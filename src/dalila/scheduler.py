@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timedelta, timezone
 
 import pytz
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -16,6 +17,12 @@ from dalila.pipeline import run_classify, run_compose_digest, run_ingest
 
 log = logging.getLogger(__name__)
 
+# When the classifier hits the rate limit, back off this long before next attempt.
+# Beats the default 5-minute scheduler cadence — most rate-limit windows on the
+# Claude Code Pro/Max plan are 1h or 5h. One hour is a conservative middle.
+_RATE_LIMIT_BACKOFF = timedelta(hours=1)
+_classify_paused_until: datetime | None = None
+
 
 def _ingest_job() -> None:
     log.info("scheduler: ingest tick")
@@ -27,9 +34,19 @@ def _ingest_job() -> None:
 
 
 def _classify_job() -> None:
+    global _classify_paused_until
+    now = datetime.now(timezone.utc)
+    if _classify_paused_until and now < _classify_paused_until:
+        remaining = (_classify_paused_until - now).total_seconds()
+        log.info("classify paused for %.0fs more (rate-limit back-off); skipping tick", remaining)
+        return
     log.info("scheduler: classify tick")
     result = run_classify(limit=100)
     log.info("classify done: %s", result)
+    if result.get("rate_limited"):
+        _classify_paused_until = now + _RATE_LIMIT_BACKOFF
+        log.warning("rate-limited — pausing scheduled classify until %s",
+                    _classify_paused_until.isoformat())
 
 
 async def _digest_job(app: Application) -> None:

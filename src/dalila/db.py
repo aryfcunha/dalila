@@ -285,3 +285,67 @@ def todays_classifier_call_count(conn: sqlite3.Connection) -> int:
         (today_utc,),
     ).fetchone()
     return int(row["n"]) if row else 0
+
+
+def status_snapshot(conn: sqlite3.Connection, hours: int = 24) -> dict:
+    """Aggregate metrics for the /status command and CLI diagnostics."""
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+    today_utc = datetime.now(timezone.utc).date().isoformat()
+
+    snap = {
+        "items_total":     conn.execute("SELECT COUNT(*) AS n FROM items").fetchone()["n"],
+        "items_pending":   conn.execute("SELECT COUNT(*) AS n FROM items WHERE classified_at IS NULL AND prefilter_passed = 1").fetchone()["n"],
+        "items_classified_window": conn.execute(
+            "SELECT COUNT(*) AS n FROM items WHERE classified_at >= ? AND classifier_error IS NULL",
+            (cutoff,)
+        ).fetchone()["n"],
+        "classifier_errors_window": conn.execute(
+            "SELECT COUNT(*) AS n FROM items WHERE classified_at >= ? AND classifier_error IS NOT NULL",
+            (cutoff,)
+        ).fetchone()["n"],
+        "llm_calls_today": conn.execute(
+            "SELECT COUNT(*) AS n FROM llm_call_log WHERE called_at >= ?",
+            (today_utc,)
+        ).fetchone()["n"],
+        "llm_avg_ms_today": conn.execute(
+            "SELECT AVG(duration_ms) AS d FROM llm_call_log WHERE called_at >= ? AND success = 1",
+            (today_utc,)
+        ).fetchone()["d"],
+        "last_digest_at": (
+            conn.execute("SELECT composed_at FROM digests ORDER BY composed_at DESC LIMIT 1").fetchone() or {}
+        ).get("composed_at") if False else None,
+        "enabled_users": conn.execute("SELECT COUNT(*) AS n FROM users WHERE enabled = 1").fetchone()["n"],
+    }
+    # The dict-or-row trick above doesn't work with sqlite3.Row; do it properly:
+    last = conn.execute("SELECT composed_at FROM digests ORDER BY composed_at DESC LIMIT 1").fetchone()
+    snap["last_digest_at"] = last["composed_at"] if last else None
+
+    # Top categories in window
+    snap["top_categories"] = [
+        (r["category"], r["n"])
+        for r in conn.execute(
+            """SELECT category, COUNT(*) AS n FROM items
+               WHERE classified_at >= ? AND classifier_error IS NULL AND category != 'other'
+               GROUP BY category ORDER BY n DESC LIMIT 6""",
+            (cutoff,)
+        )
+    ]
+
+    # Top entities (parse entities_json — small enough to do in Python)
+    import json as _json
+    from collections import Counter
+    ent_counter: Counter[str] = Counter()
+    for r in conn.execute(
+        """SELECT entities_json FROM items
+           WHERE classified_at >= ? AND classifier_error IS NULL AND entities_json IS NOT NULL""",
+        (cutoff,)
+    ):
+        try:
+            for e in _json.loads(r["entities_json"]) or []:
+                name = (e.get("name") if isinstance(e, dict) else str(e)) or ""
+                if name:
+                    ent_counter[name] += 1
+        except Exception:
+            continue
+    snap["top_entities"] = ent_counter.most_common(8)
+    return snap

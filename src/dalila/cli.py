@@ -32,6 +32,7 @@ def main(argv: list[str] | None = None) -> int:
 
     sub.add_parser("init", help="Create the SQLite DB and seed sources")
     sub.add_parser("check", help="Verify environment (claude CLI, telegram token, etc.)")
+    sub.add_parser("status", help="DB and pipeline snapshot (queue, classified, top entities)")
     sub.add_parser("ingest", help="Run one ingest pass across all enabled sources")
     p_classify = sub.add_parser("classify", help="Classify pending items")
     p_classify.add_argument("--limit", type=int, default=100, help="Max items to classify in this run")
@@ -53,6 +54,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "check":
         return _cmd_check()
+
+    if args.cmd == "status":
+        return _cmd_status()
 
     if args.cmd == "ingest":
         from dalila.pipeline import run_ingest
@@ -86,6 +90,29 @@ def main(argv: list[str] | None = None) -> int:
 
     parser.error(f"unknown command {args.cmd!r}")
     return 2
+
+
+def _cmd_status() -> int:
+    db.init_db()
+    with db.connect() as conn:
+        s = db.status_snapshot(conn, hours=24)
+    print(f"items in DB:           {s['items_total']:>5d}")
+    print(f"pending classify:      {s['items_pending']:>5d}")
+    print(f"classified (24h):      {s['items_classified_window']:>5d}"
+          + (f"  (errors: {s['classifier_errors_window']})" if s['classifier_errors_window'] else ""))
+    print(f"subscribed users:      {s['enabled_users']:>5d}")
+    print(f"llm calls today:       {s['llm_calls_today']:>5d}"
+          + (f"  (avg {(s['llm_avg_ms_today'] or 0)/1000:.1f}s/call)" if s['llm_calls_today'] else ""))
+    print(f"last digest composed:  {s['last_digest_at'] or '-'}")
+    if s['top_categories']:
+        print("\ntop categories (24h):")
+        for cat, n in s['top_categories']:
+            print(f"  {cat:30s}  n={n}")
+    if s['top_entities']:
+        print("\ntop entities (24h):")
+        for name, n in s['top_entities']:
+            print(f"  {name:30s}  n={n}")
+    return 0
 
 
 def _cmd_check() -> int:

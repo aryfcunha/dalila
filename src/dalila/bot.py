@@ -27,7 +27,8 @@ HELP_TEXT = (
     "Commands:\n"
     "• `/start` — subscribe to the daily digest\n"
     "• `/stop` — unsubscribe\n"
-    "• `/digest` — get today's digest now\n"
+    "• `/digest` — compose today's digest now (takes ~30 s)\n"
+    "• `/status` — pipeline state (queue depth, classifications, top entities)\n"
     "• `link N` — get the source URL for item #N from the latest digest\n"
     "• `/help` — show this help\n\n"
     "Daily digest arrives ~06:30 GST. Multi-user: every chat that runs `/start` gets its own copy."
@@ -60,6 +61,44 @@ async def cmd_stop(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(HELP_TEXT, parse_mode=ParseMode.MARKDOWN)
+
+
+async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Pipeline state snapshot — what's classified, top entities, etc."""
+    with db.connect() as conn:
+        s = db.status_snapshot(conn, hours=24)
+
+    lines = [
+        "📊 *Dalila status*",
+        "",
+        f"*Items in DB:* {s['items_total']:,}",
+        f"*Pending classification:* {s['items_pending']}",
+        f"*Classified in last 24h:* {s['items_classified_window']}"
+        + (f"  (errors: {s['classifier_errors_window']})" if s['classifier_errors_window'] else ""),
+        f"*Subscribed chats:* {s['enabled_users']}",
+        "",
+    ]
+
+    if s['llm_calls_today']:
+        avg = s['llm_avg_ms_today'] or 0
+        lines.append(f"*LLM calls today:* {s['llm_calls_today']}  (avg {avg/1000:.1f}s/call)")
+    if s['last_digest_at']:
+        lines.append(f"*Last digest composed:* {s['last_digest_at'][:19].replace('T', ' ')} UTC")
+
+    if s['top_categories']:
+        lines.append("")
+        lines.append("*Top categories (last 24h):*")
+        for cat, n in s['top_categories']:
+            label = cat.replace('_', ' ')
+            lines.append(f"  · {label}: {n}")
+
+    if s['top_entities']:
+        lines.append("")
+        lines.append("*Most-mentioned entities (last 24h):*")
+        for name, n in s['top_entities']:
+            lines.append(f"  · {name}: {n}")
+
+    await update.message.reply_text("\n".join(lines), parse_mode=ParseMode.MARKDOWN)
 
 
 async def cmd_digest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -143,6 +182,7 @@ def build_application() -> Application:
     app.add_handler(CommandHandler("stop", cmd_stop))
     app.add_handler(CommandHandler("help", cmd_help))
     app.add_handler(CommandHandler("digest", cmd_digest))
+    app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
     return app
 
