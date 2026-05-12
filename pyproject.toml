@@ -1,0 +1,29 @@
+[project]
+name = "dalila"
+version = "0.1.0"
+description = "Daily development news digest with UAE focus, delivered via Telegram."
+requires-python = ">=3.12"
+dependencies = [
+    # LLM access is via the `claude` CLI (subprocess), not the Anthropic API SDK.
+    # Requires Claude Code installed and authenticated against the user's Pro/Max plan.
+    "python-telegram-bot>=21.0",
+    "feedparser>=6.0.11",
+    "httpx>=0.27.0",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+    "apscheduler>=3.10",
+    "pytz>=2024.1",
+    "beautifulsoup4>=4.12",
+    "lxml>=5.0",
+    "tenacity>=9.0",
+]
+
+[project.scripts]
+dalila = "dalila.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dalila"]

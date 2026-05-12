@@ -1,0 +1,238 @@
+# Dalila — source registry (MVP, free-only)
+#
+# `kind` controls which ingestor handles the source:
+#   rss       — feedparser
+#   gdelt     — GDELT 2.0 v2 export
+#   acled     — ACLED v3 API (requires ACLED_API_KEY + ACLED_EMAIL)
+#   idmc      — IDMC RSS/reports
+#   scrape    — generic HTML scraper (BeautifulSoup) — used as fallback for sites without RSS
+#
+# `quality` is a 1–5 score used in the editor to weight which items reach the digest.
+# `enabled: false` skips the source without removing it.
+
+sources:
+  # =====================================================================
+  # UAE state & wire (highest signal for our use case)
+  # =====================================================================
+  - id: wam_en
+    name: Emirates News Agency (WAM)
+    kind: rss
+    url: https://wam.ae/en/feed/rssfeed     # TODO verify path; fallback: scrape https://wam.ae/en/section/news
+    quality: 5
+    tags: [uae, state, wire]
+    enabled: true
+
+  - id: mofa_uae
+    name: UAE Ministry of Foreign Affairs
+    kind: scrape
+    url: https://www.mofa.gov.ae/en/mediahub/news
+    selector: "article, .news-item, .card"     # broad selector; refine after first run
+    quality: 5
+    tags: [uae, state, mofa]
+    enabled: true
+
+  # =====================================================================
+  # UAE local press
+  # =====================================================================
+  - id: the_national
+    name: The National
+    kind: rss
+    url: https://www.thenationalnews.com/arc/outboundfeeds/rss/?outputType=xml
+    quality: 4
+    tags: [uae, press]
+    enabled: true
+
+  - id: gulf_news
+    name: Gulf News
+    kind: rss
+    url: https://gulfnews.com/rss
+    quality: 3
+    tags: [uae, gulf, press]
+    enabled: true
+
+  # =====================================================================
+  # UAE operating entities (the ecosystem) — most need scraping; verify URLs
+  # =====================================================================
+  - id: erc
+    name: Emirates Red Crescent
+    kind: scrape
+    url: https://www.emiratesrc.ae/en/news
+    selector: "article, .news-item"
+    quality: 5
+    tags: [uae, entity, erc]
+    enabled: true
+
+  - id: khalifa_foundation
+    name: Khalifa bin Zayed Foundation
+    kind: scrape
+    url: https://www.kbzf.gov.ae/en/news       # TODO verify
+    selector: "article, .news-item"
+    quality: 5
+    tags: [uae, entity, khalifa]
+    enabled: false                              # turn on after URL is verified
+
+  - id: erth_zayed
+    name: Erth Zayed Philanthropies
+    # Entity confirmed by Ary. URL TBD — leave disabled until Ary pastes the
+    # official news/press page; the ingestor will skip cleanly while disabled.
+    kind: scrape
+    url: ""
+    selector: "article, .news-item"
+    quality: 5
+    tags: [uae, entity, erth-zayed]
+    enabled: false
+
+  - id: uae_aid
+    name: UAE Aid Agency
+    kind: scrape
+    url: https://www.uaeaid.ae/
+    selector: "article, .news-item, .card, .post"     # broad; refine after first run
+    quality: 5
+    tags: [uae, entity, uae-aid]
+    enabled: true
+
+  # =====================================================================
+  # Global wires (free RSS — no paid wire fees)
+  # =====================================================================
+  - id: reuters_world
+    name: Reuters — World
+    kind: rss
+    url: https://feeds.reuters.com/Reuters/worldNews
+    quality: 5
+    tags: [global, wire]
+    enabled: true
+
+  - id: nyt_world
+    name: New York Times — World
+    kind: rss
+    url: https://rss.nytimes.com/services/xml/rss/nyt/World.xml
+    quality: 5
+    tags: [global, press]
+    enabled: true
+
+  - id: nyt_africa
+    name: New York Times — Africa
+    kind: rss
+    url: https://rss.nytimes.com/services/xml/rss/nyt/Africa.xml
+    quality: 5
+    tags: [global, press, africa]
+    enabled: true
+
+  - id: nyt_middleeast
+    name: New York Times — Middle East
+    kind: rss
+    url: https://rss.nytimes.com/services/xml/rss/nyt/MiddleEast.xml
+    quality: 5
+    tags: [global, press, middle-east]
+    enabled: true
+
+  - id: wapo_world
+    name: Washington Post — World
+    kind: rss
+    url: http://feeds.washingtonpost.com/rss/world
+    quality: 5
+    tags: [global, press]
+    enabled: true
+
+  - id: bbc_world
+    name: BBC News — World
+    kind: rss
+    url: http://feeds.bbci.co.uk/news/world/rss.xml
+    quality: 4
+    tags: [global, press]
+    enabled: true
+
+  - id: aljazeera_en
+    name: Al Jazeera English
+    kind: rss
+    url: https://www.aljazeera.com/xml/rss/all.xml
+    quality: 4
+    tags: [global, press, middle-east]
+    enabled: true
+
+  # =====================================================================
+  # Specialist humanitarian / development press
+  # =====================================================================
+  - id: devex
+    name: Devex News
+    kind: rss
+    url: https://www.devex.com/news/rss     # free headlines; full body paywalled
+    quality: 5
+    tags: [dev, specialist]
+    enabled: true
+
+  - id: relief_web
+    name: ReliefWeb
+    kind: rss
+    url: https://reliefweb.int/updates/rss.xml
+    quality: 5
+    tags: [humanitarian, multilateral]
+    enabled: true
+
+  - id: new_humanitarian
+    name: The New Humanitarian
+    kind: rss
+    url: https://www.thenewhumanitarian.org/rss/all
+    quality: 4
+    tags: [humanitarian, specialist]
+    enabled: true
+
+  # =====================================================================
+  # Real-time event detection
+  # =====================================================================
+  - id: gdelt_v2
+    name: GDELT 2.0 Events
+    kind: gdelt
+    # No URL — ingestor pulls from data.gdeltproject.org/gdeltv2/lastupdate.txt
+    url: ""
+    quality: 3
+    tags: [events, signal]
+    enabled: true
+
+  - id: acled
+    name: ACLED — armed conflict events
+    kind: acled
+    # No URL — uses ACLED_API_KEY + ACLED_EMAIL env vars; pulled from acleddata.com/api/acled/read
+    url: ""
+    quality: 5
+    tags: [events, conflict]
+    enabled: true                               # silently skipped if no API key
+
+  - id: idmc
+    name: IDMC — Internal Displacement Monitoring Centre
+    kind: rss
+    url: https://www.internal-displacement.org/rss.xml   # TODO verify
+    quality: 5
+    tags: [humanitarian, displacement]
+    enabled: true
+
+# Pre-filter: items must match at least one of these keywords or one entity from
+# entities.yaml before being sent to the Haiku classifier. Drops ~80% of global-wire
+# volume before paying LLM cost. Case-insensitive substring match against title+body.
+prefilter_keywords:
+  - UAE
+  - Emirates
+  - Abu Dhabi
+  - Dubai
+  - Sharjah
+  - humanitarian
+  - aid
+  - refugee
+  - displacement
+  - famine
+  - donor
+  - philanthropy
+  - foundation
+  - sustainable development
+  - foreign assistance
+  - food security
+  - climate finance
+  - Gaza
+  - Sudan
+  - Yemen
+  - Syria
+  - Ukraine
+  - DRC
+  - Sahel
+  - Ethiopia
+  - Horn of Africa

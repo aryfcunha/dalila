@@ -1,0 +1,503 @@
+# Dalila — entity watchlist
+#
+# Used by the classifier to (a) score UAE-relevance and (b) tag mentioned entities.
+# Loaded into the classifier system prompt verbatim. Edit freely; comments are ignored
+# by the classifier but help future Ary/ODA staff maintain the list.
+#
+# Aliases matter — the classifier matches on any name in the `aliases` list, so add
+# variant spellings, common abbreviations, and Arabic transliterations as you discover
+# them in the wild.
+
+# =====================================================================
+# UAE — Government & Policy
+# =====================================================================
+uae_government:
+  - name: UAE Presidential Court
+    aliases: [Presidential Court of the UAE, Diwan]
+    kind: gov
+    weight: high
+  - name: UAE Ministry of Foreign Affairs
+    aliases: [MoFA UAE, MoFA, MoFAIC, Ministry of Foreign Affairs and International Cooperation]
+    kind: gov
+    weight: high
+  - name: UAE Cabinet
+    aliases: [Cabinet of Ministers, UAE Council of Ministers]
+    kind: gov
+    weight: medium
+  - name: Office for Development Affairs
+    aliases: [ODA, ODA UAE]
+    kind: gov
+    weight: very-high
+  - name: International Humanitarian and Philanthropic Council
+    aliases: [IHPC, IHC]
+    kind: gov
+    weight: high
+  - name: UAE Ministry of Climate Change and Environment
+    aliases: [MoCCAE]
+    kind: gov
+    weight: medium
+  - name: Federal Authority for Government Human Resources
+    aliases: [FAHR]
+    kind: gov
+    weight: low
+
+# =====================================================================
+# UAE — Leadership (named individuals — Ary to expand)
+# =====================================================================
+uae_leadership:
+  - name: Mohamed bin Zayed Al Nahyan
+    aliases: [MBZ, Sheikh Mohamed bin Zayed, President of the UAE, HH MBZ]
+    role: President of the UAE
+    weight: very-high
+  - name: Mohammed bin Rashid Al Maktoum
+    aliases: [MBR, Sheikh Mohammed bin Rashid, Vice President of the UAE, Ruler of Dubai, HH MBR]
+    role: Vice President & Prime Minister; Ruler of Dubai
+    weight: very-high
+  - name: Reem Al Hashimy
+    aliases: [Reem Ebrahim Al Hashimy, Minister of State for International Cooperation]
+    role: Minister of State for International Cooperation
+    weight: high
+  - name: Anwar Gargash
+    aliases: [Dr Anwar Gargash, Diplomatic Adviser]
+    role: Diplomatic Adviser to the President
+    weight: high
+  # TODO Ary: add ED of ODA and key ODA principals by name + handle.
+
+# =====================================================================
+# UAE — Operating entities (the ecosystem)
+# =====================================================================
+uae_entities:
+  - name: Emirates Red Crescent
+    aliases: [ERC, الهلال الأحمر الإماراتي]
+    kind: humanitarian
+    weight: very-high
+  - name: Khalifa bin Zayed Foundation
+    aliases: [KBZF, Khalifa Foundation, مؤسسة خليفة بن زايد]
+    kind: foundation
+    weight: very-high
+  - name: Erth Zayed Philanthropies
+    aliases: [Erth Zayed, إرث زايد]
+    kind: foundation
+    weight: very-high
+  - name: Mohammed bin Rashid Al Maktoum Global Initiatives
+    aliases: [MBR Global Initiatives, MBRGI, MBRGlobal]
+    kind: foundation
+    weight: very-high
+  - name: Dubai Cares
+    aliases: [دبي العطاء]
+    kind: foundation
+    weight: very-high
+  - name: Abu Dhabi Fund for Development
+    aliases: [ADFD, صندوق أبوظبي للتنمية]
+    kind: dev-bank
+    weight: very-high
+  - name: Sheikh Zayed Foundation for Charity and Humanitarian Works
+    aliases: [Sheikh Zayed Foundation, Zayed Foundation]
+    kind: foundation
+    weight: high
+  - name: MBZ Initiatives
+    aliases: [Mohamed bin Zayed Initiatives, MBZ Foundation]
+    kind: foundation
+    weight: high
+  - name: The Big Heart Foundation
+    aliases: [TBHF, Big Heart Foundation, Sharjah Big Heart]
+    kind: foundation
+    weight: high
+  - name: Authority for Social Contribution — Maan
+    aliases: [Maan, Ma'an, Authority for Social Contribution]
+    kind: foundation
+    weight: high
+  - name: Dubai Charity Association
+    aliases: [DCA, جمعية دبي الخيرية]
+    kind: foundation
+    weight: medium
+  - name: Mohammed bin Rashid Al Maktoum Knowledge Foundation
+    aliases: [MBRKF, Knowledge Foundation]
+    kind: foundation
+    weight: medium
+  - name: Abdulla Al Ghurair Foundation for Education
+    aliases: [Al Ghurair Foundation, AGFE]
+    kind: foundation
+    weight: medium
+  - name: UAE Food Bank
+    aliases: [Dubai Food Bank]
+    kind: foundation
+    weight: medium
+  - name: UAE Aid Agency
+    aliases: [UAE Aid, uaeaid]
+    kind: gov-aid
+    weight: very-high
+  - name: Mubadala
+    aliases: [Mubadala Investment Company]
+    kind: sov-fund
+    weight: medium
+  - name: ADIA
+    aliases: [Abu Dhabi Investment Authority]
+    kind: sov-fund
+    weight: low
+  - name: Masdar
+    aliases: [Abu Dhabi Future Energy Company]
+    kind: corporate-impact
+    weight: medium
+
+# =====================================================================
+# UAE — Think tanks & academies
+# =====================================================================
+uae_thinktanks:
+  - name: Anwar Gargash Diplomatic Academy
+    aliases: [AGDA, EDA, Emirates Diplomatic Academy]
+    weight: high
+  - name: Emirates Policy Center
+    aliases: [EPC]
+    weight: medium
+  - name: TRENDS Research and Advisory
+    aliases: [TRENDS]
+    weight: medium
+  - name: B'huth
+    aliases: [Dubai Public Policy Research Centre, Bhuth]
+    weight: medium
+
+# =====================================================================
+# Peer Gulf donors (high cross-reference value)
+# =====================================================================
+gulf_donors:
+  - name: Saudi Fund for Development
+    aliases: [SFD, الصندوق السعودي للتنمية]
+    country: Saudi Arabia
+    weight: high
+  - name: Kuwait Fund for Arab Economic Development
+    aliases: [Kuwait Fund, KFAED]
+    country: Kuwait
+    weight: high
+  - name: Qatar Fund for Development
+    aliases: [QFFD, Qatar Fund]
+    country: Qatar
+    weight: high
+  - name: King Salman Humanitarian Aid and Relief Centre
+    aliases: [KSrelief, KS Relief]
+    country: Saudi Arabia
+    weight: high
+  - name: Islamic Development Bank
+    aliases: [IsDB, البنك الإسلامي للتنمية]
+    country: multilateral
+    weight: high
+  - name: AGFUND
+    aliases: [Arab Gulf Programme for Development]
+    country: multilateral
+    weight: medium
+
+# =====================================================================
+# Major Western donors (peer set for digest framing)
+# =====================================================================
+western_donors:
+  - name: USAID
+    aliases: [US Agency for International Development]
+    country: USA
+    weight: very-high
+  - name: US State Department Bureau of Population, Refugees, and Migration
+    aliases: [PRM]
+    country: USA
+    weight: medium
+  - name: FCDO
+    aliases: [Foreign Commonwealth and Development Office, DfID, UK Aid]
+    country: UK
+    weight: very-high
+  - name: BMZ
+    aliases: [German Federal Ministry for Economic Cooperation and Development]
+    country: Germany
+    weight: high
+  - name: AFD
+    aliases: [Agence Française de Développement, French Development Agency]
+    country: France
+    weight: high
+  - name: Sida
+    aliases: [Swedish International Development Cooperation Agency]
+    country: Sweden
+    weight: medium
+  - name: Norad
+    aliases: [Norwegian Agency for Development Cooperation]
+    country: Norway
+    weight: medium
+  - name: Global Affairs Canada
+    aliases: [GAC]
+    country: Canada
+    weight: low
+  - name: JICA
+    aliases: [Japan International Cooperation Agency]
+    country: Japan
+    weight: medium
+
+# =====================================================================
+# Multilateral & UN entities
+# =====================================================================
+multilateral:
+  - name: United Nations Office for the Coordination of Humanitarian Affairs
+    aliases: [OCHA, UN OCHA]
+    weight: very-high
+  - name: UN Refugee Agency
+    aliases: [UNHCR]
+    weight: very-high
+  - name: World Food Programme
+    aliases: [WFP]
+    weight: very-high
+  - name: United Nations Children's Fund
+    aliases: [UNICEF]
+    weight: high
+  - name: World Health Organization
+    aliases: [WHO]
+    weight: high
+  - name: International Organization for Migration
+    aliases: [IOM]
+    weight: high
+  - name: UN Office of the High Commissioner for Human Rights
+    aliases: [OHCHR]
+    weight: medium
+  - name: World Bank
+    aliases: [World Bank Group, IDA, IBRD]
+    weight: high
+  - name: International Monetary Fund
+    aliases: [IMF]
+    weight: medium
+  - name: OECD Development Assistance Committee
+    aliases: [OECD DAC, DAC]
+    weight: high
+  - name: International Committee of the Red Cross
+    aliases: [ICRC]
+    weight: high
+  - name: International Federation of Red Cross and Red Crescent Societies
+    aliases: [IFRC]
+    weight: high
+  - name: Médecins Sans Frontières
+    aliases: [MSF, Doctors Without Borders]
+    weight: medium
+  - name: African Union
+    aliases: [AU]
+    weight: high
+  - name: League of Arab States
+    aliases: [Arab League, جامعة الدول العربية]
+    weight: high
+  - name: Gulf Cooperation Council
+    aliases: [GCC, مجلس التعاون الخليجي]
+    weight: high
+
+# =====================================================================
+# Peer foundations (private philanthropy comparators)
+# =====================================================================
+peer_foundations:
+  - name: Bill and Melinda Gates Foundation
+    aliases: [Gates Foundation, BMGF]
+    weight: very-high
+  - name: Rockefeller Foundation
+    weight: high
+  - name: Ford Foundation
+    weight: high
+  - name: Open Society Foundations
+    aliases: [OSF]
+    weight: high
+  - name: MacArthur Foundation
+    weight: medium
+  - name: Wellcome Trust
+    weight: medium
+  - name: Bloomberg Philanthropies
+    weight: medium
+  - name: Aga Khan Development Network
+    aliases: [AKDN]
+    weight: high
+
+# =====================================================================
+# Replenishment cycles & vertical funds (calendar-driven doctrinal moments)
+# =====================================================================
+vertical_funds:
+  - name: Gavi the Vaccine Alliance
+    aliases: [GAVI, Gavi Alliance]
+    weight: high
+  - name: Global Fund to Fight AIDS, Tuberculosis and Malaria
+    aliases: [Global Fund, GFATM]
+    weight: high
+  - name: Global Financing Facility
+    aliases: [GFF]
+    weight: medium
+  - name: Global Partnership for Education
+    aliases: [GPE]
+    weight: medium
+  - name: Green Climate Fund
+    aliases: [GCF]
+    weight: high
+  - name: Central Emergency Response Fund
+    aliases: [CERF]
+    weight: high
+  - name: Pandemic Fund
+    weight: medium
+
+# =====================================================================
+# Crisis regions (countries / situations the editor weights heavily)
+# =====================================================================
+priority_countries:
+  - name: Sudan
+    aliases: [Republic of Sudan, السودان]
+    region: Horn of Africa
+    weight: very-high
+  - name: Gaza
+    aliases: [Gaza Strip, Palestine, Palestinian Territories]
+    region: Levant
+    weight: very-high
+  - name: Yemen
+    aliases: [Republic of Yemen, اليمن]
+    region: Arabian Peninsula
+    weight: very-high
+  - name: Syria
+    aliases: [Syrian Arab Republic, سوريا]
+    region: Levant
+    weight: high
+  - name: Ukraine
+    aliases: [Україна]
+    region: Eastern Europe
+    weight: high
+  - name: Democratic Republic of the Congo
+    aliases: [DRC, DR Congo, RDC]
+    region: Central Africa
+    weight: high
+  - name: Ethiopia
+    aliases: [Federal Democratic Republic of Ethiopia]
+    region: Horn of Africa
+    weight: high
+  - name: Somalia
+    region: Horn of Africa
+    weight: high
+  - name: South Sudan
+    region: Horn of Africa
+    weight: medium
+  - name: Afghanistan
+    region: South Asia
+    weight: medium
+  - name: Myanmar
+    aliases: [Burma]
+    region: South-East Asia
+    weight: medium
+  - name: Haiti
+    region: Caribbean
+    weight: medium
+  - name: Lebanon
+    region: Levant
+    weight: medium
+  - name: Libya
+    region: North Africa
+    weight: medium
+  - name: Mali
+    region: Sahel
+    weight: high
+  - name: Burkina Faso
+    region: Sahel
+    weight: high
+  - name: Niger
+    region: Sahel
+    weight: high
+  - name: Chad
+    region: Sahel
+    weight: medium
+  - name: Pakistan
+    region: South Asia
+    weight: low
+  - name: Bangladesh
+    region: South Asia
+    weight: low
+  - name: Sri Lanka
+    region: South Asia
+    weight: low
+  - name: Egypt
+    region: North Africa
+    weight: medium
+  - name: Jordan
+    region: Levant
+    weight: medium
+  - name: Iraq
+    region: Levant
+    weight: medium
+
+# =====================================================================
+# Topical priorities — drive both classifier scoring and editor framing
+# =====================================================================
+topics:
+  - name: climate finance
+    aliases: [climate funding, climate-resilient development, loss and damage]
+    weight: very-high
+    note: UAE has a stated doctrinal interest as host of COP28.
+  - name: food security
+    aliases: [famine, IPC classification, food crisis]
+    weight: very-high
+  - name: displacement
+    aliases: [refugees, IDPs, internally displaced, forced migration]
+    weight: very-high
+  - name: multilateralism
+    aliases: [multilateral cooperation, UN reform]
+    weight: high
+  - name: conditionality
+    aliases: [tied aid, conditional aid]
+    weight: high
+    note: UAE doctrine has historically been needs-based / non-conditional.
+  - name: faith-based aid
+    aliases: [Islamic finance, zakat, Islamic social finance, faith-inspired development]
+    weight: high
+  - name: gender and women's empowerment
+    aliases: [women in development, GEWE]
+    weight: medium
+  - name: education in emergencies
+    weight: medium
+  - name: maternal and child health
+    weight: medium
+  - name: WASH
+    aliases: [water sanitation hygiene]
+    weight: medium
+  - name: pandemic preparedness
+    weight: medium
+  - name: localization
+    aliases: [localisation, local leadership, grand bargain]
+    weight: high
+  - name: anticipatory action
+    aliases: [forecast-based financing]
+    weight: medium
+  - name: humanitarian-development-peace nexus
+    aliases: [triple nexus, HDP nexus]
+    weight: medium
+  - name: private-sector-led development
+    aliases: [blended finance, impact investment]
+    weight: high
+    note: UAE doctrine has emphasised private-sector-led models.
+
+# =====================================================================
+# Conferences & calendar moments
+# =====================================================================
+events:
+  - name: UN General Assembly
+    aliases: [UNGA, UN High-Level Week]
+    when: September annually
+    weight: very-high
+  - name: COP climate conferences
+    aliases: [COP, Conference of the Parties]
+    when: November-December annually
+    weight: very-high
+  - name: World Economic Forum
+    aliases: [WEF, Davos]
+    when: January annually
+    weight: high
+  - name: Munich Security Conference
+    aliases: [MSC]
+    when: February annually
+    weight: medium
+  - name: Doha Forum
+    when: December annually
+    weight: high
+  - name: Dubai Humanitarian Forum
+    when: November
+    weight: very-high
+  - name: World Government Summit
+    aliases: [WGS]
+    when: February (Dubai)
+    weight: high
+  - name: Skoll World Forum
+    when: April
+    weight: medium
+  - name: World Humanitarian Summit follow-ups
+    weight: medium
+  - name: G20 Development Working Group
+    weight: medium
