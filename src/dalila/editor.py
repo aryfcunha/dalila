@@ -29,12 +29,9 @@ def compose_digest(items: list[dict], *, when: datetime | None = None) -> tuple[
     cfg = get_config()
     tz = pytz.timezone(cfg.timezone)
     now = (when or datetime.now(tz)).astimezone(tz)
-    date_label = now.strftime("%A %-d %B %Y") if hasattr(now, "strftime") else str(now.date())
-    # %-d is Unix-only; fall back on Windows
-    try:
-        date_label = now.strftime("%A %#d %B %Y")
-    except Exception:
-        date_label = now.strftime("%A %d %B %Y")
+    # Cross-platform date label: build the day-of-month as an int to avoid
+    # %-d (Unix-only) / %#d (Windows-only) format-string portability issues.
+    date_label = f"{now.strftime('%A')} {now.day} {now.strftime('%B %Y')}"
 
     if len(items) < 3:
         msg = (
