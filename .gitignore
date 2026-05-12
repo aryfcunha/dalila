@@ -14,3 +14,14 @@ venv/
 dist/
 build/
 *.log
+
+# Source documents and any extracts from them. These are reference
+# material for designing prompts and topic seeds, NOT part of the
+# codebase. Do not commit — the policy text is internal and any
+# downstream extract should stay local too.
+*.docx
+*.doc
+policy_text.txt
+policy_text.*
+foreign_aid_policy*
+UAE_Foreign_Aid_Policy*
