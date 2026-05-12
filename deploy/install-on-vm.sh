@@ -26,15 +26,34 @@ ok()  { printf '\033[1;32m✓ %s\033[0m\n' "$*"; }
 log "1/6  System prerequisites"
 sudo apt-get update -q
 sudo apt-get install -y -q \
-    python3.12 python3.12-venv python3.12-dev \
     git build-essential curl ca-certificates \
-    sqlite3 tzdata
-# Node.js 20 for the claude CLI (Ubuntu 24.04 ships Node 18 which is fine too)
+    sqlite3 tzdata lsb-release
+
+# Pick the newest Python available. We need ≥3.11 (the codebase uses
+# int.bit_count(), str | None unions, etc.). On Ubuntu 24.04 that's python3.12;
+# on Debian bookworm it's python3.11. Both are in default apt repos so we
+# don't need an external PPA.
+PY=""
+for candidate in python3.13 python3.12 python3.11; do
+    if apt-cache show "$candidate" >/dev/null 2>&1; then
+        sudo apt-get install -y -q "$candidate" "$candidate-venv" "$candidate-dev"
+        PY="$candidate"
+        break
+    fi
+done
+if [[ -z "$PY" ]]; then
+    echo "ERROR: no python ≥3.11 available in apt. Distro: $(lsb_release -ds 2>/dev/null)." >&2
+    exit 1
+fi
+export PY
+ok "system packages installed (using $PY)"
+
+# Node.js 20 for the claude CLI. The Nodesource script works on both
+# Debian and Ubuntu and pins to the current distro codename automatically.
 if ! command -v node >/dev/null 2>&1; then
     curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
     sudo apt-get install -y -q nodejs
 fi
-ok "system packages installed"
 
 log "2/6  Swap file (2 GB)"
 if [[ ! -f "$SWAP_FILE" ]]; then
@@ -71,11 +90,11 @@ ok "repo at $REPO_DIR"
 log "5/6  Python venv + install"
 cd "$REPO_DIR"
 if [[ ! -d .venv ]]; then
-    python3.12 -m venv .venv
+    "$PY" -m venv .venv
 fi
 .venv/bin/pip install -q --upgrade pip
 .venv/bin/pip install -q -e .
-ok "Dalila installed in venv"
+ok "Dalila installed in venv (python: $($PY --version))"
 
 log "6/6  Runtime directories + stub .env"
 mkdir -p "$REPO_DIR/logs"

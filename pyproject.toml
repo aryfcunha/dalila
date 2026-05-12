@@ -2,7 +2,7 @@
 name = "dalila"
 version = "0.1.0"
 description = "Daily development news digest with UAE focus, delivered via Telegram."
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dependencies = [
     # LLM access is via the `claude` CLI (subprocess), not the Anthropic API SDK.
     # Requires Claude Code installed and authenticated against the user's Pro/Max plan.
