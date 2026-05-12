@@ -132,6 +132,8 @@ DALILA_INGEST_INTERVAL_MINUTES=30
 # Optional — leave blank to skip ACLED ingestion:
 ACLED_API_KEY=
 ACLED_EMAIL=
+# Optional — leave blank to skip IATI ingestion (UAE-related aid activities):
+IATI_API_KEY=
 EOF
     ok ".env stub created (you must edit this)"
 else

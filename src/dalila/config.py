@@ -25,6 +25,7 @@ class Config:
     claude_bin: str
     acled_api_key: str | None
     acled_email: str | None
+    iati_api_key: str | None
     daily_classifier_call_cap: int
     sources_path: Path
     entities_path: Path
@@ -47,6 +48,7 @@ def get_config() -> Config:
         claude_bin=os.getenv("DALILA_CLAUDE_BIN") or "claude",
         acled_api_key=os.getenv("ACLED_API_KEY") or None,
         acled_email=os.getenv("ACLED_EMAIL") or None,
+        iati_api_key=os.getenv("IATI_API_KEY") or None,
         daily_classifier_call_cap=int(os.getenv("DALILA_DAILY_CLASSIFIER_CALL_CAP", "2000")),
         sources_path=ROOT / "sources.yaml",
         entities_path=ROOT / "entities.yaml",

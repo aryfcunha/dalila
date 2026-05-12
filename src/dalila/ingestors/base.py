@@ -32,5 +32,8 @@ def ingest_source(src: dict) -> list[RawItem]:
     if kind == "acled":
         from dalila.ingestors import acled
         return acled.fetch(src)
+    if kind == "iati":
+        from dalila.ingestors import iati
+        return iati.fetch(src)
     log.warning("unknown source kind=%r for source %s; skipping", kind, src.get("id"))
     return []

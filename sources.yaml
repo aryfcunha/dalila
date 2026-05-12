@@ -234,6 +234,22 @@ sources:
     tags: [humanitarian, displacement]
     enabled: true
 
+  - id: iati_uae
+    name: IATI Datastore — UAE-related activities
+    # Pulls structured aid-activity data from the IATI Standard Datastore.
+    # Filters for participating-org or reporting-org narratives matching
+    # UAE / Emirates / ADFD / Khalifa / Erth Zayed. Each activity becomes
+    # an item whose body includes the IATI-reported transaction amounts —
+    # the classifier's financial_commitments extraction picks those up.
+    kind: iati
+    url: ""             # ingestor uses the Datastore API directly
+    quality: 5
+    tags: [iati, dev-finance, structured]
+    enabled: true
+    # Optional tuning (defaults shown):
+    window_days: 30
+    rows: 50
+
 # Pre-filter: items must match at least one of these keywords or one entity from
 # entities.yaml before being sent to the Haiku classifier. Drops ~80% of global-wire
 # volume before paying LLM cost. Case-insensitive substring match against title+body.
