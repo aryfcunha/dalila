@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 
 from dalila import db
-from dalila.classifier import classify
+from dalila.classifier import classify_batch
 from dalila.config import (
     get_config,
     load_entity_aliases,
@@ -73,55 +73,94 @@ def run_ingest() -> dict:
     return stats
 
 
-def run_classify(limit: int = 100) -> dict:
-    """Classify up to `limit` prefilter-passed items not yet classified.
+def _is_transient_error(err_msg: str) -> bool:
+    lower = err_msg.lower()
+    return any(t in lower for t in (
+        "you've hit your limit", "rate limit", "rate_limit",
+        "timeout", "connection", "503", "529",
+    ))
 
-    Distinguishes *transient* errors (rate limit, network) from *terminal* errors
-    (malformed response, can't parse JSON after retry):
-      - Transient → abort the batch immediately, leave items unclassified for retry.
-      - Terminal  → mark the item with classifier_error so we don't infinite-loop.
+
+def run_classify(limit: int = 100, batch_size: int = 10) -> dict:
+    """Classify up to `limit` prefilter-passed items in batches of `batch_size`.
+
+    Each batch goes to Haiku in a single CLI call — far cheaper than one-call-
+    per-item (amortises CLI process spawn + system-prompt re-send).
+
+    Error handling:
+      - Transient error (rate limit / network / timeout) → abort run, leave
+        items unclassified, retry on next tick.
+      - Terminal error (malformed JSON, count mismatch after retry) → fall back
+        to one-at-a-time for that batch so we mark only the bad item, not
+        the whole batch.
     """
     cfg = get_config()
     classified = 0
     errors = 0
     rate_limited = False
+    batches_done = 0
 
     with db.connect() as conn:
         if db.todays_classifier_call_count(conn) >= cfg.daily_classifier_call_cap:
-            log.warning(
-                "daily classifier cap (%d) reached; skipping classify run",
-                cfg.daily_classifier_call_cap,
-            )
+            log.warning("daily classifier cap (%d) reached; skipping classify run",
+                        cfg.daily_classifier_call_cap)
             return {"classified": 0, "errors": 0, "capped": True}
 
         rows = db.unclassified_items(conn, limit=limit)
-        log.info("classifying %d items", len(rows))
+        log.info("classifying %d items in batches of %d (%d batches)",
+                 len(rows), batch_size, (len(rows) + batch_size - 1) // batch_size)
 
-        for row in rows:
+        for batch_start in range(0, len(rows), batch_size):
+            batch_rows = rows[batch_start : batch_start + batch_size]
+            payload = [
+                {"title": r["title"], "body": r["body"], "url": r["url"]}
+                for r in batch_rows
+            ]
+
             try:
-                c = classify(
-                    title=row["title"],
-                    body=row["body"],
-                    url=row["url"],
-                )
-                db.save_classification(conn, row["id"], c)
-                classified += 1
+                classifications = classify_batch(payload)
             except Exception as exc:
                 err_msg = f"{type(exc).__name__}: {exc}"
-                lower = err_msg.lower()
-                # Transient: do NOT mark the item; abort batch and let next tick retry.
-                if any(t in lower for t in ("you've hit your limit", "rate limit", "rate_limit",
-                                            "timeout", "connection", "503", "529")):
-                    log.warning("transient error — aborting batch, item %d stays in queue: %s",
-                                row["id"], err_msg[:200])
+                if _is_transient_error(err_msg):
+                    log.warning("transient error on batch — aborting, %d items stay queued: %s",
+                                len(batch_rows), err_msg[:200])
                     rate_limited = True
                     break
-                # Terminal: mark so we don't keep retrying malformed responses
-                errors += 1
-                log.warning("classify failed for item %d (marking): %s", row["id"], err_msg)
-                db.save_classifier_error(conn, row["id"], err_msg)
+                # Terminal — could be a bad item poisoning the batch.
+                # Fall back to one-at-a-time so we only blame the actual culprit.
+                log.warning("batch failed (%s); retrying %d items individually", err_msg[:200], len(batch_rows))
+                for r in batch_rows:
+                    try:
+                        [single] = classify_batch([{"title": r["title"], "body": r["body"], "url": r["url"]}])
+                        db.save_classification(conn, r["id"], single)
+                        classified += 1
+                    except Exception as inner:
+                        inner_msg = f"{type(inner).__name__}: {inner}"
+                        if _is_transient_error(inner_msg):
+                            log.warning("transient error mid-fallback — aborting: %s", inner_msg[:200])
+                            rate_limited = True
+                            break
+                        errors += 1
+                        log.warning("classify failed for item %d (marking): %s", r["id"], inner_msg)
+                        db.save_classifier_error(conn, r["id"], inner_msg)
+                if rate_limited:
+                    break
+                continue
 
-    return {"classified": classified, "errors": errors, "rate_limited": rate_limited, "capped": False}
+            # Happy path: write all classifications back
+            for r, c in zip(batch_rows, classifications):
+                db.save_classification(conn, r["id"], c)
+                classified += 1
+            batches_done += 1
+            log.info("batch %d done (%d items classified so far)", batches_done, classified)
+
+    return {
+        "classified": classified,
+        "errors": errors,
+        "rate_limited": rate_limited,
+        "batches_done": batches_done,
+        "capped": False,
+    }
 
 
 def run_compose_digest(since_hours: int = 24, min_relevance: float = 0.4, max_items: int = 25) -> tuple[int, str]:

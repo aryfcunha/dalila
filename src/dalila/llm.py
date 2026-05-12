@@ -207,8 +207,12 @@ def call_json(*, model: str, system_prompt: str, user_prompt: str, purpose: str,
         return _parse_json_lenient(retry_raw)
 
 
-def _parse_json_lenient(text: str) -> dict:
-    """Parse JSON; tolerate ```json fences and leading/trailing prose."""
+def _parse_json_lenient(text: str):
+    """Parse JSON; tolerate ```json fences and leading/trailing prose.
+
+    Returns whatever shape json.loads produces — caller decides if it expects
+    a dict, a list, or either. (Batch classifier accepts both shapes.)
+    """
     s = text.strip()
     if s.startswith("```"):
         # Strip first fence line and any closing fence.
@@ -219,12 +223,19 @@ def _parse_json_lenient(text: str) -> dict:
             lines = lines[:-1]
         s = "\n".join(lines).strip()
 
-    # If still not pure JSON, try to extract the {...} span.
-    if not s.startswith("{"):
-        start = s.find("{")
-        end = s.rfind("}")
-        if start != -1 and end != -1 and end > start:
-            s = s[start : end + 1]
+    # If still not pure JSON, try to extract the {...} or [...] span.
+    if not s.startswith(("{", "[")):
+        obj_start = s.find("{")
+        arr_start = s.find("[")
+        starts = [p for p in (obj_start, arr_start) if p != -1]
+        if not starts:
+            raise ValueError("no JSON object or array found in response")
+        start = min(starts)
+        # Find the matching close — pick the last } or ] in the string
+        end = max(s.rfind("}"), s.rfind("]"))
+        if end <= start:
+            raise ValueError("could not locate JSON span in response")
+        s = s[start : end + 1]
 
     return json.loads(s)
 

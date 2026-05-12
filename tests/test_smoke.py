@@ -118,6 +118,45 @@ def test_llm_json_lenient_parser_extracts_from_prose():
     assert _parse_json_lenient(raw) == {"category": "humanitarian"}
 
 
+def test_llm_json_lenient_parser_accepts_array():
+    from dalila.llm import _parse_json_lenient
+    raw = "```json\n[{\"a\": 1}, {\"a\": 2}]\n```"
+    assert _parse_json_lenient(raw) == [{"a": 1}, {"a": 2}]
+
+
+def test_classify_batch_extracts_items_array():
+    """The batch extractor should accept both {items: [...]} and a bare array."""
+    from dalila.classifier import _extract_items_array
+    wrapped = {"items": [{"n": 2, "x": "b"}, {"n": 1, "x": "a"}]}
+    out = _extract_items_array(wrapped, expected=2)
+    assert [d["x"] for d in out] == ["a", "b"]  # sorted by n
+
+    bare = [{"n": 1, "x": "a"}, {"n": 2, "x": "b"}]
+    assert _extract_items_array(bare, expected=2) == bare
+
+
+def test_classify_batch_size_mismatch_raises():
+    from dalila.classifier import _extract_items_array
+    import pytest
+    with pytest.raises(ValueError, match="expected 3"):
+        _extract_items_array({"items": [{"n": 1}, {"n": 2}]}, expected=3)
+
+
+def test_build_batch_user_message_contains_all_items():
+    from dalila.classifier import _build_batch_user_message
+    msg = _build_batch_user_message([
+        {"title": "First headline", "body": "Body one", "url": "https://a.com/1"},
+        {"title": "Second headline", "body": "Body two", "url": "https://a.com/2"},
+        {"title": "Third headline", "body": None, "url": None},
+    ])
+    assert "#1" in msg and "#2" in msg and "#3" in msg
+    assert "First headline" in msg
+    assert "Second headline" in msg
+    assert "Third headline" in msg
+    assert "https://a.com/1" in msg
+    assert "EXACTLY" in msg  # the n-must-match-input directive
+
+
 def test_entity_watchlist_is_substantial():
     """Watchlist needs ~4k+ tokens for Claude's prompt cache to actually engage.
 
