@@ -81,7 +81,7 @@ def _is_transient_error(err_msg: str) -> bool:
     ))
 
 
-def run_classify(limit: int = 100, batch_size: int = 10) -> dict:
+def run_classify(limit: int = 100, batch_size: int = 25) -> dict:
     """Classify up to `limit` prefilter-passed items in batches of `batch_size`.
 
     Each batch goes to Haiku in a single CLI call — far cheaper than one-call-

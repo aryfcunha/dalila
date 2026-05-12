@@ -36,6 +36,21 @@ The full concept lives in `../dalila-concept-note.md` and `../dalila-sources.md`
 - All env config flows through `config.get_config()`. Don't read `os.getenv` elsewhere.
 - Prompts live in `prompts/*.md` as version-controlled markdown, not inline strings.
 
+## Classifier batch size (tuned 2026-05-12)
+
+Default `batch_size = 25` was set after empirical measurement on this
+Windows + Claude Code 2.1.126 setup. Single-item calls cost ~33s per item
+(dominated by CLI process spawn + auth overhead); size-25/30 batches drop
+to ~2.5s per item — roughly 13× speedup.
+
+Going beyond 30 hits diminishing returns because Haiku's output tokens
+scale linearly with batch size (~300 tokens per classification) and start
+to dominate wall time. Going below 10 leaves spawn overhead on the table.
+
+Benchmark script lives at `benchmark_batch.py`. Re-run if you switch hosts
+(macOS / Linux will likely have lower spawn overhead and a different sweet
+spot) or upgrade Claude Code.
+
 ## Known source blockers (audited 2026-05-12)
 
 Eight sources from the original spec are disabled with reasons in `sources.yaml`:

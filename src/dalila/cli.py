@@ -35,7 +35,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("ingest", help="Run one ingest pass across all enabled sources")
     p_classify = sub.add_parser("classify", help="Classify pending items")
     p_classify.add_argument("--limit", type=int, default=100, help="Max items to classify in this run")
-    p_classify.add_argument("--batch-size", type=int, default=10, help="Items per Haiku call (default 10)")
+    p_classify.add_argument("--batch-size", type=int, default=25, help="Items per Haiku call (default 25, empirically tuned)")
     p_digest = sub.add_parser("digest", help="Compose today's digest and print to stdout")
     p_digest.add_argument("--since-hours", type=int, default=24)
     p_digest.add_argument("--min-relevance", type=float, default=0.4)
