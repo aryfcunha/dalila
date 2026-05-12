@@ -1,0 +1,26 @@
+# Default: let git handle line endings per-platform on checkout.
+* text=auto
+
+# Force LF for files that must run on Linux (shell scripts, systemd units).
+# Without this, git on Windows checks them out with CRLF and they fail to
+# parse on the GCP VM.
+*.sh           text eol=lf
+*.service      text eol=lf
+deploy/dalila@.service text eol=lf
+
+# Force LF for Python so the codebase looks the same whether it's checked
+# out on Windows (dev) or Linux (prod).
+*.py           text eol=lf
+*.yaml         text eol=lf
+*.yml          text eol=lf
+*.md           text eol=lf
+*.sql          text eol=lf
+
+# Binary blobs that shouldn't be touched.
+*.db           binary
+*.png          binary
+*.jpg          binary
+*.pdf          binary
+*.pptx         binary
+*.xlsx         binary
+*.docx         binary

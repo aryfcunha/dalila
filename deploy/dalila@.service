@@ -1,0 +1,40 @@
+[Unit]
+Description=Dalila — daily UAE-lens humanitarian/development digest bot (running as %i)
+Documentation=https://github.com/aryfcunha/dalila
+After=network-online.target
+Wants=network-online.target
+
+# This is a SYSTEMD TEMPLATE unit (file ends in `@.service`). The `%i` placeholder
+# is filled in with whatever follows the `@` when you start the service —
+# i.e. `systemctl start dalila@ary` runs as user `ary` from /home/ary/dalila/.
+# Templates avoid having to edit the file with a hard-coded username before
+# installing.
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=/home/%i/dalila
+EnvironmentFile=-/home/%i/dalila/.env
+# Path includes claude's install location AND the project venv
+Environment="PATH=/home/%i/.local/bin:/home/%i/dalila/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/home/%i/dalila/.venv/bin/python -m dalila bot
+
+# Auto-restart on crash (give it 10s to avoid restart loops)
+Restart=on-failure
+RestartSec=10
+StartLimitBurst=5
+StartLimitIntervalSec=300
+
+# Resource hints (e2-micro is 1 GB RAM total; we give the bot 600 MB ceiling).
+# Going over forces it to swap rather than OOM-kill, which is what we want.
+MemoryHigh=600M
+MemoryMax=800M
+CPUWeight=80
+
+# Logs flow to journald — view with `journalctl -u dalila@<user> -f`
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=dalila
+
+[Install]
+WantedBy=multi-user.target

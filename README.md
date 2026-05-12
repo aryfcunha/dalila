@@ -44,6 +44,13 @@ dalila check
 
 `dalila check` verifies the `claude` CLI is on PATH, the Telegram token is set, etc. Fix anything red before going further.
 
+### Running it 24/7 (production)
+
+For a single-user dev setup, just leave `dalila bot` running in a terminal.
+To survive laptop sleep / reboot / power-off, put the bot on a host that
+stays on — **see [deploy/README.md](deploy/README.md) for a step-by-step
+guide to running it free on Google Cloud's always-free e2-micro tier.**
+
 ## Day-to-day commands
 
 ```bash
