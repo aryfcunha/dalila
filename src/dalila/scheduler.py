@@ -102,6 +102,16 @@ def attach_jobs(scheduler: AsyncIOScheduler, app: Application) -> None:
         replace_existing=True,
     )
 
+    # Convening pre-flight: once a day at 08:00 GST. Quiet on most days;
+    # broadcasts a heads-up message when a tracked event starts within 7 days.
+    scheduler.add_job(
+        _convening_preflight_job,
+        trigger=CronTrigger(hour=8, minute=0, timezone=tz),
+        args=[app],
+        id="convening_preflight",
+        replace_existing=True,
+    )
+
     # Doctrine pass: every 15 min, cheap when there's nothing pending.
     # Runs independently of the classify schedule so a doctrine rate-limit
     # doesn't block fresh classification (and vice versa).
@@ -119,6 +129,72 @@ def attach_jobs(scheduler: AsyncIOScheduler, app: Application) -> None:
 
 
 _doctrine_paused_until: datetime | None = None
+
+# Tracks event-ids we've already pre-flighted so we don't spam the user
+# with the same heads-up every day in the 7-day window. Cleared on
+# scheduler restart — that's fine, a duplicate notification across
+# restarts is harmless and rare.
+_preflighted_events: set[str] = set()
+
+
+async def _convening_preflight_job(app: Application) -> None:
+    """Broadcast a heads-up for any tracked convening event starting within 7 days.
+
+    See `events.yaml`. UAE Foreign Aid Policy §7.4 treats convening as a
+    doctrinal instrument — doctrine announcements cluster around these
+    platforms, so the user wants context loaded in advance.
+    """
+    from dalila.config import load_convening_events
+    from datetime import date
+
+    today = date.today()
+    upcoming: list[dict] = []
+    for ev in load_convening_events():
+        sd = ev.get("start_date")
+        if not sd or ev.get("id") in _preflighted_events:
+            continue
+        try:
+            start = date.fromisoformat(str(sd))
+        except ValueError:
+            continue
+        days_out = (start - today).days
+        if 0 <= days_out <= 7:
+            ev["_days_out"] = days_out
+            upcoming.append(ev)
+
+    if not upcoming:
+        return
+
+    lines = ["📅 *Upcoming UAE-relevant convening events*", ""]
+    for ev in upcoming:
+        lines.append(
+            f"*{ev.get('name', '')}* — starts in {ev['_days_out']} day(s) "
+            f"({ev.get('start_date')})"
+        )
+        if ev.get("location"):
+            lines.append(f"📍 {ev['location']}")
+        focus = (ev.get("topic_focus") or "").strip()
+        if focus:
+            # Collapse multi-line YAML strings to single paragraph
+            focus = " ".join(focus.split())
+            lines.append(focus)
+        if ev.get("url"):
+            lines.append(ev["url"])
+        lines.append("")
+        _preflighted_events.add(ev["id"])
+
+    text = "\n".join(lines)
+    with db.connect() as conn:
+        users = db.enabled_users(conn)
+    for user in users:
+        try:
+            await app.bot.send_message(
+                chat_id=user["chat_id"],
+                text=text,
+                parse_mode=__import__("telegram").constants.ParseMode.MARKDOWN,
+            )
+        except Exception as exc:
+            log.warning("convening preflight delivery failed for %s: %s", user["chat_id"], exc)
 
 
 def _doctrine_job() -> None:

@@ -1,0 +1,81 @@
+# Dalila — convening calendar.
+#
+# UAE Foreign Aid Policy 2026 §7.4 treats global convening as a deliberate
+# doctrinal instrument, not incidental hosting. Doctrine announcements
+# regularly cluster around these platforms. Dalila pre-flights each event
+# 7 days in advance with a Telegram heads-up so the user has the context
+# loaded before the announcements hit.
+#
+# Each entry needs: id, name, start_date (YYYY-MM-DD), end_date (optional),
+# location, topic_focus (free text), and an optional `url` for primary
+# source. Dates without a year imply "next occurrence" and are auto-rolled.
+
+events:
+  - id: adsw-2027
+    name: Abu Dhabi Sustainability Week
+    start_date: 2027-01-11
+    end_date:   2027-01-18
+    location:   Abu Dhabi
+    topic_focus: >
+      Climate finance, energy transition, food security, water — the largest
+      UAE convening platform after COP. Expect new commitments at the closing
+      ceremony.
+    url: https://www.adsw.ae/
+
+  - id: world-government-summit-2027
+    name: World Government Summit
+    start_date: 2027-02-09
+    end_date:   2027-02-11
+    location:   Dubai
+    topic_focus: >
+      Governance, AI policy, future of work. Doctrine signals on AI-for-
+      development, MEL, and inclusive technology often surface here.
+    url: https://www.worldgovernmentsummit.org/
+
+  - id: world-future-energy-summit-2027
+    name: World Future Energy Summit
+    start_date: 2027-01-12
+    end_date:   2027-01-14
+    location:   Abu Dhabi (within ADSW)
+    topic_focus: >
+      Energy access, renewables, just transition. Concrete energy-sector
+      commitments often anchored here.
+    url: https://www.worldfutureenergysummit.com/
+
+  - id: global-water-summit-2026
+    name: Global Water Summit
+    start_date: 2026-05-26
+    end_date:   2026-05-28
+    location:   London
+    topic_focus: >
+      Water security, desalination, water-stress finance. UAE delegation
+      typically announces water-sector partnerships.
+    url: https://www.watermeetsmoney.com/
+
+  - id: cop31-prep
+    name: COP31 Preparatory Meetings
+    start_date: 2026-11-09
+    end_date:   2026-11-21
+    location:   TBD
+    topic_focus: >
+      Climate finance, Loss & Damage Fund operationalisation, NDC updates.
+      UAE post-COP28 implementation positioning will be central.
+
+  - id: unga-high-level-2026
+    name: UN General Assembly — High Level Week
+    start_date: 2026-09-21
+    end_date:   2026-09-29
+    location:   New York
+    topic_focus: >
+      Bilateral meetings, side events on UAE priorities (climate, humanitarian,
+      AI). High-density of UAE bilateral meetings — many flow into
+      /meetings extraction.
+
+  - id: iucn-congress-2026
+    name: IUCN World Conservation Congress preparation
+    start_date: 2026-10-09
+    end_date:   2026-10-15
+    location:   Abu Dhabi
+    topic_focus: >
+      Biodiversity, natural-resource stewardship. UAE-hosted; doctrine on
+      biodiversity-natural-resources typically anchors here.

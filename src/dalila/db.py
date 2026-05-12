@@ -176,6 +176,13 @@ def unclassified_items(conn: sqlite3.Connection, limit: int = 100) -> list[sqlit
 
 
 def save_classification(conn: sqlite3.Connection, item_id: int, c: Classification) -> None:
+    """Persist a Classification, including the migration-004 richer fields.
+
+    Also writes derived financial_commitments and bilateral_meetings rows.
+    The item's classified_at timestamp anchors fall-back dates for
+    commitments/meetings that didn't carry their own when_iso/announced_at.
+    """
+    now = _now_iso()
     conn.execute(
         """
         UPDATE items SET
@@ -188,11 +195,15 @@ def save_classification(conn: sqlite3.Connection, item_id: int, c: Classificatio
             one_line_summary = ?,
             rationale = ?,
             entities_json = ?,
+            policy_sector = ?,
+            country_focus_json = ?,
+            capital_signals_json = ?,
+            graduation_signal = ?,
             classifier_error = NULL
         WHERE id = ?
         """,
         (
-            _now_iso(),
+            now,
             c.category,
             c.uae_relevance,
             c.severity,
@@ -201,9 +212,39 @@ def save_classification(conn: sqlite3.Connection, item_id: int, c: Classificatio
             c.one_line_summary,
             c.rationale,
             json.dumps(c.entities, ensure_ascii=False),
+            c.policy_sector,
+            json.dumps(c.country_focus, ensure_ascii=False) if c.country_focus else None,
+            json.dumps(c.capital_signals, ensure_ascii=False) if c.capital_signals else None,
+            1 if c.graduation_signal else 0,
             item_id,
         ),
     )
+
+    # Re-insert commitments + meetings idempotently. Re-classifying an item
+    # would otherwise duplicate them; delete-then-insert keeps the row count
+    # honest. Cheap — most items have 0 of each.
+    if c.financial_commitments or c.bilateral_meetings:
+        conn.execute("DELETE FROM financial_commitments WHERE item_id = ?", (item_id,))
+        conn.execute("DELETE FROM bilateral_meetings WHERE item_id = ?", (item_id,))
+        for fc in c.financial_commitments:
+            conn.execute(
+                """INSERT INTO financial_commitments(
+                       item_id, amount, currency, fund_name, recipient,
+                       commitment_type, announced_at, rationale, created_at)
+                   VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (item_id, fc.amount, fc.currency, fc.fund_name, fc.recipient,
+                 fc.commitment_type, fc.announced_at, fc.rationale, now),
+            )
+        for bm in c.bilateral_meetings:
+            conn.execute(
+                """INSERT INTO bilateral_meetings(
+                       item_id, uae_principal, foreign_principal, foreign_country,
+                       meeting_type, when_iso, location, topics_json, created_at)
+                   VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (item_id, bm.uae_principal, bm.foreign_principal, bm.foreign_country,
+                 bm.meeting_type, bm.when_iso, bm.location,
+                 json.dumps(bm.topics, ensure_ascii=False), now),
+            )
 
 
 def save_classifier_error(conn: sqlite3.Connection, item_id: int, error: str) -> None:
@@ -343,6 +384,126 @@ def backfill_title_simhash(conn: sqlite3.Connection, batch: int = 1000) -> int:
             "UPDATE items SET title_simhash = ? WHERE id = ?", updates[i:i + batch]
         )
     return len(updates)
+
+
+def recent_financial_commitments(conn: sqlite3.Connection, hours: int = 720, limit: int = 30) -> list[dict]:
+    """Recent extracted commitments, newest first. Joins back to the source item."""
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+    rows = conn.execute(
+        """
+        SELECT fc.id, fc.amount, fc.currency, fc.fund_name, fc.recipient,
+               fc.commitment_type, fc.announced_at, fc.rationale, fc.created_at,
+               i.id AS item_id, i.title, i.url
+        FROM financial_commitments fc
+        JOIN items i ON i.id = fc.item_id
+        WHERE COALESCE(fc.announced_at, fc.created_at) >= ?
+        ORDER BY COALESCE(fc.announced_at, fc.created_at) DESC, fc.id DESC
+        LIMIT ?
+        """,
+        (cutoff, limit),
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def recent_bilateral_meetings(conn: sqlite3.Connection, hours: int = 720, limit: int = 30) -> list[dict]:
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+    rows = conn.execute(
+        """
+        SELECT bm.id, bm.uae_principal, bm.foreign_principal, bm.foreign_country,
+               bm.meeting_type, bm.when_iso, bm.location, bm.topics_json,
+               bm.created_at, i.id AS item_id, i.title, i.url
+        FROM bilateral_meetings bm
+        JOIN items i ON i.id = bm.item_id
+        WHERE COALESCE(bm.when_iso, bm.created_at) >= ?
+        ORDER BY COALESCE(bm.when_iso, bm.created_at) DESC, bm.id DESC
+        LIMIT ?
+        """,
+        (cutoff, limit),
+    ).fetchall()
+    out: list[dict] = []
+    for r in rows:
+        d = dict(r)
+        d["topics"] = json.loads(d.pop("topics_json")) if d.get("topics_json") else []
+        out.append(d)
+    return out
+
+
+def items_by_country_codes(
+    conn: sqlite3.Connection,
+    codes: list[str],
+    *,
+    since_hours: int = 720,
+    limit: int = 25,
+) -> list[dict]:
+    """Items whose country_focus_json contains ANY of the given ISO codes.
+
+    Uses substring match against the stored JSON array text — sqlite has no
+    native JSON list-containment without the JSON1 extension. With codes
+    being exactly two uppercase letters wrapped in quotes in the JSON, false
+    positives are extraordinarily unlikely.
+    """
+    if not codes:
+        return []
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=since_hours)).isoformat()
+    clauses = " OR ".join(["i.country_focus_json LIKE ?"] * len(codes))
+    params: list = [cutoff]
+    params.extend([f'%"{c.upper()}"%' for c in codes])
+    params.append(limit)
+    rows = conn.execute(
+        f"""
+        SELECT i.id, i.title, i.url, i.one_line_summary, i.category,
+               i.uae_relevance, i.severity, i.entities_json, i.country_focus_json,
+               i.policy_sector, i.ingested_at,
+               s.name AS source_name, s.quality AS source_quality
+        FROM items i
+        JOIN sources s ON s.id = i.source_id
+        WHERE i.classified_at IS NOT NULL
+          AND i.classifier_error IS NULL
+          AND i.ingested_at >= ?
+          AND ({clauses})
+        ORDER BY (COALESCE(i.uae_relevance, 0.3) * COALESCE(i.severity, 0.3) * s.quality) DESC,
+                 i.ingested_at DESC
+        LIMIT ?
+        """,
+        params,
+    ).fetchall()
+    out: list[dict] = []
+    for r in rows:
+        out.append({
+            "id": r["id"],
+            "title": r["title"],
+            "url": r["url"],
+            "summary": r["one_line_summary"] or "",
+            "category": r["category"],
+            "source": r["source_name"],
+            "uae_relevance": r["uae_relevance"],
+            "severity": r["severity"],
+            "policy_sector": r["policy_sector"],
+            "country_focus": json.loads(r["country_focus_json"]) if r["country_focus_json"] else [],
+            "ingested_at": r["ingested_at"],
+        })
+    return out
+
+
+def doctrine_velocity_snapshot(conn: sqlite3.Connection, hours: int = 720, limit: int = 5) -> list[dict]:
+    """Return topics with the most evolution_log activity in the window.
+
+    Used by /status to surface 'doctrine in motion'. We count log entries
+    by parsing JSON in Python rather than relying on SQLite JSON1 (not always
+    compiled in on Debian/Ubuntu).
+    """
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+    rows = conn.execute(
+        "SELECT topic, evolution_log_json, confidence FROM doctrine_facts"
+    ).fetchall()
+    out: list[tuple[str, int, float]] = []
+    for r in rows:
+        log_arr = json.loads(r["evolution_log_json"]) if r["evolution_log_json"] else []
+        recent = sum(1 for e in log_arr if (e.get("at") or "") >= cutoff)
+        if recent:
+            out.append((r["topic"], recent, float(r["confidence"])))
+    out.sort(key=lambda t: (-t[1], t[0]))
+    return [{"topic": t, "updates": n, "confidence": c} for t, n, c in out[:limit]]
 
 
 def items_pending_doctrine(conn: sqlite3.Connection, limit: int = 20) -> list[sqlite3.Row]:
@@ -634,4 +795,20 @@ def status_snapshot(conn: sqlite3.Connection, hours: int = 24) -> dict:
         except Exception:
             continue
     snap["top_entities"] = ent_counter.most_common(8)
+
+    # Migration-004 counts: graduation signals + commitments + meetings in window
+    snap["graduation_signal_window"] = conn.execute(
+        "SELECT COUNT(*) AS n FROM items WHERE classified_at >= ? AND graduation_signal = 1",
+        (cutoff,)
+    ).fetchone()["n"]
+    snap["commitments_window"] = conn.execute(
+        """SELECT COUNT(*) AS n FROM financial_commitments
+           WHERE COALESCE(announced_at, created_at) >= ?""",
+        (cutoff,)
+    ).fetchone()["n"]
+    snap["meetings_window"] = conn.execute(
+        """SELECT COUNT(*) AS n FROM bilateral_meetings
+           WHERE COALESCE(when_iso, created_at) >= ?""",
+        (cutoff,)
+    ).fetchone()["n"]
     return snap

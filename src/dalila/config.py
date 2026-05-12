@@ -103,6 +103,65 @@ def load_prompt(name: str) -> str:
 
 
 @lru_cache(maxsize=1)
+def load_convening_events() -> list[dict]:
+    """Convening calendar — see events.yaml for the schema."""
+    cfg = get_config()
+    path = cfg.root / "events.yaml"
+    if not path.exists():
+        return []
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    return data.get("events", []) or []
+
+
+@lru_cache(maxsize=1)
+def load_regions() -> dict[str, dict]:
+    """Region-slug → {label, countries:[ISO-codes]} mapping for /region.
+
+    Returns {} if the file is missing. Slugs are normalised to lowercase
+    for case-insensitive lookups.
+    """
+    cfg = get_config()
+    path = cfg.root / "regions.yaml"
+    if not path.exists():
+        return {}
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    regions = data.get("regions", {}) or {}
+    out: dict[str, dict] = {}
+    for slug, spec in regions.items():
+        if not isinstance(spec, dict):
+            continue
+        countries = [str(c).strip().upper() for c in (spec.get("countries") or []) if c]
+        out[str(slug).strip().lower()] = {
+            "label": str(spec.get("label", slug)),
+            "countries": countries,
+        }
+    return out
+
+
+def resolve_region(query: str) -> tuple[str, dict] | None:
+    """Resolve a free-text user query to a region. Case/punctuation-insensitive.
+
+    Matches exact slug, label, or any unambiguous substring of either.
+    Returns (slug, spec) or None if no/ambiguous match.
+    """
+    if not query:
+        return None
+    q = query.strip().lower().replace(" ", "-").replace("_", "-").replace("&", "and")
+    regions = load_regions()
+    if q in regions:
+        return q, regions[q]
+    # Substring match against slug or label
+    candidates = []
+    for slug, spec in regions.items():
+        label_norm = spec["label"].lower().replace(" ", "-").replace("&", "and")
+        if q in slug or q in label_norm:
+            candidates.append((slug, spec))
+    if len(candidates) == 1:
+        return candidates[0]
+    return None
+
+
+@lru_cache(maxsize=1)
 def load_doctrine_topic_seeds() -> list[dict]:
     """Preferred doctrine topic vocabulary — see doctrine_topics.yaml.
 

@@ -1,0 +1,167 @@
+# Dalila — region → country mapping for the /region command.
+#
+# Region taxonomy follows UAE Foreign Aid Policy 2026 Ch 5 (geographic focus).
+# Country codes are ISO-3166-1 alpha-2 to match the `country_focus` field
+# the classifier emits.
+#
+# Coverage rationale:
+#   - Middle East & Arab States: priority region per policy (>50% of dev assistance).
+#     Includes all 22 Arab League members plus Iran (frequently classified
+#     under Middle East in coverage).
+#   - Africa: sub-Saharan + non-Arab North African (Morocco/Tunisia/Algeria stay
+#     in Middle East & Arab States to match the policy's chapter split).
+#   - Asia: South + Southeast + Central + East Asia excluding the Middle East.
+#   - Latin America: Central + South America + Caribbean mainland states.
+#   - SIDS: Small Island Developing States across all oceans, per UN-OHRLLS list.
+#
+# Edit when a new country appears in classifier output that isn't covered —
+# the /region command will skip uncovered countries silently.
+
+regions:
+  middle-east-arab-states:
+    label: "Middle East & Arab States"
+    countries: [AE, SA, KW, QA, BH, OM, YE, IQ, JO, LB, SY, PS, EG, LY, TN, DZ, MA, MR, SD, SO, DJ, KM, IR]
+
+  africa:
+    label: "Africa (excl. Middle East & Arab States)"
+    countries:
+      - ET   # Ethiopia
+      - KE
+      - UG
+      - TZ
+      - RW
+      - BI
+      - ER
+      - SS   # South Sudan
+      - CF
+      - TD
+      - NG
+      - GH
+      - SN
+      - ML
+      - BF
+      - NE
+      - CI
+      - LR
+      - SL
+      - GN
+      - GM
+      - GW
+      - CM
+      - CG
+      - CD   # DRC
+      - GA
+      - GQ
+      - ST
+      - AO
+      - ZM
+      - ZW
+      - MW
+      - MZ
+      - MG
+      - NA
+      - BW
+      - LS
+      - SZ   # Eswatini
+      - ZA
+      - BJ
+      - TG
+
+  asia:
+    label: "Asia (excl. Middle East & Arab States)"
+    countries:
+      - AF
+      - PK
+      - IN
+      - BD
+      - LK
+      - NP
+      - BT
+      - MM   # Myanmar
+      - TH
+      - LA
+      - KH   # Cambodia
+      - VN
+      - MY
+      - SG
+      - PH
+      - ID
+      - TL   # Timor-Leste
+      - CN
+      - JP
+      - KR
+      - KP
+      - MN
+      - KZ
+      - UZ
+      - TM
+      - KG
+      - TJ
+      - AZ
+      - AM
+      - GE
+
+  latin-america:
+    label: "Latin America & Caribbean"
+    countries:
+      - MX
+      - GT
+      - HN
+      - SV
+      - NI
+      - CR
+      - PA
+      - CO
+      - VE
+      - EC
+      - PE
+      - BO
+      - CL
+      - AR
+      - UY
+      - PY
+      - BR
+      - GY
+      - SR
+      - HT
+      - DO
+      - CU
+
+  sids:
+    label: "Small Island Developing States (SIDS)"
+    # Per UN-OHRLLS canonical SIDS list. Some Caribbean SIDS also appear in
+    # the Latin America region; the /region command will surface them under
+    # whichever region the user asks for.
+    countries:
+      - FJ   # Fiji
+      - PG   # Papua New Guinea
+      - SB   # Solomon Islands
+      - VU   # Vanuatu
+      - WS   # Samoa
+      - TO   # Tonga
+      - KI   # Kiribati
+      - TV   # Tuvalu
+      - NR   # Nauru
+      - PW   # Palau
+      - FM   # Micronesia
+      - MH   # Marshall Islands
+      - CV   # Cape Verde
+      - MU   # Mauritius
+      - SC   # Seychelles
+      - MV   # Maldives
+      - JM
+      - TT
+      - BS
+      - BB
+      - GD
+      - LC
+      - VC
+      - AG
+      - DM
+      - KN
+      - BZ
+      - GY   # Guyana (also LatAm)
+      - SR   # Suriname (also LatAm)
+      - HT   # Haiti (also LatAm)
+      - DO   # Dominican Republic (also LatAm)
+      - CU   # Cuba (also LatAm)

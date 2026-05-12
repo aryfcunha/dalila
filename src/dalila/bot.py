@@ -30,6 +30,9 @@ HELP_TEXT = (
     "• `/digest` — show the latest daily digest (read-only). `/digest fresh` to recompose now.\n"
     "• `/more <topic>` — deep-dive synthesis on a topic from the last 30 days\n"
     "• `/doctrine` — list tracked UAE doctrine positions, or `/doctrine <topic>` for evolution log\n"
+    "• `/commitments` — recent UAE financial commitments (pledges, MoUs, disbursements)\n"
+    "• `/meetings` — recent UAE bilateral meetings, calls, and visits\n"
+    "• `/region [name]` — items aggregated by region (per policy Ch 5)\n"
     "• `link N` — get the source URL for item #N from the latest digest\n"
     "• `/help` — show this help\n\n"
     "Daily digest arrives ~06:30 GST. Multi-user: every chat that runs `/start` gets its own copy."
@@ -99,6 +102,25 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         for name, n in s['top_entities']:
             lines.append(f"  · {name}: {n}")
 
+    if s.get('commitments_window') or s.get('meetings_window') or s.get('graduation_signal_window'):
+        lines.append("")
+        lines.append("*Extracted in last 24h:*")
+        if s.get('commitments_window'):
+            lines.append(f"  · {s['commitments_window']} financial commitment(s)")
+        if s.get('meetings_window'):
+            lines.append(f"  · {s['meetings_window']} bilateral meeting(s)")
+        if s.get('graduation_signal_window'):
+            lines.append(f"  · {s['graduation_signal_window']} graduation/transition signal(s)")
+
+    # Doctrine velocity — which topics moved the most in the last 30 days?
+    with db.connect() as conn:
+        velocity = db.doctrine_velocity_snapshot(conn, hours=720, limit=5)
+    if velocity:
+        lines.append("")
+        lines.append("*Doctrine in motion (last 30d):*")
+        for v in velocity:
+            lines.append(f"  · {v['topic']}: {v['updates']} update(s), confidence {v['confidence']:.2f}")
+
     await update.message.reply_text("\n".join(lines), parse_mode=ParseMode.MARKDOWN)
 
 
@@ -135,6 +157,151 @@ async def cmd_digest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         await update.message.reply_text(f"Sorry, digest composition failed: {exc}")
         return
     await _send_long(update, content)
+
+
+async def cmd_commitments(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Recent UAE financial commitments extracted from news items."""
+    if not update.message:
+        return
+    hours = 720  # last 30 days
+    with db.connect() as conn:
+        rows = db.recent_financial_commitments(conn, hours=hours, limit=20)
+    if not rows:
+        await update.message.reply_text(
+            "No UAE financial commitments tracked in the last 30 days. "
+            "These are extracted from news items mentioning concrete pledges, "
+            "disbursements, MoUs, loans, or grants with an attached amount."
+        )
+        return
+    lines = ["💰 *UAE financial commitments — last 30 days*", ""]
+    for r in rows:
+        amt = _fmt_amount(r.get("amount"), r.get("currency"))
+        when = (r.get("announced_at") or r.get("created_at") or "")[:10]
+        ct = (r.get("commitment_type") or "").upper() or "—"
+        fund = r.get("fund_name") or "(unspecified fund)"
+        recipient = r.get("recipient") or "(unspecified recipient)"
+        lines.append(f"*{amt}* · {ct} · _{when}_")
+        lines.append(f"  → {fund} → {recipient}")
+        if r.get("title"):
+            title = r["title"][:80] + ("…" if len(r["title"]) > 80 else "")
+            lines.append(f"  _{title}_")
+        lines.append("")
+    await _send_long(update, "\n".join(lines))
+
+
+def _fmt_amount(amount, currency) -> str:
+    if amount is None:
+        return f"({currency or 'unspecified'})"
+    cur = (currency or "").upper() or "?"
+    # Heuristic: amounts ≥ 1000 likely already in millions/billions in the
+    # source; smaller numbers display verbatim. We don't try to normalise
+    # because the classifier prompt says "use the same unit the article uses".
+    try:
+        amt = float(amount)
+        if amt >= 1000:
+            return f"{cur} {amt:,.0f}"
+        if amt >= 1:
+            return f"{cur} {amt:,.1f}M"
+        return f"{cur} {amt}"
+    except (TypeError, ValueError):
+        return f"{cur} {amount}"
+
+
+async def cmd_meetings(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Recent bilateral meetings / calls / visits between UAE and foreign leaders."""
+    if not update.message:
+        return
+    with db.connect() as conn:
+        rows = db.recent_bilateral_meetings(conn, hours=720, limit=20)
+    if not rows:
+        await update.message.reply_text(
+            "No bilateral meetings tracked in the last 30 days. These are "
+            "principal-level calls, visits, or summits between UAE leadership "
+            "and foreign counterparts, extracted from news coverage."
+        )
+        return
+    lines = ["🤝 *UAE bilateral meetings — last 30 days*", ""]
+    for r in rows:
+        when = (r.get("when_iso") or r.get("created_at") or "")[:10]
+        mtype = (r.get("meeting_type") or "meeting").upper()
+        uae = r.get("uae_principal") or "(UAE side)"
+        foreign = r.get("foreign_principal") or "(foreign side)"
+        country = r.get("foreign_country") or ""
+        country_tag = f" ({country})" if country else ""
+        lines.append(f"*{mtype}* · _{when}_  ·  {uae} ↔ {foreign}{country_tag}")
+        if r.get("location"):
+            lines.append(f"  📍 {r['location']}")
+        topics = r.get("topics") or []
+        if topics:
+            lines.append(f"  Topics: {', '.join(topics[:5])}")
+        lines.append("")
+    await _send_long(update, "\n".join(lines))
+
+
+async def cmd_region(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Aggregate recent items by region (per UAE Foreign Aid Policy Ch 5)."""
+    if not update.message:
+        return
+    from dalila.config import load_regions, resolve_region
+
+    query = " ".join(context.args).strip() if context.args else ""
+    regions = load_regions()
+    if not regions:
+        await update.message.reply_text("Region mapping not configured (regions.yaml missing).")
+        return
+
+    if not query:
+        # No arg → show the list of regions with item counts for the last 30 days.
+        lines = ["🌍 *Regions tracked (last 30 days)*", ""]
+        with db.connect() as conn:
+            for slug, spec in regions.items():
+                items = db.items_by_country_codes(conn, spec["countries"], since_hours=720, limit=200)
+                top_country = ""
+                if items:
+                    counts: dict[str, int] = {}
+                    for it in items:
+                        for c in it.get("country_focus", []):
+                            if c in spec["countries"]:
+                                counts[c] = counts.get(c, 0) + 1
+                    if counts:
+                        top_country = " · top: " + ", ".join(
+                            f"{c}({n})" for c, n in sorted(counts.items(), key=lambda kv: -kv[1])[:3]
+                        )
+                lines.append(f"*{spec['label']}* (`/{slug}`) — {len(items)} item(s){top_country}")
+        lines.append("")
+        lines.append("_Use_ `/region <name>` _for items in one region — e.g._ `/region africa`")
+        await _send_long(update, "\n".join(lines))
+        return
+
+    resolved = resolve_region(query)
+    if not resolved:
+        names = ", ".join(f"`{s}`" for s in regions)
+        await update.message.reply_text(
+            f"Region `{query}` not recognised. Try one of: {names}",
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        return
+    slug, spec = resolved
+    with db.connect() as conn:
+        items = db.items_by_country_codes(conn, spec["countries"], since_hours=720, limit=20)
+    if not items:
+        await update.message.reply_text(
+            f"No items in *{spec['label']}* in the last 30 days.",
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        return
+    lines = [f"🌍 *{spec['label']} — last 30 days*", ""]
+    for it in items:
+        countries = ",".join(it.get("country_focus") or [])
+        sector = f"  [{it['policy_sector']}]" if it.get("policy_sector") else ""
+        rel = it.get("uae_relevance") or 0
+        title = (it.get("title") or "")[:90]
+        lines.append(f"• `{countries}`{sector}  rel={rel:.2f}")
+        lines.append(f"  {title}")
+        if it.get("summary"):
+            lines.append(f"  _{it['summary'][:140]}_")
+        lines.append("")
+    await _send_long(update, "\n".join(lines))
 
 
 async def cmd_doctrine(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -320,12 +487,15 @@ BOT_DESCRIPTION = (
 # but hidden from the user-facing menu and /help. Add new user commands here
 # when they become production-ready.
 USER_MENU_COMMANDS: list[tuple[str, str]] = [
-    ("start",    "Subscribe to the daily digest"),
-    ("digest",   "Show the latest daily digest"),
-    ("more",     "Deep-dive on a topic (e.g. /more Sudan)"),
-    ("doctrine", "Tracked UAE doctrine positions"),
-    ("help",     "Show help"),
-    ("stop",     "Unsubscribe from the daily digest"),
+    ("start",       "Subscribe to the daily digest"),
+    ("digest",      "Show the latest daily digest"),
+    ("more",        "Deep-dive on a topic (e.g. /more Sudan)"),
+    ("doctrine",    "Tracked UAE doctrine positions"),
+    ("commitments", "Recent UAE financial commitments"),
+    ("meetings",    "UAE bilateral meetings & calls"),
+    ("region",      "Items aggregated by region"),
+    ("help",        "Show help"),
+    ("stop",        "Unsubscribe from the daily digest"),
 ]
 
 
@@ -405,6 +575,9 @@ def build_application() -> Application:
     app.add_handler(CommandHandler("digest", cmd_digest))
     app.add_handler(CommandHandler("more", cmd_more))
     app.add_handler(CommandHandler("doctrine", cmd_doctrine))
+    app.add_handler(CommandHandler("commitments", cmd_commitments))
+    app.add_handler(CommandHandler("meetings", cmd_meetings))
+    app.add_handler(CommandHandler("region", cmd_region))
     app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
     return app
