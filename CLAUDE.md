@@ -36,6 +36,26 @@ The full concept lives in `../dalila-concept-note.md` and `../dalila-sources.md`
 - All env config flows through `config.get_config()`. Don't read `os.getenv` elsewhere.
 - Prompts live in `prompts/*.md` as version-controlled markdown, not inline strings.
 
+## Known source blockers (audited 2026-05-12)
+
+Eight sources from the original spec are disabled with reasons in `sources.yaml`:
+
+- **WAM, MoFA UAE, ERC, UAE Aid Agency** — JS-rendered pages; static HTML has no
+  article cards. Need a headless browser (Playwright) to pull. Tracked for v0.2.
+- **Reuters** — `feeds.reuters.com` retired ~2020; no free RSS exists.
+- **Devex, The New Humanitarian** — Anti-bot protection (DataDome/Cloudflare) returns
+  HTML to non-browser requesters even on documented RSS paths.
+- **Erth Zayed Philanthropies** — No URL yet; awaiting Ary's input.
+
+Working sources: The National, Gulf News, NYT (World/Africa/Middle East), WaPo,
+BBC World, Al Jazeera, ReliefWeb, GDELT 2.0, IDMC, ACLED (if creds provided).
+That's 9 active + ACLED.
+
+When v0.2 adds Playwright, the fix is in `src/dalila/ingestors/scrape.py`: add a
+`renderer: playwright` option to source config, branch on it in `fetch()`, and
+have the new code path call Playwright's sync API to load the page, wait for
+hydration, then run BeautifulSoup over the rendered DOM.
+
 ## What NOT to do
 
 - Don't add interactive Claude features (web search, computer use, file ops) to the classifier or editor. Both are one-shot, no-tool-use calls. `--max-turns 1` is set in `llm._run_claude` for this reason.

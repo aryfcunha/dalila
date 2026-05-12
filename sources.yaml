@@ -16,20 +16,25 @@ sources:
   # =====================================================================
   - id: wam_en
     name: Emirates News Agency (WAM)
-    kind: rss
-    url: https://wam.ae/en/feed/rssfeed     # TODO verify path; fallback: scrape https://wam.ae/en/section/news
+    # WAM has no public RSS (verified 2026-05-12; /feed and /en/rss return HTML).
+    # Their news pages are React-rendered — static HTML contains no article cards,
+    # so the current scraper finds 0 items. Re-enable when v0.2 adds Playwright.
+    kind: scrape
+    url: https://wam.ae/en/section/news
+    selector: "article, .news-item, .post, .card, a[href*='/details/']"
     quality: 5
     tags: [uae, state, wire]
-    enabled: true
+    enabled: false
 
   - id: mofa_uae
     name: UAE Ministry of Foreign Affairs
+    # Also JS-rendered. Disabled until Playwright support lands.
     kind: scrape
     url: https://www.mofa.gov.ae/en/mediahub/news
-    selector: "article, .news-item, .card"     # broad selector; refine after first run
+    selector: "article, .news-item, .card"
     quality: 5
     tags: [uae, state, mofa]
-    enabled: true
+    enabled: false
 
   # =====================================================================
   # UAE local press
@@ -45,7 +50,7 @@ sources:
   - id: gulf_news
     name: Gulf News
     kind: rss
-    url: https://gulfnews.com/rss
+    url: https://gulfnews.com/feed
     quality: 3
     tags: [uae, gulf, press]
     enabled: true
@@ -55,12 +60,17 @@ sources:
   # =====================================================================
   - id: erc
     name: Emirates Red Crescent
+    # Same JS-rendered story as WAM/MoFA — scraper finds 0 cards. ERC's TLS cert
+    # is signed by the UAE Crown Prince Court CA (not in standard trust stores),
+    # which is why we set verify_ssl: false; that part is solved. The blocker is
+    # JS rendering. Re-enable in v0.2.
     kind: scrape
     url: https://www.emiratesrc.ae/en/news
-    selector: "article, .news-item"
+    selector: "article, .news-item, .card, a[href*='/news/']"
+    verify_ssl: false
     quality: 5
     tags: [uae, entity, erc]
-    enabled: true
+    enabled: false
 
   - id: khalifa_foundation
     name: Khalifa bin Zayed Foundation
@@ -84,23 +94,28 @@ sources:
 
   - id: uae_aid
     name: UAE Aid Agency
+    # SSL fix applied (UAE Crown Prince CA); blocker is JS-rendered pages.
     kind: scrape
     url: https://www.uaeaid.ae/
-    selector: "article, .news-item, .card, .post"     # broad; refine after first run
+    selector: "article, .news-item, .card, .post, a[href*='/news/']"
+    verify_ssl: false
     quality: 5
     tags: [uae, entity, uae-aid]
-    enabled: true
+    enabled: false
 
   # =====================================================================
   # Global wires (free RSS — no paid wire fees)
   # =====================================================================
   - id: reuters_world
     name: Reuters — World
+    # Reuters retired feeds.reuters.com circa 2020 and has no free RSS replacement.
+    # Reuters content reaches us via Google News / aggregator surfaces (BBC, NYT,
+    # Al Jazeera already cite Reuters). Leaving entry here as a reminder; disabled.
     kind: rss
     url: https://feeds.reuters.com/Reuters/worldNews
     quality: 5
     tags: [global, wire]
-    enabled: true
+    enabled: false
 
   - id: nyt_world
     name: New York Times — World
@@ -155,11 +170,14 @@ sources:
   # =====================================================================
   - id: devex
     name: Devex News
+    # Devex /news.rss returns HTML to bots (DataDome protection) despite advertising
+    # application/rss+xml on HEAD. Same wall as TNH. Disabled until either a
+    # subscription opens up the feed or v0.2 ships a browser-based fetcher.
     kind: rss
-    url: https://www.devex.com/news/rss     # free headlines; full body paywalled
+    url: https://www.devex.com/news.rss
     quality: 5
     tags: [dev, specialist]
-    enabled: true
+    enabled: false
 
   - id: relief_web
     name: ReliefWeb
@@ -171,11 +189,14 @@ sources:
 
   - id: new_humanitarian
     name: The New Humanitarian
+    # TNH is behind Cloudflare with strict bot protection (403 on all RSS
+    # paths probed 2026-05-12, even with a browser User-Agent). Disabled until
+    # a workable feed URL or a permitted scraping arrangement is found.
     kind: rss
     url: https://www.thenewhumanitarian.org/rss/all
     quality: 4
     tags: [humanitarian, specialist]
-    enabled: true
+    enabled: false
 
   # =====================================================================
   # Real-time event detection

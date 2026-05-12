@@ -36,8 +36,16 @@ def fetch(src: dict) -> list[RawItem]:
         return []
     selector = src.get("selector") or "article"
 
+    verify = bool(src.get("verify_ssl", True))
+    if not verify:
+        # Suppress urllib3 InsecureRequestWarning noise; we know what we're doing.
+        try:
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        except Exception:
+            pass
     try:
-        resp = httpx.get(url, headers=DEFAULT_HEADERS, timeout=30, follow_redirects=True)
+        resp = httpx.get(url, headers=DEFAULT_HEADERS, timeout=30, follow_redirects=True, verify=verify)
         resp.raise_for_status()
     except Exception as exc:
         log.warning("scrape fetch failed for %s: %s", src.get("id"), exc)
