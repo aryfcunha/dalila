@@ -1,5 +1,16 @@
 """IATI Datastore ingestor — pulls UAE-related aid activities.
 
+Endpoint follows the IATI Datastore v3 API contract (OpenAPI spec at
+`/Documents/Dalila/datastore.json`). We query the `activity` collection
+with `select` response type, filtered by Solr query syntax.
+
+Field naming note: transaction fields in the activity collection use the
+Solr-flattened double-prefix form (e.g. `transaction_transaction_type_code`)
+because the underlying IATI XML nests a `<transaction-type>` element inside
+each `<transaction>`. Plain `transaction_value` is single-prefix because
+the value is the inner-text of `<value>`. Easy to get wrong — the OpenAPI
+spec is authoritative.
+
 The International Aid Transparency Initiative (IATI) Datastore aggregates
 structured activity reporting from donors and recipients. UAE entities
 publishing to IATI include Abu Dhabi Fund for Development and UAE Aid
@@ -48,9 +59,12 @@ _FIELDS = ",".join([
     "reporting_org_ref",
     "activity_date_iso_date",
     "activity_date_type",
+    "participating_org_narrative",
     "transaction_value",
     "transaction_value_currency",
-    "transaction_type_code",
+    # NOTE: double prefix is intentional — see module docstring.
+    "transaction_transaction_type_code",
+    "transaction_transaction_date_iso_date",
     "recipient_country_code",
     "recipient_country_narrative",
 ])
@@ -169,12 +183,21 @@ def _join_narratives(v) -> str:
 
 
 def _format_amounts(d: dict) -> list[str]:
-    """Pair up parallel transaction arrays into 'Commitment: 1.2M USD' lines."""
+    """Pair up parallel transaction arrays into 'Commitment: 1.2M USD' lines.
+
+    The activity collection returns each transaction-attribute as a parallel
+    array (one entry per transaction on that activity). We zip them
+    positionally — IATI guarantees the ordering is consistent across the
+    parallel fields.
+    """
     vals = d.get("transaction_value") or []
     curs = d.get("transaction_value_currency") or []
-    typs = d.get("transaction_type_code") or []
+    typs = d.get("transaction_transaction_type_code") or []
+    # Solr returns scalars for single-transaction activities; normalise to list
     if not isinstance(vals, list):
-        return []
+        vals = [vals]
+        curs = [curs] if not isinstance(curs, list) else curs
+        typs = [typs] if not isinstance(typs, list) else typs
     out: list[str] = []
     for i, v in enumerate(vals):
         cur = (curs[i] if i < len(curs) else "") or "?"
