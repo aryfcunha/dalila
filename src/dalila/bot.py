@@ -177,7 +177,21 @@ def build_application() -> Application:
     cfg = get_config()
     if not cfg.telegram_bot_token:
         raise RuntimeError("TELEGRAM_BOT_TOKEN not set; cannot start bot")
-    app = ApplicationBuilder().token(cfg.telegram_bot_token).build()
+    # Default HTTPX timeouts (5s connect / 5s read) are too tight on slow or
+    # latency-spiky networks — we saw `telegram.error.TimedOut` at startup on
+    # the very first `get_me()` call. Bump generously; these only apply per
+    # request and don't affect long-poll behaviour (set separately below).
+    app = (
+        ApplicationBuilder()
+        .token(cfg.telegram_bot_token)
+        .connect_timeout(30.0)
+        .read_timeout(30.0)
+        .write_timeout(30.0)
+        .pool_timeout(10.0)
+        .get_updates_connect_timeout(30.0)
+        .get_updates_read_timeout(40.0)
+        .build()
+    )
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("stop", cmd_stop))
     app.add_handler(CommandHandler("help", cmd_help))

@@ -132,6 +132,34 @@ def _cmd_check() -> int:
     return 0
 
 
+async def _initialize_with_retry(app, attempts: int = 5, base_delay: float = 2.0) -> None:
+    """Retry app.initialize() on transient network errors.
+
+    The first call hits Telegram's `getMe` endpoint; on flaky or high-latency
+    links it can time out once and then succeed. We back off exponentially
+    (2s, 4s, 8s, 16s, 32s) before giving up so the bot survives brief outages
+    instead of crashing the long-running process.
+    """
+    from telegram.error import NetworkError, TimedOut
+
+    log = logging.getLogger("dalila.cli")
+    last_exc: Exception | None = None
+    for i in range(attempts):
+        try:
+            await app.initialize()
+            return
+        except (TimedOut, NetworkError) as exc:
+            last_exc = exc
+            delay = base_delay * (2 ** i)
+            log.warning(
+                "telegram initialize failed (%s); retrying in %.0fs (%d/%d)",
+                exc.__class__.__name__, delay, i + 1, attempts,
+            )
+            await asyncio.sleep(delay)
+    assert last_exc is not None
+    raise last_exc
+
+
 def _cmd_bot() -> int:
     cfg = get_config()
     if not cfg.telegram_bot_token:
@@ -155,7 +183,7 @@ def _cmd_bot() -> int:
 
     async def runner() -> None:
         scheduler.start()
-        await app.initialize()
+        await _initialize_with_retry(app)
         await app.start()
         await app.updater.start_polling()
         print(f"Bot running. Send /start to your bot in Telegram. Ctrl-C to stop.")
