@@ -74,10 +74,17 @@ def run_ingest() -> dict:
 
 
 def run_classify(limit: int = 100) -> dict:
-    """Classify up to `limit` prefilter-passed items not yet classified."""
+    """Classify up to `limit` prefilter-passed items not yet classified.
+
+    Distinguishes *transient* errors (rate limit, network) from *terminal* errors
+    (malformed response, can't parse JSON after retry):
+      - Transient → abort the batch immediately, leave items unclassified for retry.
+      - Terminal  → mark the item with classifier_error so we don't infinite-loop.
+    """
     cfg = get_config()
     classified = 0
     errors = 0
+    rate_limited = False
 
     with db.connect() as conn:
         if db.todays_classifier_call_count(conn) >= cfg.daily_classifier_call_cap:
@@ -100,12 +107,21 @@ def run_classify(limit: int = 100) -> dict:
                 db.save_classification(conn, row["id"], c)
                 classified += 1
             except Exception as exc:
-                errors += 1
                 err_msg = f"{type(exc).__name__}: {exc}"
-                log.warning("classify failed for item %d: %s", row["id"], err_msg)
+                lower = err_msg.lower()
+                # Transient: do NOT mark the item; abort batch and let next tick retry.
+                if any(t in lower for t in ("you've hit your limit", "rate limit", "rate_limit",
+                                            "timeout", "connection", "503", "529")):
+                    log.warning("transient error — aborting batch, item %d stays in queue: %s",
+                                row["id"], err_msg[:200])
+                    rate_limited = True
+                    break
+                # Terminal: mark so we don't keep retrying malformed responses
+                errors += 1
+                log.warning("classify failed for item %d (marking): %s", row["id"], err_msg)
                 db.save_classifier_error(conn, row["id"], err_msg)
 
-    return {"classified": classified, "errors": errors, "capped": False}
+    return {"classified": classified, "errors": errors, "rate_limited": rate_limited, "capped": False}
 
 
 def run_compose_digest(since_hours: int = 24, min_relevance: float = 0.4, max_items: int = 25) -> tuple[int, str]:

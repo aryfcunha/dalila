@@ -43,7 +43,11 @@ sources:
     name: The National
     kind: rss
     url: https://www.thenationalnews.com/arc/outboundfeeds/rss/?outputType=xml
-    quality: 4
+    # Bumped to 5: with WAM/MoFA disabled (JS-rendered), The National is the
+    # highest-signal UAE-perspective source we currently have. It carries
+    # substantive bodies (~6KB avg) and covers UAE leadership statements,
+    # MoFAIC readouts, and ecosystem moves that don't reach Reuters/NYT.
+    quality: 5
     tags: [uae, press]
     enabled: true
 

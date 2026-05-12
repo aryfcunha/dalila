@@ -129,13 +129,23 @@ def mark_source_polled(conn: sqlite3.Connection, source_id: str, items_seen: int
 
 
 def unclassified_items(conn: sqlite3.Connection, limit: int = 100) -> list[sqlite3.Row]:
+    """Pull the next batch of items to classify, prioritised by source quality.
+
+    Ordering: source.quality DESC, then prefers items with substantive body
+    (>= 200 chars), then ingested_at DESC. This ensures high-signal sources
+    (UAE state, ReliefWeb, NYT) get classified before noisier ones (GDELT's
+    URL-slug titles) when classify budget is limited.
+    """
     return list(conn.execute(
         """
-        SELECT id, source_id, title, body, url, published_at
-        FROM items
-        WHERE classified_at IS NULL
-          AND prefilter_passed = 1
-        ORDER BY ingested_at DESC
+        SELECT i.id, i.source_id, i.title, i.body, i.url, i.published_at
+        FROM items i
+        JOIN sources s ON s.id = i.source_id
+        WHERE i.classified_at IS NULL
+          AND i.prefilter_passed = 1
+        ORDER BY s.quality DESC,
+                 CASE WHEN LENGTH(COALESCE(i.body, '')) >= 200 THEN 1 ELSE 0 END DESC,
+                 i.ingested_at DESC
         LIMIT ?
         """,
         (limit,),
