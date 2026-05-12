@@ -34,15 +34,24 @@ sudo apt-get install -y -q \
 # on Debian bookworm it's python3.11. Both are in default apt repos so we
 # don't need an external PPA.
 PY=""
+# Use `apt-cache policy` and check for an installable Candidate. `apt-cache
+# show` is too permissive on Debian — it can succeed for source-only
+# packages that then fail at `apt-get install` time, which is exactly the
+# failure mode we hit on bookworm with python3.12.
 for candidate in python3.13 python3.12 python3.11; do
-    if apt-cache show "$candidate" >/dev/null 2>&1; then
-        sudo apt-get install -y -q "$candidate" "$candidate-venv" "$candidate-dev"
-        PY="$candidate"
-        break
+    cand_version="$(apt-cache policy "$candidate" 2>/dev/null | awk '/Candidate:/ {print $2}')"
+    if [[ -n "$cand_version" && "$cand_version" != "(none)" ]]; then
+        printf '   trying %s (candidate %s)...\n' "$candidate" "$cand_version"
+        if sudo apt-get install -y -q "$candidate" "$candidate-venv" "$candidate-dev"; then
+            PY="$candidate"
+            break
+        fi
     fi
 done
 if [[ -z "$PY" ]]; then
-    echo "ERROR: no python ≥3.11 available in apt. Distro: $(lsb_release -ds 2>/dev/null)." >&2
+    echo "ERROR: no python ≥3.11 installable from apt." >&2
+    echo "Distro: $(lsb_release -ds 2>/dev/null)" >&2
+    echo "Probed: python3.13, python3.12, python3.11 — none had an installable candidate." >&2
     exit 1
 fi
 export PY
