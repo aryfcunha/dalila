@@ -28,6 +28,7 @@ import shutil
 import subprocess
 import time
 from dataclasses import dataclass
+from functools import lru_cache
 
 from dalila.config import get_config
 from dalila.db import connect, record_llm_call
@@ -45,26 +46,38 @@ class LLMResponse:
     duration_ms: int
 
 
+@lru_cache(maxsize=1)
+def _resolve_claude_bin() -> str | None:
+    """Resolve the configured CLI name to an absolute executable path.
+
+    On Windows, `claude` is shipped as `claude.cmd` (a node-bin shim); plain
+    subprocess.run won't find .cmd / .bat files unless we pass the full path.
+    `shutil.which` finds them when PATHEXT includes .CMD (it does by default).
+    """
+    cfg = get_config()
+    return shutil.which(cfg.claude_bin)
+
+
 def check_cli_available() -> tuple[bool, str]:
     """Return (ok, message). Run this at startup before scheduling anything."""
     cfg = get_config()
-    bin_path = shutil.which(cfg.claude_bin)
+    bin_path = _resolve_claude_bin()
     if not bin_path:
         return False, f"`{cfg.claude_bin}` not found on PATH. Install Claude Code and run `claude login` first."
     try:
         result = subprocess.run(
-            [cfg.claude_bin, "--version"],
+            [bin_path, "--version"],
             capture_output=True,
             text=True,
             timeout=10,
         )
         if result.returncode != 0:
-            return False, f"`{cfg.claude_bin} --version` failed: {result.stderr.strip()}"
-        return True, f"claude CLI ok ({result.stdout.strip()})"
+            return False, f"`{bin_path} --version` failed: {result.stderr.strip()}"
+        return True, f"claude CLI ok at {bin_path} ({result.stdout.strip()})"
     except subprocess.TimeoutExpired:
-        return False, f"`{cfg.claude_bin} --version` timed out"
+        return False, f"`{bin_path} --version` timed out"
     except Exception as exc:
-        return False, f"`{cfg.claude_bin} --version` raised: {exc}"
+        return False, f"`{bin_path} --version` raised: {exc}"
 
 
 def _run_claude(
@@ -75,14 +88,35 @@ def _run_claude(
     purpose: str,
     timeout: int = 120,
 ) -> LLMResponse:
-    """Low-level call. Logs to llm_call_log on every invocation."""
+    """Low-level call. Logs to llm_call_log on every invocation.
+
+    The system prompt + user prompt are combined and piped via stdin. Passing
+    a 25KB system prompt as an argv element exceeds Windows' command-line limit
+    (~8KB for CMD, 32KB for CreateProcess but unreliable). Stdin sidesteps this.
+    The combined prompt opens with the system instructions and ends with the
+    item-to-classify, separated by a clear delimiter so the model treats the
+    leading section as instructions.
+    """
     cfg = get_config()
+    bin_path = _resolve_claude_bin() or cfg.claude_bin
+
+    # We don't use --system-prompt / --append-system-prompt because the watchlist
+    # is too long for argv. Instead we frame the combined prompt explicitly.
+    combined_prompt = (
+        "You are operating under the following system instructions. Follow them precisely.\n\n"
+        "===== SYSTEM INSTRUCTIONS =====\n"
+        + system_prompt.strip()
+        + "\n===== END SYSTEM INSTRUCTIONS =====\n\n"
+        "===== USER INPUT =====\n"
+        + user_prompt.strip()
+        + "\n===== END USER INPUT =====\n"
+    )
+
     args = [
-        cfg.claude_bin,
-        "-p", user_prompt,
+        bin_path,
+        "-p",                       # print mode (non-interactive)
         "--model", model,
-        "--append-system-prompt", system_prompt,
-        "--max-turns", "1",
+        "--no-session-persistence", # no resume state for a one-shot
     ]
 
     start = time.monotonic()
@@ -92,6 +126,7 @@ def _run_claude(
     try:
         result = subprocess.run(
             args,
+            input=combined_prompt,
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -100,12 +135,21 @@ def _run_claude(
             check=False,
         )
         if result.returncode != 0:
-            error = (result.stderr or "").strip()[:500] or f"exit {result.returncode}"
+            # claude sometimes writes user-facing errors to stdout (e.g. rate limits)
+            stderr_msg = (result.stderr or "").strip()
+            stdout_msg = (result.stdout or "").strip()
+            error = (stderr_msg or stdout_msg or f"exit {result.returncode}")[:500]
             raise LLMError(f"claude CLI exit {result.returncode}: {error}")
         text = (result.stdout or "").strip()
         if not text:
             error = "empty stdout"
             raise LLMError("claude CLI returned empty stdout")
+        # Detect rate-limit text in a successful-exit response (rare; CLI usually
+        # exits non-zero on limit, but defensively check).
+        lower = text.lower()
+        if "you've hit your limit" in lower or "rate limit" in lower and len(text) < 200:
+            error = text[:200]
+            raise LLMError(f"rate limited: {error}")
         success = True
     except subprocess.TimeoutExpired:
         error = f"timeout after {timeout}s"
