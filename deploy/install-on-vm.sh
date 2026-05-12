@@ -96,13 +96,16 @@ else
 fi
 ok "repo at $REPO_DIR"
 
-log "5/6  Python venv + install"
+log "5/6  Python venv + install (will take 2-4 min on e2-micro)"
 cd "$REPO_DIR"
 if [[ ! -d .venv ]]; then
     "$PY" -m venv .venv
 fi
-.venv/bin/pip install -q --upgrade pip
-.venv/bin/pip install -q -e .
+# Verbose (no -q) so the user sees progress instead of staring at a
+# blank line for 3 minutes. `--no-cache-dir` keeps RAM use lower on
+# the 1 GB e2-micro — pip's wheel cache can balloon transient memory.
+.venv/bin/pip install --upgrade pip
+.venv/bin/pip install --no-cache-dir -e .
 ok "Dalila installed in venv (python: $($PY --version))"
 
 log "6/6  Runtime directories + stub .env"
