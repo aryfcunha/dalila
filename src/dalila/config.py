@@ -100,3 +100,19 @@ def load_prompt(name: str) -> str:
     """Load a prompt file from prompts/{name}.md."""
     cfg = get_config()
     return (cfg.prompts_dir / f"{name}.md").read_text(encoding="utf-8")
+
+
+@lru_cache(maxsize=1)
+def load_doctrine_topic_seeds() -> list[dict]:
+    """Preferred doctrine topic vocabulary — see doctrine_topics.yaml.
+
+    Returns a list of {slug, description} dicts. Used by the doctrine module
+    to bias the LLM toward canonical topic slugs without hard-blocking
+    invention of new ones.
+    """
+    cfg = get_config()
+    path = cfg.root / "doctrine_topics.yaml"
+    if not path.exists():
+        return []
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    return data.get("topics", []) or []

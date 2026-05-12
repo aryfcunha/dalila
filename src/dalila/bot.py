@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from telegram import Update
+from telegram import BotCommand, BotCommandScopeAllPrivateChats, Update
 from telegram.constants import ParseMode
 from telegram.ext import (
     Application,
@@ -30,7 +30,6 @@ HELP_TEXT = (
     "• `/digest` — show the latest daily digest (read-only). `/digest fresh` to recompose now.\n"
     "• `/more <topic>` — deep-dive synthesis on a topic from the last 30 days\n"
     "• `/doctrine` — list tracked UAE doctrine positions, or `/doctrine <topic>` for evolution log\n"
-    "• `/status` — pipeline state (queue depth, classifications, top entities)\n"
     "• `link N` — get the source URL for item #N from the latest digest\n"
     "• `/help` — show this help\n\n"
     "Daily digest arrives ~06:30 GST. Multi-user: every chat that runs `/start` gets its own copy."
@@ -314,6 +313,45 @@ BOT_DESCRIPTION = (
     "philanthropy ecosystem — with a sharp focus on the UAE's role. "
     "Send /start to subscribe, /help for the command list."
 )
+
+
+# Commands that show up in the Telegram `/` autocomplete menu. `/status` is
+# deliberately omitted — it's an operator/diagnostic command, kept functional
+# but hidden from the user-facing menu and /help. Add new user commands here
+# when they become production-ready.
+USER_MENU_COMMANDS: list[tuple[str, str]] = [
+    ("start",    "Subscribe to the daily digest"),
+    ("digest",   "Show the latest daily digest"),
+    ("more",     "Deep-dive on a topic (e.g. /more Sudan)"),
+    ("doctrine", "Tracked UAE doctrine positions"),
+    ("help",     "Show help"),
+    ("stop",     "Unsubscribe from the daily digest"),
+]
+
+
+async def sync_bot_commands(app: Application) -> None:
+    """Push the user-visible command menu to Telegram.
+
+    The menu drives the `/` autocomplete popup in chats. Set per-scope
+    (AllPrivateChats) so it only appears in 1-on-1 DMs, which is the only
+    place Dalila is designed to run. Idempotent — Telegram dedupes on the
+    server side anyway, but we still read+diff to keep logs quiet.
+    """
+    try:
+        wanted = [BotCommand(name, desc) for name, desc in USER_MENU_COMMANDS]
+        current = await app.bot.get_my_commands(scope=BotCommandScopeAllPrivateChats())
+        current_tuples = [(c.command, c.description) for c in current]
+        if current_tuples != USER_MENU_COMMANDS:
+            await app.bot.set_my_commands(wanted, scope=BotCommandScopeAllPrivateChats())
+            log.info("bot commands menu updated (%d entries)", len(wanted))
+    except Exception as exc:
+        log.warning("failed to sync bot commands: %s", exc)
+
+
+async def sync_bot(app: Application) -> None:
+    """Run all server-side sync steps (identity + commands menu). One call site."""
+    await sync_bot_identity(app)
+    await sync_bot_commands(app)
 
 
 async def sync_bot_identity(app: Application) -> None:

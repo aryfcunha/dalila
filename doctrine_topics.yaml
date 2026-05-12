@@ -1,0 +1,134 @@
+# Dalila — seed vocabulary for the UAE foreign-aid doctrine tracker.
+#
+# These 20 topics are the canonical slugs the doctrine LLM should prefer when
+# tagging UAE leadership statements. They are derived from the past ~6 months
+# of UAE foreign-policy and humanitarian discourse across our active sources
+# (The National, Gulf News, NYT, WaPo, BBC, Al Jazeera, ReliefWeb, IDMC,
+# GDELT, ACLED) plus public statements by MoFAIC, MBR Global Initiatives,
+# ERC, Khalifa Foundation, ADFD, and UAE Aid Agency.
+#
+# The model is still allowed to invent new slugs when a statement clearly
+# falls outside this vocabulary — but it should reach for these first.
+# Edit this file when a topic becomes structurally important and we want it
+# tracked from day one.
+
+topics:
+  - slug: climate-finance
+    description: >
+      UAE position on climate finance instruments — loss & damage operationalisation,
+      private-capital mobilisation, blended finance, MDB reform. Anchored in COP28
+      Loss & Damage Fund and post-COP28 implementation.
+
+  - slug: conditionality
+    description: >
+      Whether humanitarian and development assistance should be conditioned on
+      political reform, governance benchmarks, civilian-government roadmaps —
+      versus needs-based, non-conditional delivery (the UAE's historic posture).
+
+  - slug: multilateralism
+    description: >
+      Stance on the UN system, multilateral pooled funds, and OECD-DAC norms
+      vs bilateral and South-South channels. Whether UAE deepens engagement
+      with WFP/UNHCR/OCHA pooled funds or routes more through bilateral lanes.
+
+  - slug: private-sector-aid
+    description: >
+      Role of private capital in development — PPPs, sovereign-wealth-funded
+      development vehicles (Mubadala, ADQ), blended finance facilities, and
+      the broader "investment is development" framing.
+
+  - slug: faith-based-aid
+    description: >
+      Secular humanitarianism vs faith-based delivery — Zakat-funded channels,
+      OIC coordination, Islamic Development Bank partnerships, the role of
+      religious institutions in distribution.
+
+  - slug: food-security
+    description: >
+      UAE position on global food security — UAE Food Security Strategy 2051,
+      strategic reserves, FAO and WFP positioning, agricultural investment
+      in producer countries, response to commodity shocks.
+
+  - slug: sudan-policy
+    description: >
+      Stance on the Sudan war (RSF vs SAF), humanitarian access in Darfur and
+      Khartoum, allegations of arms transfers, evacuation operations, and the
+      UAE's role in regional diplomacy on Sudan.
+
+  - slug: gaza-reconstruction
+    description: >
+      Gaza humanitarian response, ceasefire support, reconstruction financing,
+      post-conflict governance posture, and coordination with Egypt/Jordan/US
+      on the day-after planning.
+
+  - slug: yemen-policy
+    description: >
+      Yemen humanitarian response, port and aid access, posture on Houthi
+      maritime attacks, reconstruction in liberated areas, and STC/PLC dynamics
+      relative to UAE-supported actors.
+
+  - slug: afghanistan-engagement
+    description: >
+      Engagement with Taliban-era Afghanistan — humanitarian-only vs broader
+      engagement, women's rights as a condition of assistance, and UAE-hosted
+      mediation tracks.
+
+  - slug: women-empowerment
+    description: >
+      Gender in development — women's economic participation, girls' education,
+      maternal health, and how the UAE frames women's rights in humanitarian
+      programming including faith-sensitive contexts.
+
+  - slug: africa-investment
+    description: >
+      Horn of Africa, Sahel, and broader African engagement — investment +
+      humanitarian footprint, port and logistics infrastructure, posture on
+      coup-affected states, and the framing of UAE as an African partner.
+
+  - slug: refugee-displacement
+    description: >
+      UAE position on global displacement — host-country support, durable
+      solutions, IDP protection, IDMC-aligned data narratives, and operational
+      partnerships with UNHCR.
+
+  - slug: cop-energy-transition
+    description: >
+      Post-COP28 energy-transition narrative — "just transition" framing,
+      fossil-fuel phase-down language, energy access in developing countries,
+      and the UAE's positioning as a transition bridge.
+
+  - slug: arab-coordination
+    description: >
+      Arab League, GCC, and OIC coordinated humanitarian response — joint
+      pledges, ERC-led airlifts on behalf of regional partners, and how UAE
+      positions vis-à-vis Saudi Arabia, Qatar, and Egypt in aid diplomacy.
+
+  - slug: tech-enabled-aid
+    description: >
+      AI, digital ID, satellite imagery, drones, and logistics tech in
+      humanitarian operations — the "digital humanitarian" framing the UAE
+      uses to differentiate from legacy donors.
+
+  - slug: localisation
+    description: >
+      Locally-led aid, Grand Bargain commitments, direct funding to local
+      NGOs and national societies, and how UAE's bilateral channels reconcile
+      with the OECD-DAC localisation agenda.
+
+  - slug: soft-power-diplomacy
+    description: >
+      Aid as foreign-policy instrument — the explicit "humanitarian diplomacy"
+      framing, visibility of UAE-branded delivery, and the relationship between
+      aid commitments and bilateral political objectives.
+
+  - slug: emergency-response-speed
+    description: >
+      Rapid-response posture — 72-hour deployment language, ERC airlift
+      capability, IHC (International Humanitarian City Dubai) as a global hub,
+      and the comparative-advantage framing vs traditional donors.
+
+  - slug: health-systems
+    description: >
+      Global health — vaccines (Hope Consortium legacy), pandemic preparedness,
+      polio eradication funding, NCDs in fragile states, and partnerships with
+      Gavi/Global Fund/CEPI.

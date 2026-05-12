@@ -160,8 +160,9 @@ def _cmd_set_name() -> int:
     async def runner() -> int:
         app = bot_mod.build_application()
         await _initialize_with_retry(app)
-        await bot_mod.sync_bot_identity(app)
-        print(f"Synced: name={bot_mod.BOT_DISPLAY_NAME!r}")
+        await bot_mod.sync_bot(app)
+        print(f"Synced: name={bot_mod.BOT_DISPLAY_NAME!r}; "
+              f"menu={len(bot_mod.USER_MENU_COMMANDS)} commands")
         await app.shutdown()
         return 0
 
@@ -260,7 +261,7 @@ def _cmd_bot() -> int:
     async def runner() -> None:
         scheduler.start()
         await _initialize_with_retry(app)
-        await bot.sync_bot_identity(app)
+        await bot.sync_bot(app)
         await app.start()
         await app.updater.start_polling()
         print(f"Bot running. Send /start to your bot in Telegram. Ctrl-C to stop.")

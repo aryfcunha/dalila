@@ -16,8 +16,40 @@ import json
 import logging
 import re
 
+from functools import lru_cache
+
 from dalila import db, llm
-from dalila.config import load_prompt
+from dalila.config import load_doctrine_topic_seeds, load_prompt
+
+
+@lru_cache(maxsize=1)
+def _doctrine_system_prompt() -> str:
+    """Doctrine system prompt + the preferred-topic vocabulary appended.
+
+    Cached so we send identical bytes every call (lets Claude's prompt cache
+    engage). If you edit doctrine_topics.yaml at runtime, restart the bot.
+    """
+    base = load_prompt("doctrine")
+    seeds = load_doctrine_topic_seeds()
+    if not seeds:
+        return base
+    lines = [
+        "",
+        "---",
+        "",
+        "## Preferred topic vocabulary",
+        "",
+        "These slugs cover the topic areas we want tracked from day one. **Reach "
+        "for one of these before inventing a new slug.** Only mint a new slug if "
+        "the statement clearly falls outside this vocabulary.",
+        "",
+    ]
+    for t in seeds:
+        slug = (t.get("slug") or "").strip()
+        desc = " ".join((t.get("description") or "").split())  # collapse whitespace
+        if slug:
+            lines.append(f"- **`{slug}`** — {desc}")
+    return base + "\n".join(lines) + "\n"
 
 log = logging.getLogger(__name__)
 
@@ -116,7 +148,7 @@ def process_item(conn, item_row) -> dict:
     try:
         payload = llm.call_json(
             model=llm.HAIKU,
-            system_prompt=load_prompt("doctrine"),
+            system_prompt=_doctrine_system_prompt(),
             user_prompt=user_msg,
             purpose="doctrine",
             timeout=120,
