@@ -13,6 +13,7 @@ from urllib.parse import urlparse, urlunparse
 
 from dalila.config import get_config, load_sources
 from dalila.models import Classification, RawItem
+from dalila.simhash import simhash64, to_hex
 
 
 def _now_iso() -> str:
@@ -56,12 +57,32 @@ def connect() -> Iterator[sqlite3.Connection]:
 
 
 def init_db() -> None:
-    """Apply schema migrations and seed the sources table from sources.yaml."""
+    """Apply schema migrations and seed the sources table from sources.yaml.
+
+    Migrations are applied in filename order and tracked in `schema_migrations`
+    so re-runs are idempotent. Add new migrations as `00X_*.sql`; never edit
+    a migration that's already shipped to a live DB.
+    """
     cfg = get_config()
-    schema = (cfg.migrations_dir / "001_initial.sql").read_text(encoding="utf-8")
     with connect() as conn:
-        conn.executescript(schema)
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS schema_migrations ("
+            "  filename TEXT PRIMARY KEY, applied_at TEXT NOT NULL)"
+        )
+        applied = {r["filename"] for r in conn.execute("SELECT filename FROM schema_migrations")}
+        for sql_path in sorted(cfg.migrations_dir.glob("*.sql")):
+            if sql_path.name in applied:
+                continue
+            conn.executescript(sql_path.read_text(encoding="utf-8"))
+            conn.execute(
+                "INSERT INTO schema_migrations(filename, applied_at) VALUES(?, ?)",
+                (sql_path.name, _now_iso()),
+            )
         _seed_sources(conn)
+        n = backfill_title_simhash(conn)
+        if n:
+            import logging
+            logging.getLogger(__name__).info("backfilled title_simhash for %d existing items", n)
 
 
 def _seed_sources(conn: sqlite3.Connection) -> None:
@@ -91,14 +112,15 @@ def _seed_sources(conn: sqlite3.Connection) -> None:
 def insert_item(conn: sqlite3.Connection, item: RawItem, prefilter_passed: bool) -> int | None:
     """Insert a new item; return the row id, or None if it was a duplicate."""
     h = url_hash(item.url, item.title)
+    sh = to_hex(simhash64(item.title))
     try:
         cur = conn.execute(
             """
             INSERT INTO items(
                 source_id, url, url_hash, title, body, author,
-                published_at, ingested_at, prefilter_passed
+                published_at, ingested_at, prefilter_passed, title_simhash
             )
-            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 item.source_id,
@@ -110,6 +132,7 @@ def insert_item(conn: sqlite3.Connection, item: RawItem, prefilter_passed: bool)
                 item.published_at.isoformat() if item.published_at else None,
                 _now_iso(),
                 1 if prefilter_passed else 0,
+                sh,
             ),
         )
         return cur.lastrowid
@@ -197,6 +220,7 @@ def items_for_digest(conn: sqlite3.Connection, since_hours: int = 24, min_releva
         """
         SELECT i.id, i.title, i.url, i.body, i.one_line_summary, i.category,
                i.uae_relevance, i.severity, i.entities_json, i.doctrine_relation,
+               i.title_simhash,
                s.name AS source_name, s.quality AS source_quality
         FROM items i
         JOIN sources s ON s.id = i.source_id
@@ -222,6 +246,7 @@ def items_for_digest(conn: sqlite3.Connection, since_hours: int = 24, min_releva
             "severity": r["severity"],
             "entities": json.loads(r["entities_json"]) if r["entities_json"] else [],
             "doctrine_relation": r["doctrine_relation"],
+            "title_simhash": r["title_simhash"],
         })
     return out
 
@@ -235,6 +260,26 @@ def save_digest(conn: sqlite3.Connection, date_label: str, content: str, item_id
         (_now_iso(), date_label, content, json.dumps(item_ids), len(item_ids)),
     )
     return cur.lastrowid  # type: ignore[return-value]
+
+
+def backfill_title_simhash(conn: sqlite3.Connection, batch: int = 1000) -> int:
+    """Compute title_simhash for any item missing it (post-migration backfill).
+
+    Returns the number of rows updated. Safe to run repeatedly — only touches
+    rows where the column is NULL. Called from `dalila init` so upgrades pick
+    it up without manual intervention.
+    """
+    rows = conn.execute(
+        "SELECT id, title FROM items WHERE title_simhash IS NULL"
+    ).fetchall()
+    if not rows:
+        return 0
+    updates = [(to_hex(simhash64(r["title"])), r["id"]) for r in rows]
+    for i in range(0, len(updates), batch):
+        conn.executemany(
+            "UPDATE items SET title_simhash = ? WHERE id = ?", updates[i:i + batch]
+        )
+    return len(updates)
 
 
 def get_url_for_item(conn: sqlite3.Connection, item_id: int) -> str | None:

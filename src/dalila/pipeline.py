@@ -18,6 +18,7 @@ from dalila.config import (
 from dalila.editor import compose_digest
 from dalila.ingestors.base import ingest_source, iter_enabled_sources
 from dalila.models import RawItem
+from dalila.simhash import is_near_duplicate
 
 log = logging.getLogger(__name__)
 
@@ -217,10 +218,39 @@ def run_classify(limit: int = 100, batch_size: int = 25) -> dict:
     }
 
 
+def _dedupe_by_simhash(items: list[dict], threshold: int = 12) -> list[dict]:
+    """Drop near-duplicate titles (cross-outlet reposts of the same story).
+
+    Items are already sorted by score in items_for_digest, so the first
+    occurrence of a cluster is the best one — we keep that and drop later
+    items whose title-simhash is within `threshold` Hamming bits.
+
+    Threshold rationale (see simhash.py docstring for measurements): 12 bits
+    on a 64-bit hash catches cross-outlet reposts (~6-10 bits apart in
+    practice) without merging unrelated stories (~28-40 bits apart).
+    """
+    kept: list[dict] = []
+    dropped = 0
+    for item in items:
+        sh = item.get("title_simhash")
+        if not sh:
+            kept.append(item)
+            continue
+        is_dup = any(is_near_duplicate(sh, k.get("title_simhash"), threshold) for k in kept)
+        if is_dup:
+            dropped += 1
+            continue
+        kept.append(item)
+    if dropped:
+        log.info("digest dedup: dropped %d near-duplicate items (simhash ≤%d bits)", dropped, threshold)
+    return kept
+
+
 def run_compose_digest(since_hours: int = 24, min_relevance: float = 0.4, max_items: int = 25) -> tuple[int, str]:
     """Compose today's digest. Returns (digest_id, content)."""
     with db.connect() as conn:
         items = db.items_for_digest(conn, since_hours=since_hours, min_relevance=min_relevance)
+        items = _dedupe_by_simhash(items)
         items = items[:max_items]
         content, _ = compose_digest(items)
         cfg = get_config()

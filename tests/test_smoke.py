@@ -203,3 +203,29 @@ def test_parse_rate_limit_reset_missing_returns_none():
     """A generic timeout error carries no reset time — caller should fall back."""
     from dalila.pipeline import parse_rate_limit_reset
     assert parse_rate_limit_reset("TimeoutError: connection reset") is None
+
+
+def test_simhash_clusters_cross_outlet_reposts():
+    """Same story across outlets should be much closer than two unrelated stories."""
+    from dalila.simhash import simhash64, hamming
+    a = simhash64("Reuters: Iran agrees ceasefire after talks in Geneva")
+    b = simhash64("BBC News - Iran agrees ceasefire following Geneva talks")
+    unrelated = simhash64("Drought in Horn of Africa worsens, UN warns of famine")
+    assert hamming(a, b) <= 12, f"reposted-story distance was {hamming(a, b)}, must be ≤12"
+    assert hamming(a, unrelated) >= 20, f"unrelated-story distance was {hamming(a, unrelated)}, must be ≥20"
+
+
+def test_dedupe_by_simhash_drops_cross_outlet_repost():
+    """In a sorted list, the second copy of a cross-outlet repost must be dropped."""
+    from dalila.pipeline import _dedupe_by_simhash
+    from dalila.simhash import simhash64, to_hex
+    items = [
+        {"id": 1, "title": "Reuters: Iran agrees ceasefire after talks in Geneva",
+         "title_simhash": to_hex(simhash64("Reuters: Iran agrees ceasefire after talks in Geneva"))},
+        {"id": 2, "title": "BBC News - Iran agrees ceasefire following Geneva talks",
+         "title_simhash": to_hex(simhash64("BBC News - Iran agrees ceasefire following Geneva talks"))},
+        {"id": 3, "title": "Drought in Horn of Africa worsens",
+         "title_simhash": to_hex(simhash64("Drought in Horn of Africa worsens"))},
+    ]
+    kept_ids = [it["id"] for it in _dedupe_by_simhash(items)]
+    assert kept_ids == [1, 3], f"expected [1, 3] (cross-outlet repost dropped), got {kept_ids}"
