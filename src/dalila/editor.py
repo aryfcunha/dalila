@@ -76,3 +76,52 @@ def compose_digest(items: list[dict], *, when: datetime | None = None) -> tuple[
     # Map digest's #N references back to real item ids (so 'link N' works).
     item_ids = [items[n - 1]["id"] for n in range(1, len(items) + 1)]
     return digest_text, item_ids
+
+
+def compose_deep_dive(topic: str, items: list[dict]) -> tuple[str, list[int]]:
+    """Compose a deep-dive synthesis on `topic` from up-to-20 items.
+
+    Same overall mechanism as compose_digest (numbered payload → Haiku → text)
+    but a different prompt that produces an analytical brief, not a digest.
+    Returns (markdown, [item_ids]) so the bot can offer `link N` over the
+    sources cited.
+    """
+    if not items:
+        return (
+            f"🔍 *Deep dive — {topic}*\n\n"
+            "No matching items in the last 30 days. Try a broader keyword "
+            "(e.g. country name, organization, sector).",
+            [],
+        )
+
+    numbered = []
+    for n, it in enumerate(items, start=1):
+        numbered.append({
+            "n": n,
+            "category": it["category"],
+            "title": it["title"],
+            "source": it["source"],
+            "summary": it["summary"],
+            "uae_relevance": round(it["uae_relevance"] or 0, 2),
+            "severity": round(it["severity"] or 0, 2),
+            "entities": [e.get("name") if isinstance(e, dict) else str(e) for e in (it.get("entities") or [])][:5],
+            "ingested_at": it.get("ingested_at"),
+        })
+
+    user_payload = {"topic": topic, "items": numbered}
+    user_msg = (
+        f"Topic the user asked about: {topic!r}\n\n"
+        "Compose the deep dive from the items below. Follow the system "
+        "prompt's format and rules.\n\n"
+        "```json\n" + json.dumps(user_payload, ensure_ascii=False, indent=2) + "\n```"
+    )
+
+    text = llm.call(
+        model=llm.HAIKU,
+        system_prompt=load_prompt("deepdive"),
+        user_prompt=user_msg,
+        purpose="deepdive",
+        timeout=180,
+    )
+    item_ids = [it["id"] for it in items]
+    return text, item_ids

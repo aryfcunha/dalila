@@ -262,6 +262,69 @@ def save_digest(conn: sqlite3.Connection, date_label: str, content: str, item_id
     return cur.lastrowid  # type: ignore[return-value]
 
 
+def items_matching_topic(
+    conn: sqlite3.Connection,
+    topic: str,
+    *,
+    since_hours: int = 720,   # 30 days
+    limit: int = 20,
+) -> list[dict]:
+    """Find classified items relevant to a free-text topic for the /more deep-dive.
+
+    Matching strategy (cheap, no embeddings):
+      1. Substring match against title, one_line_summary, body, or entities_json.
+      2. Restrict to items with `classified_at` set (so we have summary + entities).
+      3. Order by score (uae_relevance * severity * source_quality) DESC, then
+         recency, so the most-consequential items come first.
+
+    Returns the same shape as items_for_digest so the deep-dive composer can
+    reuse the same numbering/payload format.
+    """
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=since_hours)).isoformat()
+    topic_norm = topic.strip().lower()
+    if not topic_norm:
+        return []
+    like = f"%{topic_norm}%"
+    rows = conn.execute(
+        """
+        SELECT i.id, i.title, i.url, i.body, i.one_line_summary, i.category,
+               i.uae_relevance, i.severity, i.entities_json, i.doctrine_relation,
+               i.title_simhash, i.ingested_at,
+               s.name AS source_name, s.quality AS source_quality
+        FROM items i
+        JOIN sources s ON s.id = i.source_id
+        WHERE i.classified_at IS NOT NULL
+          AND i.classifier_error IS NULL
+          AND i.ingested_at >= ?
+          AND (LOWER(i.title) LIKE ?
+               OR LOWER(COALESCE(i.one_line_summary, '')) LIKE ?
+               OR LOWER(COALESCE(i.body, '')) LIKE ?
+               OR LOWER(COALESCE(i.entities_json, '')) LIKE ?)
+        ORDER BY (COALESCE(i.uae_relevance, 0.3) * COALESCE(i.severity, 0.3) * s.quality) DESC,
+                 i.ingested_at DESC
+        LIMIT ?
+        """,
+        (cutoff, like, like, like, like, limit),
+    ).fetchall()
+    out: list[dict] = []
+    for r in rows:
+        out.append({
+            "id": r["id"],
+            "title": r["title"],
+            "url": r["url"],
+            "summary": r["one_line_summary"] or (r["body"] or "")[:200],
+            "category": r["category"],
+            "source": r["source_name"],
+            "uae_relevance": r["uae_relevance"],
+            "severity": r["severity"],
+            "entities": json.loads(r["entities_json"]) if r["entities_json"] else [],
+            "doctrine_relation": r["doctrine_relation"],
+            "title_simhash": r["title_simhash"],
+            "ingested_at": r["ingested_at"],
+        })
+    return out
+
+
 def backfill_title_simhash(conn: sqlite3.Connection, batch: int = 1000) -> int:
     """Compute title_simhash for any item missing it (post-migration backfill).
 

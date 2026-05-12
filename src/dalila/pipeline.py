@@ -15,7 +15,7 @@ from dalila.config import (
     load_entity_aliases,
     load_prefilter_keywords,
 )
-from dalila.editor import compose_digest
+from dalila.editor import compose_deep_dive, compose_digest
 from dalila.ingestors.base import ingest_source, iter_enabled_sources
 from dalila.models import RawItem
 from dalila.simhash import is_near_duplicate
@@ -244,6 +244,18 @@ def _dedupe_by_simhash(items: list[dict], threshold: int = 12) -> list[dict]:
     if dropped:
         log.info("digest dedup: dropped %d near-duplicate items (simhash ≤%d bits)", dropped, threshold)
     return kept
+
+
+def run_deep_dive(topic: str, since_hours: int = 720, max_items: int = 20) -> tuple[str, list[int]]:
+    """Compose a deep-dive on `topic` over recent classified items.
+
+    Returns (markdown, [item_ids]) for the bot to send and to register so
+    `link N` resolves to the items the deep-dive actually drew on.
+    """
+    with db.connect() as conn:
+        items = db.items_matching_topic(conn, topic, since_hours=since_hours, limit=max_items)
+    text, ids = compose_deep_dive(topic, items)
+    return text, ids
 
 
 def run_compose_digest(since_hours: int = 24, min_relevance: float = 0.4, max_items: int = 25) -> tuple[int, str]:

@@ -17,7 +17,7 @@ from telegram.ext import (
 
 from dalila import db
 from dalila.config import get_config
-from dalila.pipeline import run_compose_digest
+from dalila.pipeline import run_compose_digest, run_deep_dive
 
 log = logging.getLogger(__name__)
 
@@ -28,6 +28,7 @@ HELP_TEXT = (
     "• `/start` — subscribe to the daily digest\n"
     "• `/stop` — unsubscribe\n"
     "• `/digest` — compose today's digest now (takes ~30 s)\n"
+    "• `/more <topic>` — deep-dive synthesis on a topic from the last 30 days\n"
     "• `/status` — pipeline state (queue depth, classifications, top entities)\n"
     "• `link N` — get the source URL for item #N from the latest digest\n"
     "• `/help` — show this help\n\n"
@@ -113,6 +114,45 @@ async def cmd_digest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     await _send_long(update, content)
 
 
+async def cmd_more(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Deep-dive: /more <topic>. Pulls last-30d items, sends to Haiku for synthesis."""
+    if not update.message:
+        return
+    topic = " ".join(context.args).strip() if context.args else ""
+    # Strip a leading "on " — natural-language phrasing is "/more on Sudan".
+    if topic.lower().startswith("on "):
+        topic = topic[3:].strip()
+    if not topic:
+        await update.message.reply_text(
+            "Usage: `/more <topic>` — e.g. `/more Sudan`, `/more climate finance`, `/more ERC`.",
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        return
+    await update.message.reply_text(f"Researching *{topic}*… (≈30–60 s)", parse_mode=ParseMode.MARKDOWN)
+    try:
+        text, item_ids = run_deep_dive(topic)
+    except Exception as exc:
+        log.exception("/more failed for topic=%r", topic)
+        await update.message.reply_text(f"Sorry, deep-dive failed: {exc}")
+        return
+
+    # Append a short source-list footer with clickable URLs for the items the
+    # deep dive cited. We can't easily re-bind `link N` to deep-dive items
+    # (digests table is single-stream), so inline the URLs here.
+    if item_ids:
+        with db.connect() as conn:
+            urls: list[tuple[int, str]] = []
+            for n, iid in enumerate(item_ids, start=1):
+                url = db.get_url_for_item(conn, iid)
+                if url:
+                    urls.append((n, url))
+        if urls:
+            footer = "\n\n*Sources:*\n" + "\n".join(f"#{n}: {u}" for n, u in urls[:10])
+            text = text + footer
+
+    await _send_long(update, text)
+
+
 async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle non-slash messages: 'link N' for now."""
     if not update.message or not update.message.text:
@@ -128,6 +168,16 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             return
         await _reply_with_link(update, n)
         return
+
+    # `more on Sudan` / `more Sudan` — natural-language form of /more
+    if text.startswith("more "):
+        topic = update.message.text.strip()[5:].strip()
+        if topic.lower().startswith("on "):
+            topic = topic[3:].strip()
+        if topic:
+            context.args = topic.split()
+            await cmd_more(update, context)
+            return
 
     await update.message.reply_text("Try /help for commands.")
 
@@ -196,6 +246,7 @@ def build_application() -> Application:
     app.add_handler(CommandHandler("stop", cmd_stop))
     app.add_handler(CommandHandler("help", cmd_help))
     app.add_handler(CommandHandler("digest", cmd_digest))
+    app.add_handler(CommandHandler("more", cmd_more))
     app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
     return app
