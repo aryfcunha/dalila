@@ -168,3 +168,38 @@ def test_entity_watchlist_is_substantial():
         f"entities.yaml is {len(text)} chars; needs to be >12k for prompt caching to help. "
         "Expand the watchlist with more entities."
     )
+
+
+def test_parse_rate_limit_reset_dubai_pm():
+    """The exact phrasing seen in production: 'resets 5:30pm (Asia/Dubai)'."""
+    from dalila.pipeline import parse_rate_limit_reset
+    # Anchor 'now' to mid-morning Dubai time so 5:30pm is still in the future today.
+    import pytz
+    now_utc = pytz.timezone("Asia/Dubai").localize(datetime(2026, 5, 12, 9, 0)).astimezone(timezone.utc)
+    reset = parse_rate_limit_reset(
+        "claude CLI exit 1: You've hit your limit — resets 5:30pm (Asia/Dubai)",
+        now=now_utc,
+    )
+    assert reset is not None
+    local = reset.astimezone(pytz.timezone("Asia/Dubai"))
+    assert (local.hour, local.minute) == (17, 30)
+    assert local.date() == datetime(2026, 5, 12).date()
+
+
+def test_parse_rate_limit_reset_rolls_to_tomorrow():
+    """If the reset clock time has already passed today, return tomorrow's slot."""
+    from dalila.pipeline import parse_rate_limit_reset
+    import pytz
+    tz = pytz.timezone("Asia/Dubai")
+    # 'Now' is 6pm Dubai; reset is 5:30pm — must roll forward 24h.
+    now_utc = tz.localize(datetime(2026, 5, 12, 18, 0)).astimezone(timezone.utc)
+    reset = parse_rate_limit_reset("resets 5:30pm (Asia/Dubai)", now=now_utc)
+    assert reset is not None
+    local = reset.astimezone(tz)
+    assert local.date() == datetime(2026, 5, 13).date()
+
+
+def test_parse_rate_limit_reset_missing_returns_none():
+    """A generic timeout error carries no reset time — caller should fall back."""
+    from dalila.pipeline import parse_rate_limit_reset
+    assert parse_rate_limit_reset("TimeoutError: connection reset") is None

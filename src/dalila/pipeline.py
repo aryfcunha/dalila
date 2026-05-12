@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+import re
+from datetime import datetime, timedelta, timezone
+
+import pytz
 
 from dalila import db
 from dalila.classifier import classify_batch
@@ -81,6 +84,49 @@ def _is_transient_error(err_msg: str) -> bool:
     ))
 
 
+# Matches Claude Code's rate-limit phrasing, e.g.
+#   "You've hit your limit — resets 5:30pm (Asia/Dubai)"
+#   "You've hit your limit, resets at 17:30 (UTC)"
+# Captures the clock time and timezone separately.
+_RATE_LIMIT_RESET_RE = re.compile(
+    r"resets\s*(?:at\s*)?(\d{1,2}):(\d{2})\s*(am|pm)?\s*\(?([A-Za-z_/]+(?:/[A-Za-z_]+)?)?",
+    re.IGNORECASE,
+)
+
+
+def parse_rate_limit_reset(err_msg: str, now: datetime | None = None) -> datetime | None:
+    """Extract the reset time from a Claude rate-limit error.
+
+    Returns a UTC `datetime` for when the limit clears, or `None` if the
+    message doesn't carry a parseable reset time. If the parsed clock time
+    has already passed today in the given timezone, we roll to tomorrow.
+    """
+    m = _RATE_LIMIT_RESET_RE.search(err_msg)
+    if not m:
+        return None
+    hour = int(m.group(1))
+    minute = int(m.group(2))
+    ampm = (m.group(3) or "").lower()
+    tz_name = m.group(4) or "UTC"
+
+    if ampm == "pm" and hour < 12:
+        hour += 12
+    elif ampm == "am" and hour == 12:
+        hour = 0
+
+    try:
+        tz = pytz.timezone(tz_name)
+    except pytz.UnknownTimeZoneError:
+        return None
+
+    now = now or datetime.now(timezone.utc)
+    local_now = now.astimezone(tz)
+    candidate = local_now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    if candidate <= local_now:
+        candidate = candidate + timedelta(days=1)
+    return candidate.astimezone(timezone.utc)
+
+
 def run_classify(limit: int = 100, batch_size: int = 25) -> dict:
     """Classify up to `limit` prefilter-passed items in batches of `batch_size`.
 
@@ -98,6 +144,8 @@ def run_classify(limit: int = 100, batch_size: int = 25) -> dict:
     classified = 0
     errors = 0
     rate_limited = False
+    rate_limit_reset_at: datetime | None = None
+    rate_limit_message: str | None = None
     batches_done = 0
 
     with db.connect() as conn:
@@ -125,6 +173,8 @@ def run_classify(limit: int = 100, batch_size: int = 25) -> dict:
                     log.warning("transient error on batch — aborting, %d items stay queued: %s",
                                 len(batch_rows), err_msg[:200])
                     rate_limited = True
+                    rate_limit_message = err_msg
+                    rate_limit_reset_at = parse_rate_limit_reset(err_msg)
                     break
                 # Terminal — could be a bad item poisoning the batch.
                 # Fall back to one-at-a-time so we only blame the actual culprit.
@@ -139,6 +189,8 @@ def run_classify(limit: int = 100, batch_size: int = 25) -> dict:
                         if _is_transient_error(inner_msg):
                             log.warning("transient error mid-fallback — aborting: %s", inner_msg[:200])
                             rate_limited = True
+                            rate_limit_message = inner_msg
+                            rate_limit_reset_at = parse_rate_limit_reset(inner_msg)
                             break
                         errors += 1
                         log.warning("classify failed for item %d (marking): %s", r["id"], inner_msg)
@@ -158,6 +210,8 @@ def run_classify(limit: int = 100, batch_size: int = 25) -> dict:
         "classified": classified,
         "errors": errors,
         "rate_limited": rate_limited,
+        "rate_limit_reset_at": rate_limit_reset_at,
+        "rate_limit_message": rate_limit_message,
         "batches_done": batches_done,
         "capped": False,
     }

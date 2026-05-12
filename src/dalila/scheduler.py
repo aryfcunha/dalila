@@ -17,10 +17,13 @@ from dalila.pipeline import run_classify, run_compose_digest, run_ingest
 
 log = logging.getLogger(__name__)
 
-# When the classifier hits the rate limit, back off this long before next attempt.
-# Beats the default 5-minute scheduler cadence — most rate-limit windows on the
-# Claude Code Pro/Max plan are 1h or 5h. One hour is a conservative middle.
+# Fallback back-off used when the rate-limit error doesn't carry a parseable
+# reset time. When Claude does tell us when it'll reset (e.g. "resets 5:30pm
+# (Asia/Dubai)"), we honour that exactly instead — see pipeline.parse_rate_limit_reset.
 _RATE_LIMIT_BACKOFF = timedelta(hours=1)
+# Small cushion added on top of the parsed reset time so we don't fire the very
+# instant the window opens (server clock skew, gradual roll-out).
+_RATE_LIMIT_BUFFER = timedelta(seconds=60)
 _classify_paused_until: datetime | None = None
 
 
@@ -44,9 +47,15 @@ def _classify_job() -> None:
     result = run_classify(limit=100)
     log.info("classify done: %s", result)
     if result.get("rate_limited"):
-        _classify_paused_until = now + _RATE_LIMIT_BACKOFF
-        log.warning("rate-limited — pausing scheduled classify until %s",
-                    _classify_paused_until.isoformat())
+        reset_at = result.get("rate_limit_reset_at")
+        if reset_at:
+            _classify_paused_until = reset_at + _RATE_LIMIT_BUFFER
+            log.warning("rate-limited — pausing scheduled classify until %s (parsed from error)",
+                        _classify_paused_until.isoformat())
+        else:
+            _classify_paused_until = now + _RATE_LIMIT_BACKOFF
+            log.warning("rate-limited (no reset time in error) — pausing scheduled classify until %s (fallback)",
+                        _classify_paused_until.isoformat())
 
 
 async def _digest_job(app: Application) -> None:
