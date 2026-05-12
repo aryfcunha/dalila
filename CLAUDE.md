@@ -10,7 +10,7 @@ The full concept lives in `../dalila-concept-note.md` and `../dalila-sources.md`
 
 - **LLM access is via the `claude` CLI, NOT the Anthropic API SDK.** Do not add `anthropic` to dependencies. Do not write `client.messages.create(...)`. All Claude calls go through `src/dalila/llm.py`. The user is on a Pro/Max plan; per-token API spend defeats the architecture.
 - **Free sources only in MVP.** No paid X API, no NewsAPI subscription, no Devex paid tier. If you're tempted to add a paid source, ask first.
-- **Models**: Haiku 4.5 (`claude-haiku-4-5`) for the classifier, Sonnet 4.6 (`claude-sonnet-4-6`) for the editor. Opus is not used. Model IDs live in `llm.HAIKU` / `llm.SONNET` constants — change there, nowhere else.
+- **Models**: Haiku 4.5 (`claude-haiku-4-5`) for both the classifier AND the editor in MVP. Originally specced Sonnet for the editor; pinned to Haiku-only to share one model/cache/rate-limit pool while iterating. Constants live in `llm.HAIKU` / `llm.SONNET`. To upgrade the editor back to Sonnet, edit the single `model=` argument in `editor.py::compose_digest`. Opus is not used.
 - **The classifier system prompt is the instructions + entity watchlist concatenated.** Sending it identically on every call lets Claude Code's internal cache kick in. Don't interpolate timestamps, request IDs, or other per-call variables into the system prompt — that defeats caching.
 - **Prefilter before classifying.** The classifier is the most expensive thing we do. `pipeline._prefilter_match` drops ~80% of items based on keyword + entity match. Do not bypass it. UAE state/entity sources are auto-passed (their volume is low enough that filtering doesn't help).
 

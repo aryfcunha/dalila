@@ -1,4 +1,11 @@
-"""Editor — Sonnet 4.6 via the `claude` CLI. Composes the daily digest."""
+"""Editor — Haiku 4.5 via the `claude` CLI. Composes the daily digest.
+
+Originally specced as Sonnet 4.6, but MVP runs on a single Claude Code
+subscription that's also used for development. Using Haiku for both
+classifier and editor keeps to one model (one cache, one rate-limit pool)
+and is cheaper to iterate on. Flip back to Sonnet by changing the model=
+argument in compose_digest() below — the prompt format works on either.
+"""
 
 from __future__ import annotations
 
@@ -62,7 +69,7 @@ def compose_digest(items: list[dict], *, when: datetime | None = None) -> tuple[
     )
 
     digest_text = llm.call(
-        model=llm.SONNET,
+        model=llm.HAIKU,    # MVP: same model as classifier; flip to llm.SONNET when budget allows
         system_prompt=load_prompt("editor"),
         user_prompt=user_msg,
         purpose="editor",

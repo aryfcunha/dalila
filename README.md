@@ -6,7 +6,7 @@ MVP — free sources only, single-builder, designed to run on a Pro/Max Claude C
 
 ## Architecture (one paragraph)
 
-A Python pipeline ingests RSS, GDELT, ACLED, and scraped pages every 30 minutes; a cheap keyword + entity prefilter drops ~80% of items before they reach the classifier; surviving items go to **Haiku 4.5** (via the `claude` CLI) for categorisation, UAE-relevance scoring, and entity tagging; at 06:30 GST, **Sonnet 4.6** composes a digest from items above threshold, which the Telegram bot broadcasts to every subscribed chat. SQLite for storage. APScheduler for cron.
+A Python pipeline ingests RSS, GDELT, ACLED, and scraped pages every 30 minutes; a cheap keyword + entity prefilter drops ~80% of items before they reach the classifier; surviving items go to **Haiku 4.5** (via the `claude` CLI) for categorisation, UAE-relevance scoring, and entity tagging; at 06:30 GST, **Haiku** also composes the digest from items above threshold (MVP runs both stages on one model to share cache/rate limits — flip the editor to Sonnet 4.6 by changing one line in `editor.py`). The Telegram bot broadcasts to every subscribed chat. SQLite for storage. APScheduler for cron.
 
 ## Setup
 
