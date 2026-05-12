@@ -44,6 +44,7 @@ def main(argv: list[str] | None = None) -> int:
     p_doctrine = sub.add_parser("doctrine", help="Run the doctrine extraction pass over pending classified items")
     p_doctrine.add_argument("--limit", type=int, default=20, help="Max items to process this run")
     sub.add_parser("verify-sources", help="Probe every enabled source and report fetched count + sample title")
+    sub.add_parser("set-name", help="Push the canonical bot name + descriptions to Telegram (one-shot)")
     sub.add_parser("bot", help="Start the Telegram bot with the scheduler (long-running)")
 
     args = parser.parse_args(argv)
@@ -98,6 +99,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "verify-sources":
         return _cmd_verify_sources()
 
+    if args.cmd == "set-name":
+        return _cmd_set_name()
+
     if args.cmd == "bot":
         return _cmd_bot()
 
@@ -143,6 +147,25 @@ def _cmd_check() -> int:
     if not ok:
         return 1
     return 0
+
+
+def _cmd_set_name() -> int:
+    """Push the canonical bot name + descriptions to Telegram. Idempotent."""
+    cfg = get_config()
+    if not cfg.telegram_bot_token:
+        print("ERROR: TELEGRAM_BOT_TOKEN not set.", file=sys.stderr)
+        return 1
+    from dalila import bot as bot_mod
+
+    async def runner() -> int:
+        app = bot_mod.build_application()
+        await _initialize_with_retry(app)
+        await bot_mod.sync_bot_identity(app)
+        print(f"Synced: name={bot_mod.BOT_DISPLAY_NAME!r}")
+        await app.shutdown()
+        return 0
+
+    return asyncio.run(runner())
 
 
 def _cmd_verify_sources() -> int:
@@ -237,6 +260,7 @@ def _cmd_bot() -> int:
     async def runner() -> None:
         scheduler.start()
         await _initialize_with_retry(app)
+        await bot.sync_bot_identity(app)
         await app.start()
         await app.updater.start_polling()
         print(f"Bot running. Send /start to your bot in Telegram. Ctrl-C to stop.")

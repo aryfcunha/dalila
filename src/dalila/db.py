@@ -506,6 +506,23 @@ def append_doctrine_entry(
     )
 
 
+def latest_digest(conn: sqlite3.Connection) -> dict | None:
+    """Return the most recently composed digest (id, date_label, content, item_ids, composed_at), or None."""
+    row = conn.execute(
+        "SELECT id, composed_at, date_label, content, item_ids_json "
+        "FROM digests ORDER BY composed_at DESC LIMIT 1"
+    ).fetchone()
+    if not row:
+        return None
+    return {
+        "id": row["id"],
+        "composed_at": row["composed_at"],
+        "date_label": row["date_label"],
+        "content": row["content"],
+        "item_ids": json.loads(row["item_ids_json"]) if row["item_ids_json"] else [],
+    }
+
+
 def get_url_for_item(conn: sqlite3.Connection, item_id: int) -> str | None:
     row = conn.execute("SELECT url FROM items WHERE id = ?", (item_id,)).fetchone()
     return row["url"] if row else None

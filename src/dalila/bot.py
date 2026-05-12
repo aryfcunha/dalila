@@ -27,7 +27,7 @@ HELP_TEXT = (
     "Commands:\n"
     "• `/start` — subscribe to the daily digest\n"
     "• `/stop` — unsubscribe\n"
-    "• `/digest` — compose today's digest now (takes ~30 s)\n"
+    "• `/digest` — show the latest daily digest (read-only). `/digest fresh` to recompose now.\n"
     "• `/more <topic>` — deep-dive synthesis on a topic from the last 30 days\n"
     "• `/doctrine` — list tracked UAE doctrine positions, or `/doctrine <topic>` for evolution log\n"
     "• `/status` — pipeline state (queue depth, classifications, top entities)\n"
@@ -104,8 +104,31 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
 
 async def cmd_digest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """On-demand digest. Recomposes from the last 24h."""
-    await update.message.reply_text("Composing digest — this takes a minute…")
+    """Return the latest persisted daily digest.
+
+    By design we only have one daily digest per cycle (composed at 06:30 GST
+    by the scheduler). On-demand recomposition is gated behind `/digest fresh`
+    so casual `/digest` calls don't burn LLM cost re-running the editor.
+    """
+    if not update.message:
+        return
+    force_fresh = bool(context.args and context.args[0].lower() in ("fresh", "now", "--fresh"))
+
+    if not force_fresh:
+        with db.connect() as conn:
+            latest = db.latest_digest(conn)
+        if latest:
+            header = f"_(latest digest, composed {latest['composed_at'][:16].replace('T', ' ')} UTC)_\n\n"
+            await _send_long(update, header + latest["content"])
+            return
+        await update.message.reply_text(
+            "No digest composed yet today. Use `/digest fresh` to compose one now "
+            "(takes ~30 s and uses one LLM call), or wait for the scheduled 06:30 GST run.",
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        return
+
+    await update.message.reply_text("Composing fresh digest — this takes a minute…")
     try:
         digest_id, content = run_compose_digest()
     except Exception as exc:
@@ -278,6 +301,45 @@ async def _send_long(update: Update, text: str, chunk: int = 3800) -> None:
         parts.append(buf)
     for part in parts:
         await update.message.reply_text(part, parse_mode=ParseMode.MARKDOWN)
+
+
+# Canonical bot identity. Telegram allows up to 64 chars on name, 512 on
+# description. The description is shown in the chat's profile pane; the
+# short description is shown in the bot list.
+BOT_DISPLAY_NAME = "Dalila | دليلة"
+BOT_SHORT_DESCRIPTION = "Daily UAE-lens brief on humanitarian, development & philanthropy news."
+BOT_DESCRIPTION = (
+    "Dalila (دليلة, Arabic for 'guide') is a personal AI agent that delivers "
+    "a curated daily brief on the global humanitarian, development, and "
+    "philanthropy ecosystem — with a sharp focus on the UAE's role. "
+    "Send /start to subscribe, /help for the command list."
+)
+
+
+async def sync_bot_identity(app: Application) -> None:
+    """Idempotently push the bot's display name + descriptions to Telegram.
+
+    Telegram only stores one name+description per bot, so this is a global
+    setting (visible to every user). It does NOT change the @username.
+    Calls are cheap (one API call each) and Telegram is fine with re-setting
+    the same values — we read first and skip if identical to avoid noise.
+    """
+    try:
+        current = await app.bot.get_my_name()
+        if (current.name or "") != BOT_DISPLAY_NAME:
+            await app.bot.set_my_name(BOT_DISPLAY_NAME)
+            log.info("bot name set to %r", BOT_DISPLAY_NAME)
+        current_short = await app.bot.get_my_short_description()
+        if (current_short.short_description or "") != BOT_SHORT_DESCRIPTION:
+            await app.bot.set_my_short_description(BOT_SHORT_DESCRIPTION)
+            log.info("bot short description updated")
+        current_desc = await app.bot.get_my_description()
+        if (current_desc.description or "") != BOT_DESCRIPTION:
+            await app.bot.set_my_description(BOT_DESCRIPTION)
+            log.info("bot description updated")
+    except Exception as exc:
+        # Non-fatal: identity sync failure shouldn't prevent the bot from running.
+        log.warning("failed to sync bot identity: %s", exc)
 
 
 def build_application() -> Application:
