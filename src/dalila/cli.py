@@ -41,6 +41,7 @@ def main(argv: list[str] | None = None) -> int:
     p_digest.add_argument("--since-hours", type=int, default=24)
     p_digest.add_argument("--min-relevance", type=float, default=0.4)
     p_digest.add_argument("--max-items", type=int, default=25)
+    sub.add_parser("verify-sources", help="Probe every enabled source and report fetched count + sample title")
     sub.add_parser("bot", help="Start the Telegram bot with the scheduler (long-running)")
 
     args = parser.parse_args(argv)
@@ -84,6 +85,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"--- Digest #{digest_id} ---\n")
         print(content)
         return 0
+
+    if args.cmd == "verify-sources":
+        return _cmd_verify_sources()
 
     if args.cmd == "bot":
         return _cmd_bot()
@@ -130,6 +134,46 @@ def _cmd_check() -> int:
     if not ok:
         return 1
     return 0
+
+
+def _cmd_verify_sources() -> int:
+    """Probe each enabled source once; print fetched count, error (if any), and a sample title.
+
+    Detects three regression classes without paying classifier cost:
+      - Dead URLs (Reuters-style retirements, moved feeds)
+      - Scraper selector rot (matched zero cards on a previously-working page)
+      - Blank fetches (parser returns 0 items but no error — usually JS-rendered)
+    """
+    from dalila.ingestors.base import iter_enabled_sources, ingest_source
+
+    rows: list[tuple[str, str, int, str, str]] = []
+    for src in iter_enabled_sources():
+        sid = src["id"]
+        kind = src.get("kind", "?")
+        sample = ""
+        err = "-"
+        n = 0
+        try:
+            items = ingest_source(src)
+            n = len(items)
+            if items:
+                sample = (items[0].title or "")[:60]
+            else:
+                err = "0 items (selector rot? JS-rendered? feed empty?)" if kind == "scrape" else "0 items"
+        except Exception as exc:
+            err = f"{type(exc).__name__}: {exc}"[:80]
+        rows.append((sid, kind, n, err, sample))
+
+    print(f"{'id':22s} {'kind':6s} {'n':>4s}  {'status / sample':<60s}")
+    print("-" * 100)
+    for sid, kind, n, err, sample in rows:
+        status = sample if n > 0 else err
+        marker = "OK " if n > 0 else "!! "
+        print(f"{marker}{sid:20s} {kind:6s} {n:>4d}  {status}")
+    healthy = sum(1 for _, _, n, _, _ in rows if n > 0)
+    print("-" * 100)
+    print(f"{healthy}/{len(rows)} sources returned items")
+    return 0 if healthy == len(rows) else 1
 
 
 async def _initialize_with_retry(app, attempts: int = 5, base_delay: float = 2.0) -> None:
