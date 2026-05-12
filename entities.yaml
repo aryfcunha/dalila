@@ -29,9 +29,25 @@ uae_government:
     kind: gov
     weight: very-high
   - name: International Humanitarian and Philanthropic Council
-    aliases: [IHPC, IHC]
+    aliases: [IHPC, "International Humanitarian & Philanthropic Council"]
     kind: gov
     weight: high
+  - name: International Humanitarian City
+    # Different institution from IHPC despite the overlapping initialism.
+    # IHC is the logistics hub in Dubai (warehousing, airlift staging); IHPC
+    # is the policy-coordinating council. Pre-fix entities.yaml had these
+    # merged under "IHPC, IHC" which corrupted entity counts on either side.
+    aliases: [IHC, IHC Dubai, "International Humanitarian City Dubai"]
+    kind: gov
+    weight: high
+  - name: UAE FAST
+    aliases: ["UAE Foreign Assistance and Support Team", "UAE Search and Rescue"]
+    kind: gov
+    weight: high
+  - name: UAE Armed Forces Joint Command
+    aliases: ["Armed Forces Joint Command", "Joint Aviation Command"]
+    kind: gov
+    weight: medium
   - name: UAE Ministry of Climate Change and Environment
     aliases: [MoCCAE]
     kind: gov
@@ -138,6 +154,61 @@ uae_entities:
   - name: Masdar
     aliases: [Abu Dhabi Future Energy Company]
     kind: corporate-impact
+    weight: medium
+  # ─── Catalytic capital + sovereign wealth (added per Foreign Aid Policy 2026) ───
+  - name: ALTÉRRA
+    aliases: [ALTERRA, "Alterra Fund", "Alterra climate fund"]
+    kind: catalytic-fund
+    weight: very-high   # World's largest private climate investment fund (per policy)
+  - name: Emirates Investment Authority
+    aliases: [EIA, "Emirates Investment Auth."]
+    kind: sov-fund
+    weight: medium
+  - name: ADQ
+    aliases: ["Abu Dhabi Developmental Holding"]
+    kind: sov-fund
+    weight: medium
+  - name: AD Ports Group
+    aliases: ["AD Ports", "Abu Dhabi Ports"]
+    kind: corporate-impact
+    weight: medium
+  - name: TAQA
+    aliases: ["Abu Dhabi National Energy Company"]
+    kind: corporate-impact
+    weight: medium
+  - name: ADNOC
+    aliases: ["Abu Dhabi National Oil Company"]
+    kind: corporate-impact
+    weight: medium
+  # ─── Charitable / humanitarian implementers from the policy ───
+  - name: Sharjah Charity International
+    aliases: ["Sharjah Charity"]
+    kind: foundation
+    weight: medium
+  - name: Dar Al Ber Society
+    aliases: ["Dar Al Ber", "Dar Al-Ber"]
+    kind: foundation
+    weight: medium
+  - name: International Charity Organisation
+    aliases: [ICO, "International Charity Organization"]
+    kind: foundation
+    weight: medium
+  # ─── AI / knowledge / convening infrastructure named in the policy ───
+  - name: Mohamed bin Zayed University of Artificial Intelligence
+    aliases: [MBZUAI, "MBZ University of AI"]
+    kind: academic
+    weight: high
+  - name: International Center for Biosaline Agriculture
+    aliases: [ICBA]
+    kind: hosted-multilateral
+    weight: medium
+  - name: International Renewable Energy Agency
+    aliases: [IRENA]
+    kind: hosted-multilateral
+    weight: high
+  - name: Arab Monetary Fund
+    aliases: [AMF]
+    kind: hosted-multilateral
     weight: medium
 
 # =====================================================================

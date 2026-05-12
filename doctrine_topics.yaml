@@ -1,134 +1,251 @@
 # Dalila — seed vocabulary for the UAE foreign-aid doctrine tracker.
 #
-# These 20 topics are the canonical slugs the doctrine LLM should prefer when
-# tagging UAE leadership statements. They are derived from the past ~6 months
-# of UAE foreign-policy and humanitarian discourse across our active sources
-# (The National, Gulf News, NYT, WaPo, BBC, Al Jazeera, ReliefWeb, IDMC,
-# GDELT, ACLED) plus public statements by MoFAIC, MBR Global Initiatives,
-# ERC, Khalifa Foundation, ADFD, and UAE Aid Agency.
+# These topic slugs are the canonical vocabulary the doctrine LLM should
+# prefer when tagging UAE leadership statements. The list is curated and
+# kept stable across sessions so doctrine_facts rows accumulate against a
+# consistent set of topics over time.
 #
-# The model is still allowed to invent new slugs when a statement clearly
-# falls outside this vocabulary — but it should reach for these first.
-# Edit this file when a topic becomes structurally important and we want it
-# tracked from day one.
+# Composition:
+#   - 3 retained from the original 20-topic seed (cross-cutting, evergreen)
+#   - 8 country-specific positions (the contexts UAE engages most often)
+#   - 4 thematic anchors covering the broad doctrinal areas
+#   - 20 derived from the UAE Foreign Aid Policy 2026 (sectoral, instrumental,
+#     and operational positions called out explicitly in the policy text)
+#
+# Total: 35 topics. The model is allowed to invent a new slug when a
+# statement clearly falls outside this vocabulary; everything inside
+# should reach for these first.
 
 topics:
+  # ────────────────────────────────────────────────────────────────────
+  # Retained cross-cutting topics
+  # ────────────────────────────────────────────────────────────────────
   - slug: climate-finance
     description: >
-      UAE position on climate finance instruments — loss & damage operationalisation,
-      private-capital mobilisation, blended finance, MDB reform. Anchored in COP28
-      Loss & Damage Fund and post-COP28 implementation.
-
-  - slug: conditionality
-    description: >
-      Whether humanitarian and development assistance should be conditioned on
-      political reform, governance benchmarks, civilian-government roadmaps —
-      versus needs-based, non-conditional delivery (the UAE's historic posture).
+      UAE position on climate finance instruments — Loss & Damage Fund
+      operationalisation, private-capital mobilisation, blended finance,
+      MDB reform. Anchored in COP28 outcomes and post-COP28 implementation
+      including the AED 350 million committed to the L&D Fund.
 
   - slug: multilateralism
     description: >
-      Stance on the UN system, multilateral pooled funds, and OECD-DAC norms
-      vs bilateral and South-South channels. Whether UAE deepens engagement
-      with WFP/UNHCR/OCHA pooled funds or routes more through bilateral lanes.
-
-  - slug: private-sector-aid
-    description: >
-      Role of private capital in development — PPPs, sovereign-wealth-funded
-      development vehicles (Mubadala, ADQ), blended finance facilities, and
-      the broader "investment is development" framing.
+      Stance on the UN system, multilateral pooled funds, OECD-DAC alignment,
+      and OIC/Arab League coordination. Includes IFAD (UAE founding role),
+      trust-fund participation, and core-contribution vs thematic-funding
+      posture.
 
   - slug: faith-based-aid
     description: >
-      Secular humanitarianism vs faith-based delivery — Zakat-funded channels,
-      OIC coordination, Islamic Development Bank partnerships, the role of
-      religious institutions in distribution.
+      Secular humanitarianism vs faith-based delivery. Zakat-channelled
+      funding, OIC coordination, Islamic Development Bank partnerships,
+      and the explicit policy commitment that aid is "not tied to religion,
+      race, colour, culture, or political affiliation".
 
-  - slug: food-security
-    description: >
-      UAE position on global food security — UAE Food Security Strategy 2051,
-      strategic reserves, FAO and WFP positioning, agricultural investment
-      in producer countries, response to commodity shocks.
-
+  # ────────────────────────────────────────────────────────────────────
+  # Country-specific positions
+  # ────────────────────────────────────────────────────────────────────
   - slug: sudan-policy
     description: >
-      Stance on the Sudan war (RSF vs SAF), humanitarian access in Darfur and
-      Khartoum, allegations of arms transfers, evacuation operations, and the
-      UAE's role in regional diplomacy on Sudan.
+      Stance on the Sudan war (RSF vs SAF), humanitarian access in Darfur
+      and Khartoum, allegations of arms transfers, evacuation operations,
+      and the UAE's role in regional diplomacy and reconstruction posture.
 
-  - slug: gaza-reconstruction
+  - slug: somalia-policy
     description: >
-      Gaza humanitarian response, ceasefire support, reconstruction financing,
-      post-conflict governance posture, and coordination with Egypt/Jordan/US
-      on the day-after planning.
+      Engagement with Somalia — humanitarian operations, port and
+      infrastructure investment, counter-terror cooperation, drought and
+      food-security response, and federal-vs-regional state dynamics.
+
+  - slug: gaza-policy
+    description: >
+      Gaza humanitarian response, ceasefire support, reconstruction
+      financing, the day-after governance posture, and field-hospital and
+      airlift operations under UAE Aid Agency and Emirates Red Crescent.
+
+  - slug: iran-policy
+    description: >
+      Posture on Iran — regional security, sanctions context, diplomatic
+      normalisation, humanitarian carve-outs, and impact on UAE bilateral
+      and multilateral programming in the Gulf and wider region.
 
   - slug: yemen-policy
     description: >
       Yemen humanitarian response, port and aid access, posture on Houthi
-      maritime attacks, reconstruction in liberated areas, and STC/PLC dynamics
-      relative to UAE-supported actors.
+      maritime attacks, reconstruction in liberated areas, public-health
+      programming (the 13 million vaccinated cited in the policy), and
+      STC/PLC dynamics relative to UAE-supported actors.
 
-  - slug: afghanistan-engagement
+  - slug: afghanistan-policy
     description: >
-      Engagement with Taliban-era Afghanistan — humanitarian-only vs broader
-      engagement, women's rights as a condition of assistance, and UAE-hosted
-      mediation tracks.
+      Engagement with Taliban-era Afghanistan — humanitarian-only vs
+      broader engagement, women's rights as a condition of assistance,
+      UAE-hosted mediation tracks, and refugee resettlement operations.
 
-  - slug: women-empowerment
+  - slug: pakistan-policy
     description: >
-      Gender in development — women's economic participation, girls' education,
-      maternal health, and how the UAE frames women's rights in humanitarian
-      programming including faith-sensitive contexts.
+      Pakistan engagement — flood response and disaster preparedness,
+      economic stabilisation support (central bank deposits), CEPA
+      progress, refugee dynamics, and counter-terror cooperation.
 
-  - slug: africa-investment
+  - slug: ethiopia-policy
     description: >
-      Horn of Africa, Sahel, and broader African engagement — investment +
-      humanitarian footprint, port and logistics infrastructure, posture on
-      coup-affected states, and the framing of UAE as an African partner.
+      Ethiopia engagement — Tigray and Amhara humanitarian operations,
+      GERD-related regional dynamics, agricultural and food-security
+      investment, Horn-of-Africa diplomacy, and federal-region dynamics.
 
-  - slug: refugee-displacement
+  # ────────────────────────────────────────────────────────────────────
+  # Thematic anchors
+  # ────────────────────────────────────────────────────────────────────
+  - slug: humanitarian-aid
     description: >
-      UAE position on global displacement — host-country support, durable
-      solutions, IDP protection, IDMC-aligned data narratives, and operational
-      partnerships with UNHCR.
+      Overall UAE humanitarian doctrine — needs-based, non-conditional,
+      rapid-response posture; the AED 12 billion / 5-year humanitarian
+      track record; end-to-end ecosystem from procurement to delivery;
+      humanitarian-development-peace nexus framing.
 
-  - slug: cop-energy-transition
+  - slug: development-finance
     description: >
-      Post-COP28 energy-transition narrative — "just transition" framing,
-      fossil-fuel phase-down language, energy access in developing countries,
-      and the UAE's positioning as a transition bridge.
+      UAE development finance approach — ADFD concessional lending, the
+      continuum-of-capital model, sovereign-wealth participation, and the
+      shift from grant-only to blended/catalytic structures.
 
-  - slug: arab-coordination
+  - slug: ai-for-development
     description: >
-      Arab League, GCC, and OIC coordinated humanitarian response — joint
-      pledges, ERC-led airlifts on behalf of regional partners, and how UAE
-      positions vis-à-vis Saudi Arabia, Qatar, and Egypt in aid diplomacy.
+      AI and frontier-tech doctrine — MBZUAI, the AI Minister, responsible
+      and inclusive adoption framing, AI-enabled MEL and service delivery,
+      and access to sovereign-grade compute for partner countries.
 
-  - slug: tech-enabled-aid
+  - slug: stabilization
     description: >
-      AI, digital ID, satellite imagery, drones, and logistics tech in
-      humanitarian operations — the "digital humanitarian" framing the UAE
-      uses to differentiate from legacy donors.
+      Post-crisis stabilisation posture — bridging relief, recovery, and
+      development; supporting fragile and conflict-affected states across
+      the humanitarian-development-peace nexus rather than in silos.
 
-  - slug: localisation
+  # ────────────────────────────────────────────────────────────────────
+  # Derived from the UAE Foreign Aid Policy 2026
+  # ────────────────────────────────────────────────────────────────────
+  - slug: self-reliance-transition
     description: >
-      Locally-led aid, Grand Bargain commitments, direct funding to local
-      NGOs and national societies, and how UAE's bilateral channels reconcile
-      with the OECD-DAC localisation agenda.
+      Moving partner countries from aid dependency to self-sufficiency.
+      Multi-year strategies include explicit transition pathways, capacity
+      handoff milestones, and pathways to country ownership of programmes.
 
-  - slug: soft-power-diplomacy
+  - slug: non-conditionality
     description: >
-      Aid as foreign-policy instrument — the explicit "humanitarian diplomacy"
-      framing, visibility of UAE-branded delivery, and the relationship between
-      aid commitments and bilateral political objectives.
+      The policy's explicit commitment that UAE support "is not tied to
+      political, economic, or policy concessions". Distinguishes UAE from
+      donors that condition aid on governance or human-rights reform.
 
-  - slug: emergency-response-speed
+  - slug: partner-country-ownership
     description: >
-      Rapid-response posture — 72-hour deployment language, ERC airlift
-      capability, IHC (International Humanitarian City Dubai) as a global hub,
-      and the comparative-advantage framing vs traditional donors.
+      Co-creation principle — solutions designed with partner countries
+      based on local priorities; sovereign equality of all states; partner
+      governments lead delivery; UAE engages as a peer, not a donor.
 
-  - slug: health-systems
+  - slug: water-systems
     description: >
-      Global health — vaccines (Hope Consortium legacy), pandemic preparedness,
-      polio eradication funding, NCDs in fragile states, and partnerships with
-      Gavi/Global Fund/CEPI.
+      UAE-distinctive expertise in water — desalination, recycling, Zayed
+      Wells (50,000 across 12 countries), water-stress management in arid
+      contexts. The "second-largest producer of desalinated water" framing.
+
+  - slug: food-systems
+    description: >
+      Agriculture and food security — high-yield seeds, advanced irrigation,
+      supply-chain logistics, ICBA hosting, AED 180m to Lives & Livelihoods
+      Fund 2.0, and post-commodity-shock responsiveness.
+
+  - slug: energy-access
+    description: >
+      Energy systems in partner countries — renewables (Masdar deployment
+      model), responsible hydrocarbon management, just-transition framing,
+      and the comparative advantage of UAE's low-cost-at-scale clean energy.
+
+  - slug: education-and-skills
+    description: >
+      Education doctrine — girls' education emphasis, tech-enabled learning,
+      tertiary and vocational pathways, talent pipelines, and the UAE's
+      own youth-literacy achievement as a reference model.
+
+  - slug: trade-corridors-cepa
+    description: >
+      Comprehensive Economic Partnership Agreements (CEPAs) as a foreign-
+      aid instrument — trade corridors, market access, export readiness
+      support, and the explicit positioning of trade as a development tool.
+
+  - slug: state-owned-enterprises
+    description: >
+      Strengthening partner-country SOEs as development institutions
+      (energy, water, trade, infrastructure). UAE draws on ADNOC, AD Ports,
+      TAQA as institutional templates for technology transfer and capacity
+      building.
+
+  - slug: blended-finance-instruments
+    description: >
+      The specific instrument stack — first-loss capital, junior equity,
+      concessional/subordinated loans, guarantees, currency-hedging
+      facilities, debt swaps, revolving capital vehicles. ALTÉRRA as the
+      largest exemplar.
+
+  - slug: debt-sustainability
+    description: >
+      Debt-distress posture — debt-for-development swaps, debt sustainability
+      analysis as a precondition for instrument selection, time-bound
+      central bank deposits as macroeconomic support.
+
+  - slug: localisation-grand-bargain
+    description: >
+      Locally-led aid — direct funding to local CSOs and national societies,
+      community feedback systems, complaints mechanisms, and alignment with
+      Grand Bargain commitments.
+
+  - slug: vulnerable-populations
+    description: >
+      Strategic objective targeting women, children, mothers, and
+      marginalised groups. Evidence-based programming, gender-disaggregated
+      data, and protection-focused humanitarian design.
+
+  - slug: humanitarian-logistics
+    description: >
+      The end-to-end UAE humanitarian-logistics stack — International
+      Humanitarian City Dubai, UAE FAST rapid-deployment teams, Armed
+      Forces Joint Command airlift, pre-positioned stockpiles, streamlined
+      approval pathways.
+
+  - slug: disaster-preparedness
+    description: >
+      Anticipatory action and pre-positioning — early-warning systems,
+      predictive analytics, disaster-resilient infrastructure, and the
+      explicit policy commitment to "invest in stopping crises before
+      they occur".
+
+  - slug: convening-platforms
+    description: >
+      UAE as a global convening hub — Abu Dhabi Sustainability Week, World
+      Government Summit, World Future Energy Summit, Global Water Summit,
+      hosting IRENA / ICBA / Arab Monetary Fund. Convening as a deliberate
+      doctrinal instrument, not incidental.
+
+  - slug: mel-and-transparency
+    description: >
+      Monitoring, evaluation, and learning — OECD-DAC and IATI alignment,
+      independent evaluation function, public dashboards, real-time
+      AI-enabled tracking, and annual reporting commitments.
+
+  - slug: biodiversity-natural-resources
+    description: >
+      Natural-resource stewardship in partner countries — value-added
+      processing, sustainable extraction, biodiversity protection,
+      hosting the IUCN World Conservation Congress as a doctrinal anchor.
+
+  - slug: catalytic-capital
+    description: >
+      Sovereign-wealth as a development multiplier — ADIA, Mubadala, EIA
+      (~USD 1.5 trillion AUM), ALTÉRRA, and the explicit "each dirham
+      mobilises multiples" framing. UAE as anchor investor and syndicator.
+
+  - slug: triangular-cooperation
+    description: >
+      UAE + developing-country expertise + third-party arrangement — Global
+      South knowledge exchange, regional centres of excellence, joint
+      financing arrangements with regional development banks. Distinct
+      from bilateral and multilateral channels.
