@@ -101,5 +101,36 @@ def attach_jobs(scheduler: AsyncIOScheduler, app: Application) -> None:
         id="digest",
         replace_existing=True,
     )
-    log.info("jobs scheduled: ingest every %dm, classify every 5m, digest daily at %s %s",
-             cfg.ingest_interval_minutes, cfg.digest_time, cfg.timezone)
+
+    # Doctrine pass: every 15 min, cheap when there's nothing pending.
+    # Runs independently of the classify schedule so a doctrine rate-limit
+    # doesn't block fresh classification (and vice versa).
+    scheduler.add_job(
+        _doctrine_job,
+        trigger=IntervalTrigger(minutes=15),
+        id="doctrine",
+        replace_existing=True,
+    )
+    log.info(
+        "jobs scheduled: ingest every %dm, classify every 5m, doctrine every 15m, "
+        "digest daily at %s %s",
+        cfg.ingest_interval_minutes, cfg.digest_time, cfg.timezone,
+    )
+
+
+_doctrine_paused_until: datetime | None = None
+
+
+def _doctrine_job() -> None:
+    global _doctrine_paused_until
+    now = datetime.now(timezone.utc)
+    if _doctrine_paused_until and now < _doctrine_paused_until:
+        return
+    from dalila import doctrine as doctrine_module
+    log.info("scheduler: doctrine tick")
+    result = doctrine_module.run_pass(limit=10)
+    log.info("doctrine done: %s", result)
+    if result.get("rate_limited"):
+        _doctrine_paused_until = now + _RATE_LIMIT_BACKOFF
+        log.warning("doctrine rate-limited — paused until %s",
+                    _doctrine_paused_until.isoformat())

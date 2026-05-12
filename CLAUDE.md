@@ -25,7 +25,10 @@ The full concept lives in `../dalila-concept-note.md` and `../dalila-sources.md`
 | Add a new CLI subcommand | `src/dalila/cli.py` |
 | Add a new Telegram command | `src/dalila/bot.py` |
 | Add a new ingestor kind | new file in `src/dalila/ingestors/` + dispatch in `ingestors/base.py` |
-| Schema change | new `migrations/00X_*.sql` + apply in `db.init_db()` |
+| Schema change | new `migrations/00X_*.sql` — runs automatically via `db.init_db()` (tracked in `schema_migrations`) |
+| Change deep-dive prompt | `prompts/deepdive.md` |
+| Change doctrine extraction prompt | `prompts/doctrine.md` |
+| Near-duplicate threshold | `is_near_duplicate(threshold=…)` in `src/dalila/simhash.py` |
 
 ## Style / conventions
 
@@ -81,11 +84,22 @@ hydration, then run BeautifulSoup over the rendered DOM.
 ## Common operations
 
 ```bash
-dalila init                       # bootstrap DB
+dalila init                       # bootstrap DB (idempotent; applies pending migrations)
 dalila check                      # verify env
+dalila verify-sources             # probe every enabled source — catches dead URLs / selector rot
 dalila ingest                     # one ingest pass
 dalila classify --limit 50        # classify pending items
+dalila doctrine --limit 20        # extract doctrine facts from classified UAE-leadership items
 dalila digest                     # compose + print today's digest
 dalila bot                        # start bot + scheduler (production)
 pytest -v                         # smoke tests
 ```
+
+## Scheduler jobs (when `dalila bot` runs)
+
+| Job | Cadence | Notes |
+|---|---|---|
+| ingest    | every `ingest_interval_minutes` (default 30m) | replace_existing |
+| classify  | every 5m | pauses exactly until rate-limit window resets (parsed from CLI error) |
+| doctrine  | every 15m | independent rate-limit back-off; cheap when queue is empty |
+| digest    | daily at `digest_time` GST | also runs a `classify(200)` first to flush backlog |

@@ -41,6 +41,8 @@ def main(argv: list[str] | None = None) -> int:
     p_digest.add_argument("--since-hours", type=int, default=24)
     p_digest.add_argument("--min-relevance", type=float, default=0.4)
     p_digest.add_argument("--max-items", type=int, default=25)
+    p_doctrine = sub.add_parser("doctrine", help="Run the doctrine extraction pass over pending classified items")
+    p_doctrine.add_argument("--limit", type=int, default=20, help="Max items to process this run")
     sub.add_parser("verify-sources", help="Probe every enabled source and report fetched count + sample title")
     sub.add_parser("bot", help="Start the Telegram bot with the scheduler (long-running)")
 
@@ -84,6 +86,13 @@ def main(argv: list[str] | None = None) -> int:
         )
         print(f"--- Digest #{digest_id} ---\n")
         print(content)
+        return 0
+
+    if args.cmd == "doctrine":
+        from dalila import doctrine as doctrine_mod
+        db.init_db()
+        result = doctrine_mod.run_pass(limit=args.limit)
+        print(f"doctrine pass: {result}")
         return 0
 
     if args.cmd == "verify-sources":

@@ -229,3 +229,73 @@ def test_dedupe_by_simhash_drops_cross_outlet_repost():
     ]
     kept_ids = [it["id"] for it in _dedupe_by_simhash(items)]
     assert kept_ids == [1, 3], f"expected [1, 3] (cross-outlet repost dropped), got {kept_ids}"
+
+
+def test_doctrine_validate_rejects_bad_slug():
+    """Topic slugs must be kebab-case starting with a letter."""
+    from dalila.doctrine import _validate_action
+    bad = {"action": "new", "topic": "Climate Finance!", "position_summary": "UAE supports private-sector-led climate finance."}
+    action, _ = _validate_action(bad)
+    assert action == "noop", "bad slug must downgrade to noop"
+
+
+def test_doctrine_validate_accepts_well_formed():
+    from dalila.doctrine import _validate_action
+    good = {
+        "action": "new",
+        "topic": "climate-finance",
+        "position_summary": "UAE backs private-sector-led climate finance models.",
+        "nuance": "Subject to bilateral framing.",
+        "confidence_delta": 0.05,
+    }
+    action, norm = _validate_action(good)
+    assert action == "new"
+    assert norm["topic"] == "climate-finance"
+    assert abs(norm["confidence_delta"] - 0.05) < 1e-9
+
+
+def test_doctrine_validate_clamps_confidence_delta():
+    from dalila.doctrine import _validate_action
+    p = {"action": "append", "topic": "conditionality",
+         "position_summary": "UAE supports needs-based humanitarian aid.",
+         "evolution_entry": {"relation": "reinforcing", "summary": "Restated by MoFAIC."},
+         "confidence_delta": 5.0}
+    action, norm = _validate_action(p)
+    assert action == "append"
+    assert norm["confidence_delta"] == 0.2, "delta must clamp to +/- 0.2"
+
+
+def test_doctrine_fact_lifecycle_new_then_append(tmp_path, monkeypatch):
+    """Insert a new doctrine fact, then append to it, and verify the log + confidence shift."""
+    from dalila import db
+    monkeypatch.setenv("DALILA_DB_PATH", str(tmp_path / "doctrine.db"))
+    from dalila import config
+    config.get_config.cache_clear()
+    config.load_sources.cache_clear()
+    db.init_db()
+    with db.connect() as conn:
+        # Need a real source + item for the FK
+        conn.execute("INSERT OR IGNORE INTO sources(id,name,kind,url,quality,enabled) VALUES('t','t','rss','x',5,1)")
+        conn.execute("INSERT INTO items(source_id,title,ingested_at,prefilter_passed) VALUES('t','i1', '2026-05-12T00:00:00+00:00', 1)")
+        conn.execute("INSERT INTO items(source_id,title,ingested_at,prefilter_passed) VALUES('t','i2', '2026-05-12T00:00:00+00:00', 1)")
+        i1 = conn.execute("SELECT id FROM items WHERE title='i1'").fetchone()["id"]
+        i2 = conn.execute("SELECT id FROM items WHERE title='i2'").fetchone()["id"]
+        db.upsert_doctrine_fact_new(
+            conn, topic="climate-finance",
+            position_summary="UAE backs private-sector-led climate finance.",
+            nuance=None, source_item_id=i1,
+        )
+        db.append_doctrine_entry(
+            conn, topic="climate-finance",
+            position_summary="UAE backs private-sector-led climate finance, including blended models.",
+            nuance="Now explicitly includes blended finance.",
+            evolution_entry={"relation": "refining", "summary": "President's Bonn speech added blended-finance language."},
+            source_item_id=i2, confidence_delta=0.1,
+        )
+        facts = db.list_doctrine_facts(conn)
+    assert len(facts) == 1
+    f = facts[0]
+    assert f["topic"] == "climate-finance"
+    assert len(f["evolution_log"]) == 2
+    assert f["source_item_ids"] == [i1, i2]
+    assert abs(f["confidence"] - 0.6) < 1e-9, f"expected 0.5 + 0.1 = 0.6, got {f['confidence']}"

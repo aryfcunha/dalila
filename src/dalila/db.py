@@ -345,6 +345,167 @@ def backfill_title_simhash(conn: sqlite3.Connection, batch: int = 1000) -> int:
     return len(updates)
 
 
+def items_pending_doctrine(conn: sqlite3.Connection, limit: int = 20) -> list[sqlite3.Row]:
+    """Classified items with a doctrine_relation that haven't been through the doctrine pass yet."""
+    return list(conn.execute(
+        """
+        SELECT id, title, body, one_line_summary, doctrine_relation,
+               entities_json, ingested_at, uae_relevance
+        FROM items
+        WHERE classified_at IS NOT NULL
+          AND classifier_error IS NULL
+          AND doctrine_relation IS NOT NULL
+          AND doctrine_relation NOT IN ('', 'null')
+          AND doctrine_processed_at IS NULL
+        ORDER BY ingested_at DESC
+        LIMIT ?
+        """,
+        (limit,),
+    ))
+
+
+def mark_item_doctrine_processed(conn: sqlite3.Connection, item_id: int) -> None:
+    conn.execute(
+        "UPDATE items SET doctrine_processed_at = ? WHERE id = ?",
+        (_now_iso(), item_id),
+    )
+
+
+def list_doctrine_facts(conn: sqlite3.Connection) -> list[dict]:
+    rows = conn.execute(
+        """SELECT id, topic, position_summary, nuance, first_stated_at,
+                  last_confirmed_at, evolution_log_json, source_item_ids_json,
+                  confidence
+           FROM doctrine_facts
+           ORDER BY last_confirmed_at DESC"""
+    ).fetchall()
+    out: list[dict] = []
+    for r in rows:
+        out.append({
+            "id": r["id"],
+            "topic": r["topic"],
+            "position_summary": r["position_summary"],
+            "nuance": r["nuance"],
+            "first_stated_at": r["first_stated_at"],
+            "last_confirmed_at": r["last_confirmed_at"],
+            "evolution_log": json.loads(r["evolution_log_json"]) if r["evolution_log_json"] else [],
+            "source_item_ids": json.loads(r["source_item_ids_json"]) if r["source_item_ids_json"] else [],
+            "confidence": r["confidence"],
+        })
+    return out
+
+
+def doctrine_fact_for_topic(conn: sqlite3.Connection, topic: str) -> dict | None:
+    facts = [f for f in list_doctrine_facts(conn) if f["topic"] == topic]
+    return facts[0] if facts else None
+
+
+def upsert_doctrine_fact_new(
+    conn: sqlite3.Connection,
+    *,
+    topic: str,
+    position_summary: str,
+    nuance: str | None,
+    source_item_id: int,
+    initial_confidence: float = 0.5,
+) -> int:
+    """Insert a fresh doctrine fact. Returns the new row id.
+
+    Initialises evolution_log with the originating item and timestamps with now.
+    """
+    now = _now_iso()
+    entry = [{
+        "at": now,
+        "relation": "new",
+        "item_id": source_item_id,
+        "summary": "First recorded statement on this topic.",
+    }]
+    cur = conn.execute(
+        """
+        INSERT INTO doctrine_facts(
+            topic, position_summary, nuance, first_stated_at, last_confirmed_at,
+            evolution_log_json, source_item_ids_json, confidence
+        ) VALUES(?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(topic) DO NOTHING
+        """,
+        (topic, position_summary, nuance, now, now,
+         json.dumps(entry), json.dumps([source_item_id]), initial_confidence),
+    )
+    if cur.rowcount == 0:
+        # Concurrent insert — fall back to append
+        return _append_doctrine_entry(
+            conn, topic=topic, position_summary=position_summary, nuance=nuance,
+            evolution_entry={"relation": "reinforcing", "summary": "Concurrent insert; merged."},
+            source_item_id=source_item_id, confidence_delta=0.0,
+        )
+    row = conn.execute("SELECT id FROM doctrine_facts WHERE topic = ?", (topic,)).fetchone()
+    return int(row["id"])
+
+
+def _append_doctrine_entry(
+    conn: sqlite3.Connection,
+    *,
+    topic: str,
+    position_summary: str,
+    nuance: str | None,
+    evolution_entry: dict,
+    source_item_id: int,
+    confidence_delta: float,
+) -> int:
+    """Append an evolution log entry to an existing topic; update position + confidence."""
+    row = conn.execute(
+        "SELECT id, evolution_log_json, source_item_ids_json, confidence FROM doctrine_facts WHERE topic = ?",
+        (topic,),
+    ).fetchone()
+    if not row:
+        return upsert_doctrine_fact_new(
+            conn, topic=topic, position_summary=position_summary,
+            nuance=nuance, source_item_id=source_item_id,
+        )
+    log_arr = json.loads(row["evolution_log_json"]) if row["evolution_log_json"] else []
+    src_arr = json.loads(row["source_item_ids_json"]) if row["source_item_ids_json"] else []
+    now = _now_iso()
+    log_arr.append({
+        "at": now,
+        "relation": evolution_entry.get("relation") or "reinforcing",
+        "item_id": source_item_id,
+        "summary": evolution_entry.get("summary") or "",
+    })
+    if source_item_id not in src_arr:
+        src_arr.append(source_item_id)
+    new_conf = max(0.0, min(1.0, float(row["confidence"]) + float(confidence_delta)))
+    conn.execute(
+        """UPDATE doctrine_facts SET
+               position_summary = ?,
+               nuance = COALESCE(?, nuance),
+               last_confirmed_at = ?,
+               evolution_log_json = ?,
+               source_item_ids_json = ?,
+               confidence = ?
+           WHERE topic = ?""",
+        (position_summary, nuance, now, json.dumps(log_arr), json.dumps(src_arr), new_conf, topic),
+    )
+    return int(row["id"])
+
+
+def append_doctrine_entry(
+    conn: sqlite3.Connection,
+    *,
+    topic: str,
+    position_summary: str,
+    nuance: str | None,
+    evolution_entry: dict,
+    source_item_id: int,
+    confidence_delta: float,
+) -> int:
+    """Public alias of _append_doctrine_entry for the doctrine module."""
+    return _append_doctrine_entry(
+        conn, topic=topic, position_summary=position_summary, nuance=nuance,
+        evolution_entry=evolution_entry, source_item_id=source_item_id,
+        confidence_delta=confidence_delta,
+    )
+
+
 def get_url_for_item(conn: sqlite3.Connection, item_id: int) -> str | None:
     row = conn.execute("SELECT url FROM items WHERE id = ?", (item_id,)).fetchone()
     return row["url"] if row else None

@@ -29,6 +29,7 @@ HELP_TEXT = (
     "• `/stop` — unsubscribe\n"
     "• `/digest` — compose today's digest now (takes ~30 s)\n"
     "• `/more <topic>` — deep-dive synthesis on a topic from the last 30 days\n"
+    "• `/doctrine` — list tracked UAE doctrine positions, or `/doctrine <topic>` for evolution log\n"
     "• `/status` — pipeline state (queue depth, classifications, top entities)\n"
     "• `link N` — get the source URL for item #N from the latest digest\n"
     "• `/help` — show this help\n\n"
@@ -112,6 +113,62 @@ async def cmd_digest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         await update.message.reply_text(f"Sorry, digest composition failed: {exc}")
         return
     await _send_long(update, content)
+
+
+async def cmd_doctrine(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """List tracked doctrine positions, or show one topic's evolution log."""
+    if not update.message:
+        return
+    topic_query = " ".join(context.args).strip().lower().replace(" ", "-") if context.args else ""
+
+    with db.connect() as conn:
+        facts = db.list_doctrine_facts(conn)
+
+    if not facts:
+        await update.message.reply_text(
+            "No doctrine facts recorded yet. UAE leadership items take time to "
+            "accumulate; check back after a few days of ingestion."
+        )
+        return
+
+    if not topic_query:
+        lines = ["🇦🇪 *UAE doctrine — tracked positions*", ""]
+        for f in facts[:20]:
+            conf_bar = "▓" * int(round(f["confidence"] * 5)) + "░" * (5 - int(round(f["confidence"] * 5)))
+            lines.append(f"*{f['topic']}*  `{conf_bar}` {f['confidence']:.2f}")
+            lines.append(f"  {f['position_summary']}")
+            lines.append("")
+        lines.append("_Use_ `/doctrine <topic>` _for the evolution log of one topic._")
+        await _send_long(update, "\n".join(lines))
+        return
+
+    # Topic-specific view
+    matches = [f for f in facts if topic_query in f["topic"]]
+    if not matches:
+        topics = ", ".join(f["topic"] for f in facts[:10])
+        await update.message.reply_text(
+            f"No doctrine topic matches `{topic_query}`. Tracked: {topics}",
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        return
+    f = matches[0]
+    lines = [
+        f"🇦🇪 *{f['topic']}* — confidence {f['confidence']:.2f}",
+        "",
+        f"*Position:* {f['position_summary']}",
+    ]
+    if f["nuance"]:
+        lines.append(f"*Nuance:* {f['nuance']}")
+    lines.append(f"*First stated:* {f['first_stated_at'][:10]}")
+    lines.append(f"*Last confirmed:* {f['last_confirmed_at'][:10]}")
+    lines.append("")
+    lines.append("*Evolution log:*")
+    for entry in (f["evolution_log"] or [])[-10:]:
+        at = (entry.get("at") or "")[:10]
+        rel = entry.get("relation", "?")
+        summary = entry.get("summary", "")
+        lines.append(f"  • _{at}_ ({rel}): {summary}")
+    await _send_long(update, "\n".join(lines))
 
 
 async def cmd_more(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -247,6 +304,7 @@ def build_application() -> Application:
     app.add_handler(CommandHandler("help", cmd_help))
     app.add_handler(CommandHandler("digest", cmd_digest))
     app.add_handler(CommandHandler("more", cmd_more))
+    app.add_handler(CommandHandler("doctrine", cmd_doctrine))
     app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
     return app
