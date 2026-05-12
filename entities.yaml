@@ -68,7 +68,7 @@ uae_leadership:
 # =====================================================================
 uae_entities:
   - name: Emirates Red Crescent
-    aliases: [ERC, الهلال الأحمر الإماراتي]
+    aliases: [ERC, ERCS, "Emirates Red Crescent Society", "Emirates Red Crescent Authority", الهلال الأحمر الإماراتي]
     kind: humanitarian
     weight: very-high
   - name: Khalifa bin Zayed Foundation
@@ -76,7 +76,7 @@ uae_entities:
     kind: foundation
     weight: very-high
   - name: Erth Zayed Philanthropies
-    aliases: [Erth Zayed, إرث زايد]
+    aliases: [Erth Zayed, EZP, "Erth Zayed Phil.", إرث زايد, ارث زايد]
     kind: foundation
     weight: very-high
   - name: Mohammed bin Rashid Al Maktoum Global Initiatives

@@ -83,11 +83,14 @@ sources:
 
   - id: erth_zayed
     name: Erth Zayed Philanthropies
-    # Entity confirmed by Ary. URL TBD — leave disabled until Ary pastes the
-    # official news/press page; the ingestor will skip cleanly while disabled.
+    # https://erthzayed.ae/ is currently a splash page only — logo + copyright +
+    # a privacy-policy link, no news section, no press releases. Verified
+    # 2026-05-12. The real Erth Zayed signal will reach Dalila via mentions in
+    # other sources (entities.yaml has the aliases). Re-enable as a scrape
+    # source if/when the entity publishes a public news/press URL.
     kind: scrape
-    url: ""
-    selector: "article, .news-item"
+    url: https://erthzayed.ae/
+    selector: "article, .news-item, .post"
     quality: 5
     tags: [uae, entity, erth-zayed]
     enabled: false
