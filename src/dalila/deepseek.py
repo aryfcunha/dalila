@@ -49,13 +49,18 @@ from dalila.models import Classification
 
 log = logging.getLogger(__name__)
 
-DEEPSEEK_CHAT = "deepseek-chat"
+# DeepSeek's current naming (as of 2026):
+#   deepseek-v4-flash  — fast, cheap (the equivalent of "Haiku" tier). What we want for backfill.
+#   deepseek-chat      — historic alias; the server routes this to v4-flash anyway.
+#   deepseek-reasoner  — slower, more expensive (the R1 line). Overkill for classification.
+DEEPSEEK_FLASH = "deepseek-v4-flash"
+DEEPSEEK_CHAT = "deepseek-chat"       # kept as a back-compat alias; not used by default
 DEEPSEEK_REASONER = "deepseek-reasoner"
 
 _API_URL = "https://api.deepseek.com/chat/completions"
 
 
-def classify_batch(items: list[dict], *, model: str = DEEPSEEK_CHAT) -> list[Classification]:
+def classify_batch(items: list[dict], *, model: str = DEEPSEEK_FLASH) -> list[Classification]:
     """Classify N items in ONE DeepSeek API call. Signature-compatible with
     `classifier.classify_batch` so it's a drop-in replacement.
 
@@ -145,12 +150,22 @@ def _call_chat(
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             raw = resp.read().decode("utf-8", errors="replace")
         payload = json.loads(raw)
+        # If DeepSeek returns an error payload (e.g. insufficient balance,
+        # bad model name), it still comes back HTTP 200 with shape
+        # `{"error": {"message": "...", "code": "..."}}`. Surface that instead
+        # of the cryptic "no choices" message we used to log.
+        if isinstance(payload, dict) and isinstance(payload.get("error"), dict):
+            err_obj = payload["error"]
+            error = f"deepseek error: {err_obj.get('message') or err_obj}"
+            raise LLMError(error)
         choices = payload.get("choices") or []
         if not choices:
-            raise LLMError(f"deepseek: no choices in response: {raw[:300]}")
+            error = f"deepseek: no choices in response: {raw[:300]}"
+            raise LLMError(error)
         text = (choices[0].get("message") or {}).get("content") or ""
         if not text.strip():
-            raise LLMError("deepseek: empty content in response")
+            error = "deepseek: empty content in response"
+            raise LLMError(error)
         success = True
     except urllib.error.HTTPError as exc:
         body_text = ""
