@@ -234,8 +234,13 @@ BACKFILL_SOURCES: dict[str, dict] = {
     },
     "the_national": {
         "name": "The National",
-        # Arc Publishing exposes a sitemap-index per year/month.
-        "index_url": "https://www.thenationalnews.com/arc/outboundfeeds/sitemap-index/",
+        # Arc Publishing exposes a sitemap-index — `?outputType=xml` is REQUIRED;
+        # without it the server returns the HTML site shell, which fails XML
+        # parsing and yields 0 items. Verified against robots.txt 2026-05-13.
+        # The index is paginated by offset (?from=0,100,200…) up to ~10000;
+        # lastmod on each child equals "now" so we can't filter by date —
+        # we walk all children until max_per_source is hit.
+        "index_url": "https://www.thenationalnews.com/arc/outboundfeeds/sitemap-index/?outputType=xml",
         "tags": ["uae", "press"],
         "fetch_body": True,
     },

@@ -17,6 +17,7 @@ from __future__ import annotations
 import csv
 import io
 import logging
+import sys
 import zipfile
 from datetime import date, datetime, time as dtime, timedelta, timezone
 from typing import Iterator
@@ -26,6 +27,14 @@ import httpx
 from dalila.models import RawItem
 
 log = logging.getLogger(__name__)
+
+# GDELT GKG rows have THEMES / ORGS / PERSONS columns that can easily exceed
+# Python's default csv field cap (131072 chars). Raise it to ~10MB once at
+# import time; a single GKG zip is <10MB total, so this is a generous ceiling.
+try:
+    csv.field_size_limit(10_000_000)
+except OverflowError:
+    csv.field_size_limit(sys.maxsize // 2)
 
 LASTUPDATE_URL = "http://data.gdeltproject.org/gdeltv2/lastupdate.txt"
 
@@ -76,7 +85,16 @@ def fetch(src: dict) -> list[RawItem]:
     # V2LOCATIONS (col 9), V2PERSONS (col 11), V2ORGANIZATIONS (col 13), V2.1EXTRASXML for title
     items: list[RawItem] = []
     reader = csv.reader(io.StringIO(text), delimiter="\t", quoting=csv.QUOTE_NONE)
-    rows = list(reader)
+    rows: list[list[str]] = []
+    while True:
+        try:
+            row = next(reader)
+        except StopIteration:
+            break
+        except (csv.Error, Exception) as exc:
+            log.debug("gdelt: skipping bad CSV row: %s", exc)
+            continue
+        rows.append(row)
     # Sample most recent (rows are chronological — take last N)
     for row in rows[-GDELT_MAX_ITEMS_PER_POLL:]:
         if len(row) < 14:
@@ -156,7 +174,18 @@ def _parse_slice(zip_bytes: bytes, source_id: str, *, cap: int) -> list[RawItem]
         return []
     items: list[RawItem] = []
     reader = csv.reader(io.StringIO(text), delimiter="\t", quoting=csv.QUOTE_NONE)
-    rows = list(reader)
+    # Iterate row-by-row inside try so one oversized field doesn't lose the
+    # whole slice. The 10MB field-size ceiling already covers normal rows.
+    rows: list[list[str]] = []
+    while True:
+        try:
+            row = next(reader)
+        except StopIteration:
+            break
+        except (csv.Error, Exception) as exc:
+            log.debug("gdelt: skipping bad CSV row: %s", exc)
+            continue
+        rows.append(row)
     for row in rows[-cap:]:
         if len(row) < 14:
             continue
