@@ -257,7 +257,7 @@ def _cmd_check() -> int:
     print(f"Digest time:        {cfg.digest_time}")
     print(f"Ingest interval:    every {cfg.ingest_interval_minutes} min")
     print(f"Telegram token:     {'set' if cfg.telegram_bot_token else 'MISSING — bot will not start'}")
-    print(f"ACLED creds:        {'set' if (cfg.acled_api_key and cfg.acled_email) else 'unset (ACLED ingestion skipped)'}")
+    print(f"ACLED creds:        {'set (oauth)' if (cfg.acled_username and cfg.acled_password) else 'unset (ACLED ingestion skipped — set ACLED_USERNAME + ACLED_PASSWORD)'}")
     ok, msg = check_cli_available()
     print(f"Claude CLI:         {'OK' if ok else 'FAIL'} — {msg}")
     print()

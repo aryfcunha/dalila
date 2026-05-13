@@ -1,16 +1,22 @@
 """ACLED ingestor — armed conflict events.
 
-Requires ACLED_API_KEY and ACLED_EMAIL. Without them, this ingestor silently
-returns []. Sign up free (non-commercial license) at
-https://acleddata.com/register-for-api-access/.
+ACLED migrated to OAuth 2.0 in 2026. The old `key=` + `email=` query-param
+auth no longer works. Now:
 
-We pull events from the last 24 hours, filtered to a curated country set
-matching our priority_countries in entities.yaml.
+1. Register a myACLED account at https://acleddata.com/user/register
+2. Set ACLED_USERNAME (your registration email) + ACLED_PASSWORD in .env
+3. We POST those to https://acleddata.com/oauth/token to mint a 24h
+   `access_token`, cached in-process. The token is sent as a Bearer
+   header on every /api/acled/read call.
+
+Without creds, this ingestor silently returns []. We pull events from
+the last 24 hours, filtered to a curated priority country set.
 """
 
 from __future__ import annotations
 
 import logging
+import threading
 from datetime import date, datetime, timedelta, timezone
 from typing import Iterator
 
@@ -21,7 +27,61 @@ from dalila.models import RawItem
 
 log = logging.getLogger(__name__)
 
-ACLED_BASE = "https://api.acleddata.com/acled/read"
+# v2026: new base URL. Old api.acleddata.com host returns 404 / HTML now.
+ACLED_BASE = "https://acleddata.com/api/acled/read"
+ACLED_OAUTH_URL = "https://acleddata.com/oauth/token"
+
+# Token cache — class-level so live ingest (every 30 min) and backfill share it.
+_TOKEN_LOCK = threading.Lock()
+_token_cache: dict = {"access_token": None, "expires_at": None}
+
+
+def _get_access_token() -> str | None:
+    """Return a fresh OAuth Bearer token (cached for 24h - safety margin).
+
+    Returns None if creds are missing or the auth call fails. Callers should
+    fall back to "skip ACLED this pass" — never raise.
+    """
+    cfg = get_config()
+    if not cfg.acled_username or not cfg.acled_password:
+        return None
+    now = datetime.now(timezone.utc)
+    with _TOKEN_LOCK:
+        if _token_cache["access_token"] and _token_cache["expires_at"] and now < _token_cache["expires_at"]:
+            return _token_cache["access_token"]
+        try:
+            resp = httpx.post(
+                ACLED_OAUTH_URL,
+                data={
+                    "username": cfg.acled_username,
+                    "password": cfg.acled_password,
+                    "grant_type": "password",
+                    "client_id": "acled",
+                    "scope": "authenticated",
+                },
+                timeout=30,
+            )
+            resp.raise_for_status()
+            payload = resp.json()
+        except Exception as exc:
+            log.warning("ACLED oauth/token failed: %s", exc)
+            return None
+        tok = payload.get("access_token")
+        if not tok:
+            log.warning("ACLED oauth/token: no access_token in response: %s", str(payload)[:200])
+            return None
+        # ACLED returns expires_in (seconds). Default 24h; back off by 60s
+        # so we never present an expired token mid-request.
+        ttl = int(payload.get("expires_in") or 24 * 3600)
+        _token_cache["access_token"] = tok
+        _token_cache["expires_at"] = now + timedelta(seconds=max(ttl - 60, 60))
+        log.info("ACLED oauth/token: minted new token, expires in %ds", ttl)
+        return tok
+
+
+def _auth_headers() -> dict:
+    tok = _get_access_token()
+    return {"Authorization": f"Bearer {tok}"} if tok else {}
 
 # Country names ACLED uses — kept short for MVP, expand as needed
 PRIORITY_COUNTRIES = [
@@ -35,14 +95,17 @@ PRIORITY_COUNTRIES = [
 
 def fetch(src: dict) -> list[RawItem]:
     cfg = get_config()
-    if not cfg.acled_api_key or not cfg.acled_email:
-        log.info("ACLED skipped: ACLED_API_KEY or ACLED_EMAIL not set")
+    if not cfg.acled_username or not cfg.acled_password:
+        log.info("ACLED skipped: ACLED_USERNAME or ACLED_PASSWORD not set")
+        return []
+    headers = _auth_headers()
+    if not headers:
+        log.info("ACLED skipped: could not mint oauth token (check creds)")
         return []
 
     since = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
     params = {
-        "key": cfg.acled_api_key,
-        "email": cfg.acled_email,
+        "_format": "json",
         "event_date": f"{since}|{datetime.now(timezone.utc).strftime('%Y-%m-%d')}",
         "event_date_where": "BETWEEN",
         "country": "|".join(PRIORITY_COUNTRIES),
@@ -51,7 +114,7 @@ def fetch(src: dict) -> list[RawItem]:
     }
 
     try:
-        resp = httpx.get(ACLED_BASE, params=params, timeout=60)
+        resp = httpx.get(ACLED_BASE, params=params, headers=headers, timeout=60)
         resp.raise_for_status()
         payload = resp.json()
     except Exception as exc:
@@ -116,16 +179,19 @@ def iter_items_range(
     Same shape as `fetch()` but unbounded by the 24-hour window.
     """
     cfg = get_config()
-    if not cfg.acled_api_key or not cfg.acled_email:
-        log.warning("ACLED backfill skipped: ACLED_API_KEY or ACLED_EMAIL not set")
+    if not cfg.acled_username or not cfg.acled_password:
+        log.warning("ACLED backfill skipped: ACLED_USERNAME or ACLED_PASSWORD not set")
+        return
+    headers = _auth_headers()
+    if not headers:
+        log.warning("ACLED backfill skipped: could not mint oauth token (check creds)")
         return
     until = until or date.today()
     page = 1
     fetched = 0
     while True:
         params = {
-            "key": cfg.acled_api_key,
-            "email": cfg.acled_email,
+            "_format": "json",
             "event_date": f"{since.isoformat()}|{until.isoformat()}",
             "event_date_where": "BETWEEN",
             "country": "|".join(PRIORITY_COUNTRIES),
@@ -134,7 +200,9 @@ def iter_items_range(
             "page": page,
         }
         try:
-            resp = httpx.get(ACLED_BASE, params=params, timeout=90)
+            # Re-pull headers each request so an expired token gets refreshed
+            # mid-walk without forcing the caller to restart the backfill.
+            resp = httpx.get(ACLED_BASE, params=params, headers=_auth_headers(), timeout=90)
             resp.raise_for_status()
             payload = resp.json()
         except Exception as exc:

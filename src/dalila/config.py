@@ -23,8 +23,12 @@ class Config:
     ingest_interval_minutes: int
     telegram_bot_token: str | None
     claude_bin: str
-    acled_api_key: str | None
-    acled_email: str | None
+    # ACLED moved to OAuth in 2026 — username (email) + password get exchanged
+    # for a 24h Bearer token. Old ACLED_API_KEY env var kept for back-compat
+    # in `dalila check` but no longer used by the ingestor.
+    acled_username: str | None
+    acled_password: str | None
+    acled_api_key: str | None  # legacy, ignored — kept so existing .env files don't error
     iati_api_key: str | None
     daily_classifier_call_cap: int
     sources_path: Path
@@ -46,8 +50,11 @@ def get_config() -> Config:
         ingest_interval_minutes=int(os.getenv("DALILA_INGEST_INTERVAL_MINUTES", "30")),
         telegram_bot_token=os.getenv("TELEGRAM_BOT_TOKEN") or None,
         claude_bin=os.getenv("DALILA_CLAUDE_BIN") or "claude",
-        acled_api_key=os.getenv("ACLED_API_KEY") or None,
-        acled_email=os.getenv("ACLED_EMAIL") or None,
+        # ACLED v2026 OAuth: username = the email you registered with;
+        # password is your myACLED account password.
+        acled_username=(os.getenv("ACLED_USERNAME") or os.getenv("ACLED_EMAIL")) or None,
+        acled_password=os.getenv("ACLED_PASSWORD") or None,
+        acled_api_key=os.getenv("ACLED_API_KEY") or None,  # legacy, ignored
         iati_api_key=os.getenv("IATI_API_KEY") or None,
         daily_classifier_call_cap=int(os.getenv("DALILA_DAILY_CLASSIFIER_CALL_CAP", "2000")),
         sources_path=ROOT / "sources.yaml",
