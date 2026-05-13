@@ -164,6 +164,95 @@ def resolve_region(query: str) -> tuple[str, dict] | None:
 
 
 @lru_cache(maxsize=1)
+def load_countries() -> dict:
+    """Load countries.yaml.
+
+    Returns a dict:
+      {
+        "countries": {ISO2: {name, aliases, region}, ...},
+        "regions":   {slug: {label, countries: [ISO2, ...]}, ...},
+        "alias_index": {lowercase-alias: ISO2, ...},  # built from canonical names + aliases
+      }
+
+    `alias_index` is the lookup used by /country (Telegram) and any classifier
+    post-processing — pass a free-text country name through it to recover the
+    ISO-2 code. Missing file → returns empty stubs (system still works, just
+    no country features).
+    """
+    cfg = get_config()
+    path = cfg.root / "countries.yaml"
+    if not path.exists():
+        return {"countries": {}, "regions": {}, "alias_index": {}}
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    raw_countries: dict = data.get("countries", {}) or {}
+    regions: dict = data.get("regions", {}) or {}
+
+    # Coerce all keys to uppercase string ISO codes. Guards against YAML 1.1
+    # parsing bare 2-letter codes like NO/ON/YES/NULL as booleans/None.
+    countries: dict = {}
+    for k, v in raw_countries.items():
+        if not isinstance(v, dict):
+            continue
+        if isinstance(k, bool) or k is None:
+            # Skip if the key got lost to YAML 1.1 boolean coercion.
+            # The user should quote the key in countries.yaml (e.g. "NO":).
+            continue
+        countries[str(k).upper()] = v
+
+    # Annotate each country with its region slug (back-reference for fast lookup)
+    for slug, spec in regions.items():
+        for iso in (spec.get("countries") or []):
+            iso_u = str(iso).upper() if iso else ""
+            if iso_u in countries and isinstance(countries[iso_u], dict):
+                countries[iso_u]["region"] = slug
+
+    # Build alias index — lowercased name + every alias, mapping to ISO-2
+    alias_index: dict[str, str] = {}
+    for iso, spec in countries.items():
+        if not isinstance(spec, dict):
+            continue
+        name = (spec.get("name") or "").strip()
+        if name:
+            alias_index[name.lower()] = iso
+        for alias in (spec.get("aliases") or []):
+            a = str(alias).strip().lower()
+            if a:
+                alias_index[a] = iso
+        # The ISO code itself also resolves
+        alias_index[iso.lower()] = iso
+
+    return {"countries": countries, "regions": regions, "alias_index": alias_index}
+
+
+def resolve_country(query: str) -> str | None:
+    """Resolve a free-text country query to its canonical ISO-2 code.
+
+    Case-insensitive, punctuation-tolerant. Returns None on no match
+    or ambiguous match. Examples:
+      resolve_country("USA")              → "US"
+      resolve_country("united states")    → "US"
+      resolve_country("UAE")              → "AE"
+      resolve_country("DRC")              → "CD"
+      resolve_country("Cote d Ivoire")    → "CI"
+      resolve_country("xyz")              → None
+    """
+    if not query:
+        return None
+    cat = load_countries()
+    idx = cat["alias_index"]
+    q = query.strip().lower().strip(".,;:!?")
+    if q in idx:
+        return idx[q]
+    # Try normalising punctuation/whitespace
+    q_norm = " ".join(q.replace(".", " ").replace("-", " ").replace("'", " ").split())
+    if q_norm in idx:
+        return idx[q_norm]
+    # Substring fallback — only if exactly one alias contains the query
+    matches = {iso for alias, iso in idx.items() if q in alias}
+    return next(iter(matches)) if len(matches) == 1 else None
+
+
+@lru_cache(maxsize=1)
 def load_doctrine_topic_seeds() -> list[dict]:
     """Preferred doctrine topic vocabulary — see doctrine_topics.yaml.
 

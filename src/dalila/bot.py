@@ -44,6 +44,7 @@ def _help_text() -> str:
         "• `/commitments` — recent UAE financial commitments (pledges, MoUs, disbursements)\n"
         "• `/meetings` — recent UAE bilateral meetings, calls, and visits\n"
         "• `/region [name]` — items aggregated by region (per policy Ch 5)\n"
+        "• `/country <name>` — recent news mentioning a specific country (e.g. `/country Sudan`)\n"
         "• `link N` — get the source URL for item #N from the latest digest\n"
         "• `/help` — show this help\n\n"
         "Daily digest arrives ~06:30 GST. Multi-user: every chat that runs `/start` gets its own copy."
@@ -250,6 +251,77 @@ async def cmd_meetings(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         if topics:
             lines.append(f"  Topics: {', '.join(topics[:5])}")
         lines.append("")
+    await _send_long(update, "\n".join(lines))
+
+
+async def cmd_country(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Recent news mentioning a specific country.
+
+    Usage: `/country Sudan`, `/country USA`, `/country UAE`.
+
+    Resolves common aliases (UK, U.S., DRC, etc.) to a canonical ISO code,
+    then pulls items where the classifier tagged that country in
+    country_focus. Defaults to a 14-day window.
+    """
+    if not update.message:
+        return
+    from dalila.config import load_countries, resolve_country
+
+    query = " ".join(context.args).strip() if context.args else ""
+    if not query:
+        await update.message.reply_text(
+            "Usage: `/country <name>`. Examples:\n"
+            "  `/country Sudan`\n"
+            "  `/country USA`\n"
+            "  `/country UAE`\n"
+            "Aliases like USA, U.S., UK, DRC, KSA are recognised.",
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        return
+
+    iso = resolve_country(query)
+    if not iso:
+        await update.message.reply_text(
+            f"Couldn't resolve `{query}` to a country. Try the full name "
+            f"(e.g. `United States`) or the ISO-2 code (e.g. `US`).",
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        return
+
+    cat = load_countries()
+    spec = cat["countries"].get(iso, {})
+    canonical = spec.get("name") or iso
+    region_slug = spec.get("region") or ""
+    region_label = (cat["regions"].get(region_slug) or {}).get("label", "")
+
+    with db.connect() as conn:
+        items = db.items_for_country(conn, iso, since_hours=14*24, limit=20)
+        co = db.country_cooccurrence(conn, iso, since_hours=14*24)
+
+    if not items:
+        await update.message.reply_text(
+            f"No items mentioning *{canonical}* in the last 14 days.",
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        return
+
+    lines = [f"🌍 *{canonical}*" + (f"  ·  _{region_label}_" if region_label else "")]
+    lines.append(f"_{len(items)} item(s) in last 14 days_")
+    if co:
+        top_co = sorted(co.items(), key=lambda kv: kv[1], reverse=True)[:6]
+        co_str = ", ".join(
+            f"{cat['countries'].get(c, {}).get('name', c)} ({n})"
+            for c, n in top_co
+        )
+        lines.append(f"_Often co-mentioned with: {co_str}_")
+    lines.append("")
+    for i, it in enumerate(items[:15], start=1):
+        when = (it.get("published_at") or it.get("ingested_at") or "")[:10]
+        title = (it.get("title") or "").strip()
+        if len(title) > 140:
+            title = title[:137] + "…"
+        lines.append(f"{i}. {title}  _({when} · {it.get('source','')})_")
+
     await _send_long(update, "\n".join(lines))
 
 
@@ -593,6 +665,7 @@ def build_application() -> Application:
     app.add_handler(CommandHandler("commitments", cmd_commitments))
     app.add_handler(CommandHandler("meetings", cmd_meetings))
     app.add_handler(CommandHandler("region", cmd_region))
+    app.add_handler(CommandHandler("country", cmd_country))
     app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
     return app

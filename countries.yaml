@@ -1,0 +1,320 @@
+# Dalila — canonical country catalogue.
+#
+# Used by:
+#   * the classifier (country_focus normalisation)
+#   * the /country Telegram command (alias resolution)
+#   * the country view page (region grouping + heatmap)
+#
+# Codes are ISO-3166-1 alpha-2. Aliases capture common name variants we see
+# in real news (e.g. "USA", "Türkiye", "DRC"). Add aliases freely as you
+# spot mis-attributions; do not change the canonical `name` or `region`.
+#
+# Regions follow the user's 15-region taxonomy. Some borderline cases:
+#   * Egypt, Libya, Tunisia, Algeria, Morocco, Mauritania → North Africa
+#   * Sudan, South Sudan → Eastern Africa (UN groups Sudan in N Africa
+#     but Dalila treats both as part of the Horn/Sahel humanitarian theatre)
+#   * Turkey → Middle East (per ODA practice; UN puts it in W Asia)
+#   * Cyprus → Middle East
+#   * Russia → Eastern Europe (geopolitically; UN puts it in E Europe + N Asia)
+#   * Iran → Middle East (not Central Asia)
+#   * Afghanistan → South Asia (not Central Asia)
+
+regions:
+  north-america:
+    label: North America
+    countries: [US, CA]
+  central-america:
+    label: Central America
+    countries: [MX, GT, BZ, HN, SV, NI, CR, PA, CU, JM, HT, DO, BS, TT]
+  south-america:
+    label: South America
+    countries: [CO, VE, GY, SR, EC, PE, BR, BO, PY, CL, AR, UY]
+  western-europe:
+    label: Western Europe
+    countries: [GB, IE, FR, BE, NL, LU, DE, AT, CH, IT, ES, PT, GR, MT, IS, NO, SE, FI, DK]
+  eastern-europe:
+    label: Eastern Europe
+    countries: [PL, CZ, SK, HU, RO, BG, RS, HR, SI, BA, MK, AL, ME, XK, MD, UA, BY, RU, EE, LV, LT]
+  north-africa:
+    label: North Africa
+    countries: [EG, LY, TN, DZ, MA, MR]
+  eastern-africa:
+    label: Eastern Africa
+    countries: [SD, SS, ET, ER, DJ, SO, KE, UG, RW, BI, TZ, MW, MZ, ZW, ZM, MG, KM, SC, MU]
+  western-africa:
+    label: Western Africa
+    countries: [ML, BF, NE, TD, NG, SN, GM, GW, GN, SL, LR, CI, GH, TG, BJ, CV, CF, CM, CG, CD, GA, GQ, ST]
+  southern-africa:
+    label: Southern Africa
+    countries: [ZA, NA, BW, LS, SZ, AO]
+  middle-east:
+    label: Middle East
+    countries: [SA, AE, KW, BH, QA, OM, YE, JO, LB, SY, IQ, IR, IL, PS, TR, CY]
+  south-asia:
+    label: South Asia
+    countries: [IN, PK, BD, NP, BT, LK, MV, AF]
+  central-asia:
+    label: Central Asia
+    countries: [KZ, KG, TJ, TM, UZ]
+  north-east-asia:
+    label: North East Asia
+    countries: [CN, MN, KP, KR, JP, TW, HK, MO]
+  south-east-asia:
+    label: South East Asia
+    countries: [TH, VN, LA, KH, MM, ID, MY, SG, BN, PH, TL]
+  asia-pacific:
+    label: Asia-Pacific
+    countries: [AU, NZ, PG, FJ, SB, VU, WS, TO, KI, MH, FM, PW, NR, TV]
+
+# canonical name + alias variants per country
+# Aliases are matched case-insensitively, with word boundaries
+countries:
+  # =========================================================================
+  # North America
+  # =========================================================================
+  US:
+    name: United States
+    aliases: [USA, U.S.A., U.S., America, United States of America]
+  CA:
+    name: Canada
+    aliases: []
+
+  # =========================================================================
+  # Central America & Caribbean
+  # =========================================================================
+  MX: {name: Mexico, aliases: []}
+  GT: {name: Guatemala, aliases: []}
+  BZ: {name: Belize, aliases: []}
+  HN: {name: Honduras, aliases: []}
+  SV: {name: El Salvador, aliases: []}
+  NI: {name: Nicaragua, aliases: []}
+  CR: {name: Costa Rica, aliases: []}
+  PA: {name: Panama, aliases: []}
+  CU: {name: Cuba, aliases: []}
+  JM: {name: Jamaica, aliases: []}
+  HT: {name: Haiti, aliases: []}
+  DO: {name: Dominican Republic, aliases: [DR, Dominican Rep.]}
+  BS: {name: Bahamas, aliases: [The Bahamas]}
+  TT: {name: Trinidad and Tobago, aliases: [Trinidad & Tobago]}
+
+  # =========================================================================
+  # South America
+  # =========================================================================
+  CO: {name: Colombia, aliases: []}
+  VE: {name: Venezuela, aliases: [Bolivarian Republic of Venezuela]}
+  GY: {name: Guyana, aliases: []}
+  SR: {name: Suriname, aliases: []}
+  EC: {name: Ecuador, aliases: []}
+  PE: {name: Peru, aliases: []}
+  BR: {name: Brazil, aliases: []}
+  BO: {name: Bolivia, aliases: [Plurinational State of Bolivia]}
+  PY: {name: Paraguay, aliases: []}
+  CL: {name: Chile, aliases: []}
+  AR: {name: Argentina, aliases: []}
+  UY: {name: Uruguay, aliases: []}
+
+  # =========================================================================
+  # Western Europe
+  # =========================================================================
+  GB:
+    name: United Kingdom
+    aliases: [UK, U.K., Britain, Great Britain, England]
+  IE: {name: Ireland, aliases: [Republic of Ireland]}
+  FR: {name: France, aliases: []}
+  BE: {name: Belgium, aliases: []}
+  NL: {name: Netherlands, aliases: [The Netherlands, Holland]}
+  LU: {name: Luxembourg, aliases: []}
+  DE: {name: Germany, aliases: [Federal Republic of Germany]}
+  AT: {name: Austria, aliases: []}
+  CH: {name: Switzerland, aliases: []}
+  IT: {name: Italy, aliases: []}
+  ES: {name: Spain, aliases: []}
+  PT: {name: Portugal, aliases: []}
+  GR: {name: Greece, aliases: [Hellenic Republic]}
+  MT: {name: Malta, aliases: []}
+  IS: {name: Iceland, aliases: []}
+  "NO": {name: Norway, aliases: []}      # quoted: YAML 1.1 parses bare NO as boolean False
+  SE: {name: Sweden, aliases: []}
+  FI: {name: Finland, aliases: []}
+  DK: {name: Denmark, aliases: []}
+
+  # =========================================================================
+  # Eastern Europe
+  # =========================================================================
+  PL: {name: Poland, aliases: []}
+  CZ: {name: Czech Republic, aliases: [Czechia]}
+  SK: {name: Slovakia, aliases: []}
+  HU: {name: Hungary, aliases: []}
+  RO: {name: Romania, aliases: []}
+  BG: {name: Bulgaria, aliases: []}
+  RS: {name: Serbia, aliases: []}
+  HR: {name: Croatia, aliases: []}
+  SI: {name: Slovenia, aliases: []}
+  BA: {name: Bosnia and Herzegovina, aliases: [Bosnia, Bosnia & Herzegovina]}
+  MK: {name: North Macedonia, aliases: [Macedonia, FYROM, Former Yugoslav Republic of Macedonia]}
+  AL: {name: Albania, aliases: []}
+  ME: {name: Montenegro, aliases: []}
+  XK: {name: Kosovo, aliases: []}
+  MD: {name: Moldova, aliases: [Republic of Moldova]}
+  UA: {name: Ukraine, aliases: []}
+  BY: {name: Belarus, aliases: []}
+  RU: {name: Russia, aliases: [Russian Federation, USSR]}
+  EE: {name: Estonia, aliases: []}
+  LV: {name: Latvia, aliases: []}
+  LT: {name: Lithuania, aliases: []}
+
+  # =========================================================================
+  # North Africa
+  # =========================================================================
+  EG: {name: Egypt, aliases: [Arab Republic of Egypt]}
+  LY: {name: Libya, aliases: []}
+  TN: {name: Tunisia, aliases: []}
+  DZ: {name: Algeria, aliases: []}
+  MA: {name: Morocco, aliases: [Kingdom of Morocco]}
+  MR: {name: Mauritania, aliases: []}
+
+  # =========================================================================
+  # Eastern Africa
+  # =========================================================================
+  SD: {name: Sudan, aliases: [Republic of the Sudan, North Sudan]}
+  SS: {name: South Sudan, aliases: [Republic of South Sudan]}
+  ET: {name: Ethiopia, aliases: [Federal Democratic Republic of Ethiopia]}
+  ER: {name: Eritrea, aliases: []}
+  DJ: {name: Djibouti, aliases: []}
+  SO: {name: Somalia, aliases: [Federal Republic of Somalia]}
+  KE: {name: Kenya, aliases: []}
+  UG: {name: Uganda, aliases: []}
+  RW: {name: Rwanda, aliases: []}
+  BI: {name: Burundi, aliases: []}
+  TZ: {name: Tanzania, aliases: [United Republic of Tanzania]}
+  MW: {name: Malawi, aliases: []}
+  MZ: {name: Mozambique, aliases: []}
+  ZW: {name: Zimbabwe, aliases: []}
+  ZM: {name: Zambia, aliases: []}
+  MG: {name: Madagascar, aliases: []}
+  KM: {name: Comoros, aliases: [The Comoros]}
+  SC: {name: Seychelles, aliases: []}
+  MU: {name: Mauritius, aliases: []}
+
+  # =========================================================================
+  # Western Africa (incl. Central Africa for our purposes)
+  # =========================================================================
+  ML: {name: Mali, aliases: []}
+  BF: {name: Burkina Faso, aliases: []}
+  NE: {name: Niger, aliases: []}
+  TD: {name: Chad, aliases: []}
+  NG: {name: Nigeria, aliases: [Federal Republic of Nigeria]}
+  SN: {name: Senegal, aliases: []}
+  GM: {name: Gambia, aliases: [The Gambia]}
+  GW: {name: Guinea-Bissau, aliases: [Guinea Bissau]}
+  GN: {name: Guinea, aliases: [Republic of Guinea]}
+  SL: {name: Sierra Leone, aliases: []}
+  LR: {name: Liberia, aliases: []}
+  CI: {name: Côte d'Ivoire, aliases: [Cote d'Ivoire, Ivory Coast]}
+  GH: {name: Ghana, aliases: []}
+  TG: {name: Togo, aliases: []}
+  BJ: {name: Benin, aliases: []}
+  CV: {name: Cabo Verde, aliases: [Cape Verde]}
+  CF: {name: Central African Republic, aliases: [CAR]}
+  CM: {name: Cameroon, aliases: []}
+  CG: {name: Republic of the Congo, aliases: [Congo-Brazzaville, Congo Republic, ROC]}
+  CD: {name: Democratic Republic of the Congo, aliases: [DRC, DR Congo, Congo-Kinshasa, Zaire]}
+  GA: {name: Gabon, aliases: []}
+  GQ: {name: Equatorial Guinea, aliases: []}
+  ST: {name: São Tomé and Príncipe, aliases: [Sao Tome and Principe, Sao Tome]}
+
+  # =========================================================================
+  # Southern Africa
+  # =========================================================================
+  ZA: {name: South Africa, aliases: [Republic of South Africa, RSA]}
+  NA: {name: Namibia, aliases: []}
+  BW: {name: Botswana, aliases: []}
+  LS: {name: Lesotho, aliases: []}
+  SZ: {name: Eswatini, aliases: [Swaziland]}
+  AO: {name: Angola, aliases: []}
+
+  # =========================================================================
+  # Middle East
+  # =========================================================================
+  SA: {name: Saudi Arabia, aliases: [KSA, Kingdom of Saudi Arabia]}
+  AE: {name: United Arab Emirates, aliases: [UAE, U.A.E., Emirates, the Emirates]}
+  KW: {name: Kuwait, aliases: []}
+  BH: {name: Bahrain, aliases: []}
+  QA: {name: Qatar, aliases: []}
+  OM: {name: Oman, aliases: [Sultanate of Oman]}
+  YE: {name: Yemen, aliases: [Republic of Yemen]}
+  JO: {name: Jordan, aliases: [Hashemite Kingdom of Jordan]}
+  LB: {name: Lebanon, aliases: []}
+  SY: {name: Syria, aliases: [Syrian Arab Republic]}
+  IQ: {name: Iraq, aliases: [Republic of Iraq]}
+  IR: {name: Iran, aliases: [Islamic Republic of Iran, Persia]}
+  IL: {name: Israel, aliases: [State of Israel]}
+  PS: {name: Palestine, aliases: [oPt, Occupied Palestinian Territories, Palestinian Territories, State of Palestine, West Bank, Gaza, Gaza Strip]}
+  TR: {name: Türkiye, aliases: [Turkey, Republic of Türkiye]}
+  CY: {name: Cyprus, aliases: []}
+
+  # =========================================================================
+  # South Asia
+  # =========================================================================
+  IN: {name: India, aliases: [Republic of India]}
+  PK: {name: Pakistan, aliases: [Islamic Republic of Pakistan]}
+  BD: {name: Bangladesh, aliases: []}
+  NP: {name: Nepal, aliases: []}
+  BT: {name: Bhutan, aliases: []}
+  LK: {name: Sri Lanka, aliases: [Ceylon]}
+  MV: {name: Maldives, aliases: [The Maldives]}
+  AF: {name: Afghanistan, aliases: [Islamic Republic of Afghanistan, Islamic Emirate of Afghanistan]}
+
+  # =========================================================================
+  # Central Asia
+  # =========================================================================
+  KZ: {name: Kazakhstan, aliases: []}
+  KG: {name: Kyrgyzstan, aliases: [Kyrgyz Republic]}
+  TJ: {name: Tajikistan, aliases: []}
+  TM: {name: Turkmenistan, aliases: []}
+  UZ: {name: Uzbekistan, aliases: []}
+
+  # =========================================================================
+  # North East Asia
+  # =========================================================================
+  CN: {name: China, aliases: [People's Republic of China, PRC, Mainland China]}
+  MN: {name: Mongolia, aliases: []}
+  KP: {name: North Korea, aliases: [DPRK, Democratic People's Republic of Korea]}
+  KR: {name: South Korea, aliases: [ROK, Republic of Korea]}
+  JP: {name: Japan, aliases: []}
+  TW: {name: Taiwan, aliases: [Republic of China, ROC, Chinese Taipei]}
+  HK: {name: Hong Kong, aliases: [Hong Kong SAR]}
+  MO: {name: Macao, aliases: [Macau]}
+
+  # =========================================================================
+  # South East Asia
+  # =========================================================================
+  TH: {name: Thailand, aliases: [Kingdom of Thailand]}
+  VN: {name: Vietnam, aliases: [Viet Nam, Socialist Republic of Vietnam]}
+  LA: {name: Laos, aliases: [Lao PDR, Lao People's Democratic Republic]}
+  KH: {name: Cambodia, aliases: [Kingdom of Cambodia]}
+  MM: {name: Myanmar, aliases: [Burma]}
+  ID: {name: Indonesia, aliases: [Republic of Indonesia]}
+  MY: {name: Malaysia, aliases: []}
+  SG: {name: Singapore, aliases: []}
+  BN: {name: Brunei, aliases: [Brunei Darussalam]}
+  PH: {name: Philippines, aliases: [Republic of the Philippines]}
+  TL: {name: Timor-Leste, aliases: [East Timor]}
+
+  # =========================================================================
+  # Asia-Pacific
+  # =========================================================================
+  AU: {name: Australia, aliases: []}
+  NZ: {name: New Zealand, aliases: [Aotearoa]}
+  PG: {name: Papua New Guinea, aliases: [PNG]}
+  FJ: {name: Fiji, aliases: []}
+  SB: {name: Solomon Islands, aliases: []}
+  VU: {name: Vanuatu, aliases: []}
+  WS: {name: Samoa, aliases: []}
+  TO: {name: Tonga, aliases: []}
+  KI: {name: Kiribati, aliases: []}
+  MH: {name: Marshall Islands, aliases: []}
+  FM: {name: Micronesia, aliases: [Federated States of Micronesia, FSM]}
+  PW: {name: Palau, aliases: []}
+  NR: {name: Nauru, aliases: []}
+  TV: {name: Tuvalu, aliases: []}

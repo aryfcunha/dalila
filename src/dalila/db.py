@@ -285,6 +285,11 @@ def items_for_digest(
         exclude_clause = f" AND i.id NOT IN ({placeholders}) "
         params.extend(int(x) for x in exclude_ids)
 
+    # The window is anchored on ingested_at — when the news actually arrived
+    # — NOT on classified_at. classified_at is when we processed it. For a
+    # "morning brief for May 12" the relevant question is "what news did we
+    # have by then?", and re-classification (which resets classified_at) must
+    # not change which day a story belongs to.
     rows = conn.execute(
         f"""
         SELECT i.id, i.title, i.url, i.body, i.one_line_summary, i.category,
@@ -294,8 +299,8 @@ def items_for_digest(
         FROM items i
         JOIN sources s ON s.id = i.source_id
         WHERE i.classified_at IS NOT NULL
-          AND i.classified_at >= ?
-          AND i.classified_at <= ?
+          AND i.ingested_at >= ?
+          AND i.ingested_at <= ?
           AND COALESCE(i.uae_relevance, 0) >= ?
           AND i.category != 'other'
           AND TRIM(COALESCE(i.title, '')) != ''
