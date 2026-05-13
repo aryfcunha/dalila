@@ -439,18 +439,25 @@ def _doc(title: str, body: str) -> str:
     )
 
 
-def _masthead(*, on_page: str, tag: str = "DAILY BRIEF") -> str:
-    """on_page: 'home' | 'digest' | 'archive' | 'about'."""
+def _masthead(*, on_page: str, tag: str = "DAILY BRIEF", link_prefix: str = "") -> str:
+    """on_page: 'home' | 'digest' | 'archive' | 'about'.
+
+    `link_prefix` is the relative path back to the site root. `""` for pages
+    at root (index, archive, about); `"../"` for pages one level deep
+    (digests/YYYY-MM-DD.html). Keeps links working regardless of whether the
+    site is served from the domain root or a project path like `/dalila/`.
+    """
     def _attr(p: str) -> str:
         return ' aria-current="page"' if on_page == p else ""
+    home_href = link_prefix or "./"
     return f"""
 <header class="masthead">
-  <h1 class="masthead-title"><a href="/">Dalila<span class="ar">دليلة</span></a></h1>
+  <h1 class="masthead-title"><a href="{home_href}">Dalila<span class="ar">دليلة</span></a></h1>
   <div class="masthead-tag">{html.escape(tag)}</div>
   <nav class="masthead-nav">
-    <a href="/"{_attr("home")}>Home</a>
-    <a href="/archive.html"{_attr("archive")}>Archive</a>
-    <a href="/about.html"{_attr("about")}>About</a>
+    <a href="{home_href}"{_attr("home")}>Home</a>
+    <a href="{link_prefix}archive.html"{_attr("archive")}>Archive</a>
+    <a href="{link_prefix}about.html"{_attr("about")}>About</a>
   </nav>
 </header>
 """
@@ -460,7 +467,7 @@ def _footer(*, contact_email: str, telegram_bot: str | None) -> str:
     parts = [f'<span>© {datetime.now().year} Dalila — daily intelligence brief</span>']
     if telegram_bot:
         parts.append(f'<span><a href="https://t.me/{telegram_bot}">Subscribe on Telegram</a></span>')
-    parts.append(f'<span><a href="mailto:{contact_email}">Suggest a source</a></span>')
+    parts.append(f'<span><a href="mailto:{contact_email}">Submit a suggestion</a></span>')
     return '<footer class="foot">' + "".join(parts) + '</footer>'
 
 
@@ -476,6 +483,7 @@ def render_digest(
     contact_email: str = "dalila.dev.digest@gmail.com",
     telegram_bot: str | None = "dalila_development_digest_bot",
     on_page: str = "digest",
+    link_prefix: str = "../",
 ) -> str:
     cfg = get_config()
     tz = pytz.timezone(cfg.timezone)
@@ -494,7 +502,7 @@ def render_digest(
         by_cat.setdefault(it.get("category") or "other", []).append(it)
 
     body: list[str] = []
-    body.append(_masthead(on_page=on_page))
+    body.append(_masthead(on_page=on_page, link_prefix=link_prefix))
     body.append(_ticker_strip(date_label, time_label, len(numbered), total_ingested))
     body.append(_top_block(top3))
     for cat_key, label in SECTIONS:
@@ -615,7 +623,10 @@ def render_index(
     contact_email: str = "dalila.dev.digest@gmail.com",
     telegram_bot: str | None = "dalila_development_digest_bot",
 ) -> str:
-    """Home page = latest digest, full content, with nav marking Home as current."""
+    """Home page = latest digest, full content, with nav marking Home as current.
+
+    Always at the site root, so link_prefix='' (links resolve relative to /).
+    """
     return render_digest(
         latest_items,
         when=when,
@@ -623,6 +634,7 @@ def render_index(
         contact_email=contact_email,
         telegram_bot=telegram_bot,
         on_page="home",
+        link_prefix="",
     )
 
 
@@ -641,7 +653,8 @@ def render_archive(
     `briefs` is a list of dicts: { date_label, slug, preview }, newest first.
     """
     body: list[str] = []
-    body.append(_masthead(on_page="archive", tag="ARCHIVE"))
+    # archive.html sits at the site root → no path prefix needed
+    body.append(_masthead(on_page="archive", tag="ARCHIVE", link_prefix=""))
 
     if not briefs:
         body.append(
@@ -721,7 +734,8 @@ def render_about(
     sorted_buckets = [k for k, _ in bucket_order if k in grouped]
 
     body: list[str] = []
-    body.append(_masthead(on_page="about", tag="ABOUT"))
+    # about.html sits at the site root → no path prefix needed
+    body.append(_masthead(on_page="about", tag="ABOUT", link_prefix=""))
     body.append('<div class="about">')
     body.append(
         '<p style="font-size:17px;color:var(--type);margin-top:18px;">'
