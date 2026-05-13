@@ -2227,16 +2227,7 @@ def render_methodology(
     body: list[str] = []
     body.append(_masthead(on_page="methodology", tag="METHODOLOGY", link_prefix=""))
     body.append('<div class="methodology">')
-    body.append(
-        '<p class="kicker" style="font-style:italic;color:var(--type-dim);'
-        'max-width:64ch;margin:14px 0 24px;font-size:15px;line-height:1.55;">'
-        'Every numeric threshold, sampling rate, batch size, and model choice '
-        'in this brief encodes a decision. This page is the source of truth '
-        'for those decisions and the empirical evidence behind them. '
-        'It is generated directly from <code>METHODOLOGY.md</code> in the '
-        'repository — when a knob is tuned, the rationale here is updated '
-        'in the same commit.</p>'
-    )
+    # No kicker — the document opens with its own framing.
     body.append(body_md)
     body.append('</div>')
     body.append(_footer(contact_email=contact_email, telegram_bot=telegram_bot))
@@ -2255,6 +2246,10 @@ def _md_to_html(md: str) -> str:
     for what is ~80 lines of recognisable regex.
     """
     import re
+
+    # Strip HTML comments (used at the top of METHODOLOGY.md as editorial
+    # guidance for future maintainers — must not leak into the rendered page).
+    md = re.sub(r"<!--.*?-->", "", md, flags=re.DOTALL)
 
     lines = md.split("\n")
     out: list[str] = []
