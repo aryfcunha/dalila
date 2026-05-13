@@ -60,6 +60,11 @@ def main(argv: list[str] | None = None) -> int:
                         help="LLM backend for the classify pass when --classify-first is set (default 'claude'). Digests themselves always use Claude.")
     p_back.add_argument("--classify-limit", type=int, default=2000,
                         help="Max items to classify in the pre-pass when --classify-first is set (default 2000).")
+    p_bf = sub.add_parser("backfill", help="Historical archive backfill via XML sitemaps + GDELT/ACLED date ranges (does NOT classify — run `dalila classify` after)")
+    p_bf.add_argument("--since", required=True, help="ISO date YYYY-MM-DD (inclusive)")
+    p_bf.add_argument("--until", default=None, help="ISO date YYYY-MM-DD (inclusive; default today)")
+    p_bf.add_argument("--source", default=None,
+                       help="Single source id: wam_en, the_national, gulf_news, gdelt_v2, or acled. Default: all five.")
     p_doctrine = sub.add_parser("doctrine", help="Run the doctrine extraction pass over pending classified items")
     p_doctrine.add_argument("--limit", type=int, default=20, help="Max items to process this run")
     sub.add_parser("verify-sources", help="Probe every enabled source and report fetched count + sample title")
@@ -169,6 +174,25 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Backfilled {len(results)} brief(s):")
         for r in results:
             print(f"  · #{r['digest_id']:>3d}  {r['date_label']:>25s}  {r['char_count']:>5d} chars")
+        return 0
+
+    if args.cmd == "backfill":
+        from datetime import date
+        from dalila.pipeline import run_backfill
+        db.init_db()
+        try:
+            since = date.fromisoformat(args.since)
+            until = date.fromisoformat(args.until) if args.until else None
+        except ValueError as exc:
+            print(f"ERROR: bad date format: {exc}", file=sys.stderr)
+            return 2
+        stats = run_backfill(since=since, until=until, source=args.source)
+        print(f"\nBackfill complete (since={since}, until={until or 'today'}):")
+        for sid, s in stats.items():
+            print(f"  {sid:20s}  fetched={s['fetched']:5d}  new={s['new']:5d}  "
+                  f"passed={s['prefilter_passed']:5d}  err={s['error'] or '-'}")
+        print("\nNext step: classify the new items, e.g.")
+        print("  dalila classify --backend deepseek --limit 5000")
         return 0
 
     if args.cmd == "doctrine":

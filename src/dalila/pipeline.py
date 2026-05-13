@@ -241,6 +241,118 @@ def run_classify(limit: int = 100, batch_size: int = 25, *, backend: str = "clau
     }
 
 
+def run_backfill(
+    since: "date",
+    until: "date | None" = None,
+    *,
+    source: str | None = None,
+) -> dict:
+    """Historical backfill from the dated archives of one or all backfill sources.
+
+    Sources:
+      - Sitemap-based (wam_en, the_national, gulf_news) — walks XML sitemaps,
+        fetches each article HTML for title + meta-description.
+      - gdelt_v2 — walks 15-min GKG slices (sampled hourly by default).
+      - acled — paginated event-date range query.
+
+    Items are inserted via `db.insert_item` so dedup (url_hash UNIQUE) is
+    automatic — re-running a backfill is safe. Prefilter is honored exactly
+    like the live ingest path (high-signal source tags auto-pass).
+    """
+    from datetime import date as _date
+    from dalila.ingestors import sitemap as sitemap_mod
+    from dalila.ingestors import gdelt as gdelt_mod
+    from dalila.ingestors import acled as acled_mod
+
+    until = until or _date.today()
+    keywords = load_prefilter_keywords()
+    aliases = load_entity_aliases()
+
+    # Pull source registry so we can look up tags / register if missing.
+    with db.connect() as conn:
+        existing_src_rows = {
+            r["id"]: r for r in conn.execute("SELECT id, name FROM sources").fetchall()
+        }
+    src_yaml_by_id = {s["id"]: s for s in iter_enabled_sources()}
+    # Also include disabled sources from the yaml — wam_en is disabled by default
+    # but we still want to backfill it.
+    from dalila.config import load_sources as _load_sources
+    for s in _load_sources():
+        src_yaml_by_id.setdefault(s["id"], s)
+
+    def _src_meta(sid: str) -> dict:
+        return src_yaml_by_id.get(sid) or {"id": sid, "tags": []}
+
+    # The set of sources to run.
+    all_sources = list(sitemap_mod.BACKFILL_SOURCES.keys()) + ["gdelt_v2", "acled"]
+    if source:
+        if source not in all_sources:
+            raise ValueError(
+                f"unknown backfill source {source!r}; choices: {', '.join(all_sources)}"
+            )
+        targets = [source]
+    else:
+        targets = all_sources
+
+    stats: dict[str, dict] = {}
+    with db.connect() as conn:
+        for sid in targets:
+            log.info("backfill: starting source=%s since=%s until=%s", sid, since, until)
+            meta = _src_meta(sid)
+            tags = meta.get("tags") or []
+            is_high_signal = any(t in ("uae", "state", "entity") for t in tags)
+
+            # Make sure the source row exists in the DB (the items FK relies on it).
+            if sid not in existing_src_rows:
+                conn.execute(
+                    "INSERT OR IGNORE INTO sources(id, name, kind, url, quality, enabled) "
+                    "VALUES(?, ?, ?, ?, ?, ?)",
+                    (sid, meta.get("name") or sid, meta.get("kind") or "backfill",
+                     meta.get("url") or None, int(meta.get("quality", 3)),
+                     1 if meta.get("enabled", True) else 0),
+                )
+
+            new_count = 0
+            passed_count = 0
+            seen_count = 0
+            error: str | None = None
+            try:
+                if sid == "gdelt_v2":
+                    iterator = gdelt_mod.iter_items_range(sid, since, until)
+                elif sid == "acled":
+                    iterator = acled_mod.iter_items_range(sid, since, until)
+                else:
+                    iterator = sitemap_mod.iter_items(sid, since, until)
+
+                for it in iterator:
+                    seen_count += 1
+                    passed = is_high_signal or _prefilter_match(it, keywords, aliases)
+                    row_id = db.insert_item(conn, it, prefilter_passed=passed)
+                    if row_id is not None:
+                        new_count += 1
+                        if passed:
+                            passed_count += 1
+                    # Periodic commit so a long run doesn't lose everything on Ctrl-C.
+                    if seen_count % 200 == 0:
+                        try:
+                            conn.commit()
+                        except Exception:
+                            pass
+            except Exception as exc:
+                error = f"{type(exc).__name__}: {exc}"
+                log.exception("backfill source=%s failed", sid)
+
+            stats[sid] = {
+                "fetched": seen_count,
+                "new": new_count,
+                "prefilter_passed": passed_count,
+                "error": error,
+            }
+            log.info("backfill[%s] done: fetched=%d new=%d passed=%d error=%s",
+                     sid, seen_count, new_count, passed_count, error or "-")
+    return stats
+
+
 def _dedupe_by_simhash(items: list[dict], threshold: int = 12) -> list[dict]:
     """Drop near-duplicate titles (cross-outlet reposts of the same story).
 
@@ -480,8 +592,18 @@ def run_publish_site(out_dir: "Path") -> dict:
                 composed = datetime.fromisoformat(row["composed_at"].replace("Z", "+00:00"))
             except Exception:
                 composed = datetime.now(timezone.utc)
-            slug = composed.strftime("%Y-%m-%d")
-            html_str = render_digest(items, when=composed, total_ingested=len(items))
+            # Slug + display time must reflect the brief's TARGET date (date_label),
+            # not when we composed it. Otherwise three backfilled briefs all
+            # composed today collapse into one 2026-05-13.html file.
+            slug_dt = composed
+            label = (row["date_label"] or "").strip()
+            if label:
+                try:
+                    slug_dt = datetime.strptime(label, "%A %d %B %Y").replace(tzinfo=timezone.utc)
+                except Exception:
+                    pass
+            slug = slug_dt.strftime("%Y-%m-%d")
+            html_str = render_digest(items, when=slug_dt, total_ingested=len(items))
             (digests_dir / f"{slug}.html").write_text(html_str, encoding="utf-8")
             written.append({
                 "slug": slug,
