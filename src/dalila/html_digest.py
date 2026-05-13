@@ -351,6 +351,35 @@ a:hover {{
 }}
 .archive-title a:hover {{ color: var(--amber); border-bottom-color: var(--amber); }}
 .archive-preview {{ color: var(--muted); font-size: 12px; margin-top: 6px; line-height: 1.5; }}
+.archive-row.hidden {{ display: none; }}
+.archive-count {{
+  color: var(--type-dim);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  margin: 14px 0 18px;
+}}
+.archive-count #archive-count-shown, .archive-count #archive-count-total {{
+  color: var(--amber); font-weight: 700;
+}}
+.archive-more {{ margin: 28px 0 0; text-align: center; }}
+.archive-more button {{
+  background: transparent;
+  color: var(--amber);
+  border: 1px solid var(--amber);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 12px 28px;
+  cursor: pointer;
+  transition: background .14s ease, color .14s ease;
+}}
+.archive-more button:hover {{
+  background: var(--amber);
+  color: var(--bg);
+}}
 
 /* ---------- about ---------- */
 .about p, .about ul, .about li {{
@@ -862,13 +891,25 @@ def render_archive(
             'No briefs in the archive yet. The next one composes at 06:30 GST.</p>'
         )
     else:
-        body.append('<section class="archive">')
-        for b in briefs:
+        # Progressive disclosure: render the full list server-side so it's
+        # crawlable + works without JS, but hide all rows past the first 20
+        # behind `.archive-row.hidden`. A "Load more" button reveals the
+        # next batch of 20 on click.
+        INITIAL_VISIBLE = 20
+        BATCH = 20
+        body.append(
+            f'<p class="archive-count">'
+            f'<span id="archive-count-shown">{min(INITIAL_VISIBLE, len(briefs))}</span> '
+            f'of <span id="archive-count-total">{len(briefs)}</span> briefs</p>'
+        )
+        body.append('<section class="archive" id="archive-list">')
+        for i, b in enumerate(briefs):
             slug = html.escape(b.get("slug") or "")
             date_label = html.escape(b.get("date_label") or "")
             preview = html.escape(b.get("preview") or "")
+            row_cls = "archive-row" + (" hidden" if i >= INITIAL_VISIBLE else "")
             body.append(
-                '<div class="archive-row">'
+                f'<div class="{row_cls}">'
                 f'<div class="archive-date">{date_label}</div>'
                 '<div>'
                 f'<div class="archive-title"><a href="digests/{slug}.html">Morning brief — {date_label}</a></div>'
@@ -877,6 +918,42 @@ def render_archive(
                 '</div>'
             )
         body.append('</section>')
+
+        if len(briefs) > INITIAL_VISIBLE:
+            body.append(
+                f'<div class="archive-more">'
+                f'<button type="button" id="archive-load-more" '
+                f'data-batch="{BATCH}">Load {min(BATCH, len(briefs) - INITIAL_VISIBLE)} more</button>'
+                f'</div>'
+            )
+            body.append("""
+<script>
+(function(){
+  const btn = document.getElementById('archive-load-more');
+  const shownEl = document.getElementById('archive-count-shown');
+  const totalEl = document.getElementById('archive-count-total');
+  const total = parseInt(totalEl.textContent, 10);
+  const batch = parseInt(btn.dataset.batch, 10);
+  btn.addEventListener('click', function() {
+    const hidden = document.querySelectorAll('.archive-row.hidden');
+    let revealed = 0;
+    for (const row of hidden) {
+      if (revealed >= batch) break;
+      row.classList.remove('hidden');
+      revealed++;
+    }
+    const shown = parseInt(shownEl.textContent, 10) + revealed;
+    shownEl.textContent = shown;
+    const stillHidden = total - shown;
+    if (stillHidden <= 0) {
+      btn.parentElement.removeChild(btn);
+    } else {
+      btn.textContent = 'Load ' + Math.min(batch, stillHidden) + ' more';
+    }
+  });
+})();
+</script>
+""")
 
     body.append(_footer(contact_email=contact_email, telegram_bot=telegram_bot))
     return _doc("Dalila — Archive", "\n".join(body))
