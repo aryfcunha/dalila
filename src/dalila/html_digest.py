@@ -1394,6 +1394,11 @@ def _country_view_styles() -> str:
     fill:none; stroke:var(--amber); opacity:.65;
     stroke-linecap:round;
   }
+  /* Capital markers — explicit fill set inline so they show even though
+     the overlay layer sits above the heatmapped country paths. */
+  .carto-overlay circle {
+    pointer-events: none;
+  }
   .world-map { width:100%; min-height:420px; }
   .world-map svg { display:block; width:100%; height:auto; }
   .world-map path.country {
@@ -1862,6 +1867,30 @@ def _country_view_script() -> str:
     if (!src) return;
     const [sx, sy] = src;
     const maxCount = Math.max(...entries.map(e => e[1]));
+    const TIERS = [
+      [0.4, 0.35],
+      [0.9, 0.50],
+      [1.5, 0.65],
+      [2.2, 0.80],
+      [3.0, 0.95],
+    ];
+
+    function addDot(x, y, radius, opacity) {
+      const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      c.setAttribute('cx', x.toFixed(2));
+      c.setAttribute('cy', y.toFixed(2));
+      c.setAttribute('r', radius.toFixed(2));
+      c.setAttribute('fill', '#ffcf66');
+      c.setAttribute('stroke', '#0a0805');
+      c.setAttribute('stroke-width', '0.6');
+      c.setAttribute('opacity', opacity.toFixed(2));
+      overlay.appendChild(c);
+    }
+
+    // Source marker — slightly larger, distinct so the user can see where
+    // the arcs originate (especially useful for small-country sources like UAE).
+    addDot(sx, sy, 4.0, 1.0);
+
     for (const [other, cnt] of entries) {
       const tgt = centroidFor(other);
       if (!tgt) continue;
@@ -1870,18 +1899,7 @@ def _country_view_script() -> str:
       const dist = Math.hypot(dx, dy) || 1;
       const cx = (sx + tx) / 2 + (-dy / dist) * (dist * 0.22);
       const cy = (sy + ty) / 2 + ( dx / dist) * (dist * 0.22);
-      // Discrete-bucket visibility: each arc falls into one of 5 strength
-      // tiers based on sqrt(cnt/max). Stepped width + opacity together so
-      // arcs read as clearly "weak / medium / strong / very strong" rather
-      // than blending into a continuous gradient.
       const r = Math.sqrt(cnt / Math.max(maxCount, 1));
-      const TIERS = [
-        [0.4, 0.35],   // tier 0: faintest
-        [0.9, 0.50],
-        [1.5, 0.65],
-        [2.2, 0.80],
-        [3.0, 0.95],   // tier 4: top
-      ];
       const tier = Math.min(TIERS.length - 1, Math.floor(r * TIERS.length));
       const [w, op] = TIERS[tier];
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -1889,6 +1907,12 @@ def _country_view_script() -> str:
       path.setAttribute('stroke-width', w.toFixed(2));
       path.setAttribute('opacity', op.toFixed(2));
       overlay.appendChild(path);
+      // Target endpoint marker — the radius scales with co-mention count so
+      // a strong-tie country has an obviously chunky dot, a weak-tie one
+      // has a discreet pinprick. Crucially, the dot makes it visually
+      // unambiguous *which point* the arc is anchored at, even when the
+      // target country is tiny on the world map (UAE, Singapore, Lebanon).
+      addDot(tx, ty, 1.6 + 2.2 * r, 0.85);
     }
   }
 
