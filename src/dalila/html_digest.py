@@ -1268,6 +1268,7 @@ def render_countries(
         '<span class="legend-swatch" data-h="5"></span>'
         '<span class="legend-swatch" data-h="6"></span>'
         '<span class="legend-swatch" data-h="7"></span>'
+        '<span class="legend-swatch" data-h="8"></span>'
         '<span class="legend-low">low</span>'
         '<span class="legend-high" id="legend-high">high</span>'
         '</div>'
@@ -1396,7 +1397,11 @@ def _country_view_styles() -> str:
   .world-map { width:100%; min-height:420px; }
   .world-map svg { display:block; width:100%; height:auto; }
   .world-map path.country {
-    fill:#1a1612; stroke:#2a2218; stroke-width:0.4;
+    /* Default fill is overridden inline by JS via fillForCount(); this is
+       the pre-paint state and the "no data" fallback. Stroke is a touch
+       darker than the lightest stop so the lowest-tier countries still
+       show their borders. */
+    fill:#1a1612; stroke:#0a0805; stroke-width:0.4;
     cursor:pointer; transition:fill .12s, stroke .12s;
   }
   .world-map path.country.has-data { cursor:pointer; }
@@ -1443,14 +1448,16 @@ def _country_view_styles() -> str:
     width:22px; height:14px; display:inline-block;
     border:1px solid #2a2218;
   }
+  /* Heat swatches — kept in sync with HEAT_STOPS in _country_view_script */
   .legend-swatch[data-h="0"] { background:#1a1612; }
-  .legend-swatch[data-h="1"] { background:#2c1f0a; }
-  .legend-swatch[data-h="2"] { background:#4a3110; }
-  .legend-swatch[data-h="3"] { background:#75501a; }
-  .legend-swatch[data-h="4"] { background:#a47424; }
-  .legend-swatch[data-h="5"] { background:#cf8b1e; }
-  .legend-swatch[data-h="6"] { background:#e9a230; }
-  .legend-swatch[data-h="7"] { background:#ffb454; }
+  .legend-swatch[data-h="1"] { background:#3d2a14; }
+  .legend-swatch[data-h="2"] { background:#5e3d18; }
+  .legend-swatch[data-h="3"] { background:#80541c; }
+  .legend-swatch[data-h="4"] { background:#a06d22; }
+  .legend-swatch[data-h="5"] { background:#c08628; }
+  .legend-swatch[data-h="6"] { background:#dba038; }
+  .legend-swatch[data-h="7"] { background:#f0b84a; }
+  .legend-swatch[data-h="8"] { background:#ffcf66; }
   .legend-low { margin-left:6px; color:var(--muted); }
   .legend-high { margin-left:auto; color:var(--amber); }
 
@@ -1684,18 +1691,32 @@ def _country_view_script() -> str:
     return totals;
   }
 
-  // Amber heat ramp: 8 stops from background → bright amber.
-  // Country fill is keyed by log-ish intensity so a small handful of
-  // hot-tier countries don't crush everyone else into one colour.
+  // Amber heat ramp, 9 stops. Stop 0 is "no mentions in window" — sits just
+  // above the ocean tone (#0e0c08) so untracked land is visibly distinct
+  // from sea but recedes. Stops 1+ stretch from a perceptible warm tint up
+  // to bright amber so even single-digit mention counts have a discernible
+  // color. Square-root scaling (vs the previous log) gives mid-volume
+  // countries clearly distinct intensities — a country with 30 mentions
+  // looks visibly hotter than one with 3, and one with 300 looks visibly
+  // hotter than one with 30.
   const HEAT_STOPS = [
-    "#1a1612", "#2c1f0a", "#4a3110", "#75501a",
-    "#a47424", "#cf8b1e", "#e9a230", "#ffb454"
+    "#1a1612",   // 0  — no mentions: barely above ocean, present but quiet
+    "#3d2a14",   // 1  — minimum signal: faint warm tint
+    "#5e3d18",
+    "#80541c",
+    "#a06d22",
+    "#c08628",
+    "#dba038",
+    "#f0b84a",
+    "#ffcf66"    // 8  — top-tier: bright amber, max contrast
   ];
   function fillForCount(cnt, max) {
     if (cnt <= 0) return HEAT_STOPS[0];
-    // Log-ish bucketing so the heat curve isn't dominated by the top country.
-    const t = Math.log(1 + cnt) / Math.log(1 + max);
-    const idx = Math.min(HEAT_STOPS.length - 1, Math.max(1, Math.round(t * (HEAT_STOPS.length - 1))));
+    // sqrt(t) brightens mid-range without letting the top country dominate.
+    // Floor at index 1 so any nonzero count is *visibly* different from zero.
+    const t = Math.sqrt(cnt / Math.max(max, 1));
+    const idx = Math.min(HEAT_STOPS.length - 1,
+                         Math.max(1, Math.round(t * (HEAT_STOPS.length - 1))));
     return HEAT_STOPS[idx];
   }
 
