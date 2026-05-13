@@ -1204,18 +1204,19 @@ def render_countries(
     body: list[str] = []
     body.append(_masthead(on_page="countries", tag="COUNTRY VIEW", link_prefix=""))
 
-    body.append(
-        f'<p class="date-line">LAST {window_days} DAYS · '
-        f'{sum(country_counts.values())} ITEM TAGS · '
-        f'{len(country_counts)} COUNTRIES WITH ANY MENTIONS</p>'
-    )
+    # Removed the static "LAST N DAYS · X TAGS · Y COUNTRIES" line —
+    # it was double-counting (using the 180-day timeline payload while
+    # labelling itself "LAST 90 DAYS"). The timeline-chip stats row
+    # below already shows these numbers correctly and updates with the
+    # active window. One source of truth.
     body.append(
         '<p class="kicker" style="color:var(--type-dim);font-family:Iowan Old Style,Source Serif Pro,Georgia,serif;'
-        'font-size:15px;line-height:1.6;max-width:64ch;margin:8px 0 24px;">'
-        'Mention density per country, grouped by region. Hover for the exact count; '
-        'click a country to see which other countries appear alongside it '
+        'font-size:15px;line-height:1.6;max-width:64ch;margin:14px 0 18px;">'
+        'Mention density per country. Hover for the exact count; click a '
+        'country to see which other countries appear alongside it '
         '(thicker arc = more co-mentions) and the underlying news. '
-        'Use the region buttons below to filter.</p>'
+        'Use the window chips to change the time range and the region '
+        'buttons to filter.</p>'
     )
 
     # Timeline filter chips (client-side: re-bucket counts from the timeline payload)
