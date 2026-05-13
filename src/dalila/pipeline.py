@@ -374,8 +374,10 @@ def run_publish_site(out_dir: "Path") -> dict:
     from pathlib import Path
     import json as _json
 
-    from dalila.config import load_sources
-    from dalila.html_digest import render_about, render_archive, render_digest, render_index
+    from dalila.config import load_countries, load_sources
+    from dalila.html_digest import (
+        render_about, render_archive, render_countries, render_digest, render_index,
+    )
 
     out_dir = Path(out_dir)
     digests_dir = out_dir / "digests"
@@ -452,12 +454,39 @@ def run_publish_site(out_dir: "Path") -> dict:
     about_html = render_about(sources)
     (out_dir / "about.html").write_text(about_html, encoding="utf-8")
 
+    # 4. Countries view (region-grouped heatmap + per-country news on click)
+    try:
+        from dalila.config import load_countries
+        from dalila.html_digest import render_countries
+
+        cat = load_countries()
+        window_days = 14
+        with db.connect() as conn:
+            counts = db.country_mention_counts(conn, since_hours=window_days * 24)
+            items_by_country: dict[str, list[dict]] = {}
+            cooccurrence: dict[str, dict[str, int]] = {}
+            for iso in counts.keys():
+                items_by_country[iso] = db.items_for_country(
+                    conn, iso, since_hours=window_days * 24, limit=30,
+                )
+                cooccurrence[iso] = db.country_cooccurrence(
+                    conn, iso, since_hours=window_days * 24,
+                )
+        countries_html = render_countries(
+            cat["countries"], cat["regions"], counts,
+            items_by_country, cooccurrence, window_days=window_days,
+        )
+        (out_dir / "countries.html").write_text(countries_html, encoding="utf-8")
+    except Exception:
+        log.exception("publish-site: countries page generation failed")
+
     return {
         "out_dir": str(out_dir),
         "digests": len(written),
         "wrote": [
             str(out_dir / "index.html"),
             str(out_dir / "archive.html"),
+            str(out_dir / "countries.html"),
             str(out_dir / "about.html"),
         ] + [str(digests_dir / f"{d['slug']}.html") for d in written],
     }
