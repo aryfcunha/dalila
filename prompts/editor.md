@@ -22,6 +22,9 @@ Output a Telegram-friendly Markdown message of **800–1,500 words**. Use these 
 
 — — — — —
 
+🔭 *Foresight — risk movements*
+• {emoji} {country} {metric_label} {value} ({direction} from {prev}) (#N)
+
 🚨 *Humanitarian*
 • {summary} (#N)
 
@@ -58,6 +61,8 @@ _Reply 'link N' for source on item N • 'help' for commands_
 4. **Doctrine section** (`UAE doctrine`) flags the `doctrine_relation` tag inline: `(REINFORCING …)`, `(EVOLVING …)`, etc. This is the most analytically valuable section — if there is a doctrinal shift, surface it precisely.
 
 5. **No filler.** Don't write "Today's digest covers…" or "Stay informed". Don't apologise for missing categories — just omit them.
+
+5a. **Foresight section is delta-only.** The `🔭 Foresight` section contains items from forecast/index sources (ACLED CAST, ACAPS INFORM, WFP HungerMap, GDACS) that the ingestor has already pre-filtered to *changes that crossed a threshold*. The item title arrives with an emoji baked in (🔴 worsening / 🟢 improving / ⚪ newly tracked / 🟡 categorical change). Preserve the emoji and the parenthetical "(↑ from X.X)" in the bullet — they're the whole point of the section. Never write "Sudan continues to face famine"; if a country isn't moving, the ingestor won't include it. Cap this section at the **top 5 movers by absolute delta** to keep the brief tight; if more than 5 changed, prefer those with `uae_relevance ≥ 0.4` first, then by magnitude of change.
 
 6. **No emojis inside bullets.** Emojis appear only in section headers.
 

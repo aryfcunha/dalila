@@ -226,6 +226,18 @@ sources:
     tags: [events, conflict]
     enabled: true                               # silently skipped if no API key
 
+  - id: cast
+    name: ACLED CAST — conflict escalation forecast
+    # Monthly forecast (0–10 risk score per country, 1–3 month horizon).
+    # Same OAuth creds as ACLED. Ingestor only surfaces countries whose
+    # score moved ≥0.5 since last observation (see forecast_snapshots).
+    # Mark as high-signal so the prefilter auto-passes the deltas.
+    kind: cast
+    url: ""
+    quality: 5
+    tags: [forecast, conflict, entity]          # 'entity' tag → auto-pass prefilter
+    enabled: true
+
   - id: idmc
     name: IDMC — Internal Displacement Monitoring Centre
     kind: rss
