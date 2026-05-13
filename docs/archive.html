@@ -346,6 +346,65 @@ a:hover {
 }
 .source-block li .note { color: var(--muted); margin-left: 4px; }
 
+/* Methodology page */
+.methodology {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 12px 0 32px;
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--type);
+}
+.methodology h1 { display: none; }  /* MASTHEAD already shows title */
+.methodology h2 {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--amber);
+  border-top: 1px solid var(--rule-strong);
+  padding-top: 18px;
+  margin: 28px 0 12px;
+}
+.methodology h3 {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--type);
+  margin: 18px 0 8px;
+}
+.methodology p { margin: 0 0 12px; }
+.methodology ul { margin: 0 0 14px; padding-left: 22px; }
+.methodology li { margin: 4px 0; }
+.methodology hr { border: none; border-top: 1px dashed var(--rule); margin: 24px 0; }
+.methodology code {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 0.88em; color: var(--amber); background: var(--bg-deep);
+  padding: 1px 5px; border: 1px solid var(--rule-strong);
+}
+.method-table-wrap { overflow-x: auto; margin: 8px 0 18px; }
+.method-table {
+  width: 100%; border-collapse: collapse;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+}
+.method-table th, .method-table td {
+  border: 1px solid var(--rule-strong);
+  padding: 8px 10px; text-align: left; vertical-align: top;
+}
+.method-table thead th {
+  background: var(--bg-deep);
+  color: var(--amber);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.method-table td:first-child { color: var(--type); font-weight: 600; }
+.method-table td strong { color: var(--amber); }
+
 /* ---------- countries view ---------- */
 .country-controls {
   display: flex;
@@ -514,14 +573,15 @@ a:hover {
     <a href="./">Home</a>
     <a href="archive.html" aria-current="page">Archive</a>
     <a href="countries.html">Countries</a>
+    <a href="methodology.html">Methodology</a>
     <a href="about.html">About</a>
   </nav>
 </header>
 
 <section class="archive">
 <div class="archive-row"><div class="archive-date">Wednesday 13 May 2026</div><div><div class="archive-title"><a href="digests/2026-05-13.html">Morning brief — Wednesday 13 May 2026</a></div><div class="archive-preview">Sudan: DTM Focused Flash Alert: Blue Nile State (Update 002) · The crisis is Sudan is much worse than what is acknowledged</div></div></div>
-<div class="archive-row"><div class="archive-date">Tuesday 12 May 2026</div><div><div class="archive-title"><a href="digests/2026-05-13.html">Morning brief — Tuesday 12 May 2026</a></div><div class="archive-preview">Palestine - Escalating violence and protracted displacement · Iran war latest: UAE condemns IRGC&#x27;s attempted infiltration of Kuwait</div></div></div>
-<div class="archive-row"><div class="archive-date">Monday 11 May 2026</div><div><div class="archive-title"><a href="digests/2026-05-13.html">Morning brief — Monday 11 May 2026</a></div><div class="archive-preview">UAE cyber security priorities pay off amid Iran tensions, official says · Lebanese Mourn Eight Members of One Family Killed in Israeli Strike</div></div></div>
+<div class="archive-row"><div class="archive-date">Tuesday 12 May 2026</div><div><div class="archive-title"><a href="digests/2026-05-12.html">Morning brief — Tuesday 12 May 2026</a></div><div class="archive-preview">Palestine - Escalating violence and protracted displacement · Iran war latest: UAE condemns IRGC&#x27;s attempted infiltration of Kuwait</div></div></div>
+<div class="archive-row"><div class="archive-date">Monday 11 May 2026</div><div><div class="archive-title"><a href="digests/2026-05-11.html">Morning brief — Monday 11 May 2026</a></div><div class="archive-preview">UAE cyber security priorities pay off amid Iran tensions, official says · Lebanese Mourn Eight Members of One Family Killed in Israeli Strike</div></div></div>
 </section>
 <footer class="foot"><span>© 2026 Dalila — daily intelligence brief</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Submit a suggestion</a></span></footer>
 </div>

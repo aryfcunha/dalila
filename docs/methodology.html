@@ -1,0 +1,1008 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dalila — Methodology</title>
+<style>
+:root {
+  --bg:#0A0A0A;
+  --bg-deep:#000000;
+  --type:#E8E1D3;
+  --type-dim:#9A958A;
+  --muted:#6E6A60;
+  --amber:#FFB454;
+  --amber-deep:#D88E30;
+  --cyan:#7AB9C9;
+  --green:#7CB36E;
+  --red:#D67866;
+  --rule:#1F1B16;
+  --rule-strong:#3A332A;
+}
+html,body {
+  background: var(--bg);
+  color: var(--type);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+body {
+  margin: 0;
+  font-family: "JetBrains Mono", "IBM Plex Mono", "SF Mono", "Source Code Pro", Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.55;
+  letter-spacing: 0.01em;
+}
+.serif {
+  font-family: "Iowan Old Style", "Source Serif Pro", "PT Serif", Georgia, "Times New Roman", serif;
+  font-feature-settings: "kern", "liga", "calt";
+}
+a {
+  color: var(--cyan);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.12s ease, color 0.12s ease;
+}
+a:hover {
+  color: var(--amber);
+  border-bottom-color: var(--amber);
+}
+.wrap { max-width: 880px; margin: 0 auto; padding: 28px 32px 80px; }
+
+/* ---------- masthead ---------- */
+.masthead {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 18px;
+  align-items: baseline;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--amber);
+  margin-bottom: 18px;
+}
+.masthead-title {
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  margin: 0;
+  color: var(--type);
+}
+.masthead-title a { color: var(--type); border: 0; }
+.masthead-title .ar {
+  color: var(--amber);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 0.65em;
+  margin-left: 8px;
+  vertical-align: 3px;
+}
+.masthead-tag {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-left: 1px solid var(--rule-strong);
+  padding-left: 14px;
+  margin-left: 6px;
+}
+.masthead-nav {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: right;
+}
+.masthead-nav a {
+  color: var(--muted);
+  margin-left: 14px;
+  border: 0;
+}
+.masthead-nav a[aria-current=page] { color: var(--amber); }
+.masthead-nav a:hover { color: var(--type); }
+
+/* ---------- ticker strip ---------- */
+.ticker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0 0 18px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 24px;
+}
+.ticker span {
+  padding: 0 14px;
+  border-right: 1px solid var(--rule-strong);
+}
+.ticker span:first-child { padding-left: 0; }
+.ticker span:last-child { border-right: 0; }
+.ticker b { color: var(--amber); font-weight: 700; }
+
+/* ---------- top stories ---------- */
+.top { margin: 0 0 28px; }
+.top-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--amber);
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+}
+.top-head .label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+.top-head .count { color: var(--muted); font-size: 10px; letter-spacing: 0.14em; }
+.top ol { list-style: none; padding: 0; margin: 0; counter-reset: t; }
+.top li {
+  counter-increment: t;
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 14px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--rule);
+  align-items: baseline;
+}
+.top li:last-child { border-bottom: 0; }
+.top li::before {
+  content: counter(t, decimal-leading-zero);
+  color: var(--amber);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+.top a {
+  color: var(--type);
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 16px;
+  line-height: 1.4;
+  border-bottom: 1px solid transparent;
+}
+.top a:hover {
+  color: var(--amber);
+  border-bottom-color: var(--amber);
+}
+.top .ref { color: var(--muted); font-size: 10px; margin-left: 6px; letter-spacing: 0.08em; }
+
+/* ---------- sections ---------- */
+.section { margin: 0 0 30px; }
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+}
+.section-head .label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--type);
+}
+.section-head .count {
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+
+/* ---------- items ---------- */
+.item {
+  padding: 14px 0 16px;
+  border-bottom: 1px solid var(--rule);
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 14px;
+}
+.item:last-child { border-bottom: 0; }
+.item-n {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding-top: 2px;
+}
+.item-body .title {
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 16px;
+  line-height: 1.4;
+  font-weight: 600;
+  color: var(--type);
+  margin: 0 0 6px;
+}
+.item-body .title a {
+  color: var(--type);
+  border-bottom: 1px solid transparent;
+}
+.item-body .title a:hover {
+  color: var(--amber);
+  border-bottom-color: var(--amber);
+}
+.item-body .summary {
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 14px;
+  color: var(--type-dim);
+  margin: 0 0 8px;
+  line-height: 1.55;
+}
+.item-body .meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.item-body .meta .src { color: var(--type-dim); }
+.item-body .meta .rel { color: var(--amber); }
+.item-body .meta .sev { color: var(--muted); }
+.item-body .meta a { color: var(--cyan); border: 0; }
+.item-body .meta a:hover { color: var(--amber); }
+.doctrine-tag {
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  padding: 1px 6px;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  font-weight: 700;
+}
+
+/* ---------- footer ---------- */
+.foot {
+  margin-top: 56px;
+  padding-top: 14px;
+  border-top: 1px solid var(--amber);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.foot a { color: var(--muted); border: 0; }
+.foot a:hover { color: var(--amber); }
+
+/* ---------- archive ---------- */
+.archive-row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 18px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--rule);
+  align-items: baseline;
+}
+.archive-date {
+  color: var(--amber);
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.archive-title a {
+  color: var(--type);
+  font-family: "Iowan Old Style", Georgia, serif;
+  font-size: 16px;
+  line-height: 1.4;
+  border-bottom: 1px solid transparent;
+}
+.archive-title a:hover { color: var(--amber); border-bottom-color: var(--amber); }
+.archive-preview { color: var(--muted); font-size: 12px; margin-top: 6px; line-height: 1.5; }
+
+/* ---------- about ---------- */
+.about p, .about ul, .about li {
+  font-family: "Iowan Old Style", Georgia, serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--type-dim);
+  max-width: 64ch;
+}
+.about h2 {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--amber);
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 6px;
+  margin: 34px 0 14px;
+}
+.about strong { color: var(--type); }
+.about code {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 0.9em;
+  color: var(--amber);
+  background: var(--bg-deep);
+  padding: 1px 5px;
+  border: 1px solid var(--rule-strong);
+}
+.source-block {
+  margin: 0 0 22px;
+  padding: 8px 0 0 16px;
+  border-left: 1px solid var(--rule-strong);
+}
+.source-block strong {
+  display: block;
+  color: var(--amber);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.source-block ul { list-style: none; padding: 0; margin: 0; }
+.source-block li {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  color: var(--type-dim);
+  padding: 3px 0;
+}
+.source-block li .note { color: var(--muted); margin-left: 4px; }
+
+/* Methodology page */
+.methodology {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 12px 0 32px;
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--type);
+}
+.methodology h1 { display: none; }  /* MASTHEAD already shows title */
+.methodology h2 {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--amber);
+  border-top: 1px solid var(--rule-strong);
+  padding-top: 18px;
+  margin: 28px 0 12px;
+}
+.methodology h3 {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--type);
+  margin: 18px 0 8px;
+}
+.methodology p { margin: 0 0 12px; }
+.methodology ul { margin: 0 0 14px; padding-left: 22px; }
+.methodology li { margin: 4px 0; }
+.methodology hr { border: none; border-top: 1px dashed var(--rule); margin: 24px 0; }
+.methodology code {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 0.88em; color: var(--amber); background: var(--bg-deep);
+  padding: 1px 5px; border: 1px solid var(--rule-strong);
+}
+.method-table-wrap { overflow-x: auto; margin: 8px 0 18px; }
+.method-table {
+  width: 100%; border-collapse: collapse;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+}
+.method-table th, .method-table td {
+  border: 1px solid var(--rule-strong);
+  padding: 8px 10px; text-align: left; vertical-align: top;
+}
+.method-table thead th {
+  background: var(--bg-deep);
+  color: var(--amber);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.method-table td:first-child { color: var(--type); font-weight: 600; }
+.method-table td strong { color: var(--amber); }
+
+/* ---------- countries view ---------- */
+.country-controls {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin: 6px 0 22px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.country-controls label { color: var(--muted); margin-right: 4px; }
+.region-pill {
+  display: inline-block;
+  padding: 3px 8px;
+  border: 1px solid var(--rule-strong);
+  color: var(--type-dim);
+  cursor: pointer;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.region-pill:hover { color: var(--amber); border-color: var(--amber-deep); }
+.region-pill.active { color: var(--bg); background: var(--amber); border-color: var(--amber); }
+
+.region-block { margin: 0 0 22px; }
+.region-head {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  justify-content: space-between;
+}
+.region-head .count { color: var(--muted); }
+.tile-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.tile {
+  width: 44px; height: 44px;
+  background: var(--bg-deep);
+  border: 1px solid var(--rule-strong);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--type-dim);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.12s ease, color 0.12s ease;
+  position: relative;
+}
+.tile:hover { border-color: var(--amber); color: var(--type); z-index: 2; }
+.tile .num {
+  font-size: 9px;
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+  margin-top: 1px;
+}
+.tile.selected {
+  border-color: var(--amber);
+  color: var(--bg);
+  background: var(--amber);
+}
+.tile.selected .num { color: rgba(10,10,10,0.6); }
+.tile.dim { opacity: 0.28; }
+.tile.empty { color: var(--muted); }
+/* Heatmap shades (data-h attribute set by JS) */
+.tile[data-h="1"] { background: #1a1409; border-color: #2a1f12; color: var(--type-dim); }
+.tile[data-h="2"] { background: #2c1f0a; border-color: #3d2912; color: var(--type-dim); }
+.tile[data-h="3"] { background: #4a3110; border-color: #5d3e14; color: var(--type); }
+.tile[data-h="4"] { background: #75501a; border-color: #8a611f; color: var(--type); }
+.tile[data-h="5"] { background: #a47424; border-color: #b88229; color: var(--bg); }
+.tile[data-h="6"] { background: var(--amber-deep); border-color: var(--amber); color: var(--bg); }
+
+#country-detail {
+  margin: 28px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule-strong);
+}
+.country-detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.country-detail-head h2 {
+  margin: 0;
+  font-family: "Iowan Old Style", Georgia, serif;
+  font-size: 22px;
+  color: var(--amber);
+  font-weight: 700;
+}
+.country-detail-head .meta {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.country-cofreq {
+  font-size: 11px;
+  color: var(--type-dim);
+  margin: 0 0 14px;
+  letter-spacing: 0.04em;
+}
+.country-cofreq .pair {
+  display: inline-block;
+  margin-right: 12px;
+  margin-bottom: 4px;
+  padding: 2px 6px;
+  border: 1px solid var(--rule-strong);
+  color: var(--type-dim);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+.country-cofreq .pair b { color: var(--amber); font-weight: 700; margin-left: 4px; }
+.country-news-empty {
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+  padding: 28px 0;
+  text-align: center;
+}
+
+/* ---------- print + mobile ---------- */
+@media print {
+  html,body { background: white; color: black; }
+  a { color: black; text-decoration: underline; }
+  .masthead-nav, .foot { display: none; }
+}
+@media (max-width: 640px) {
+  .wrap { padding: 22px 18px 60px; }
+  .masthead { grid-template-columns: 1fr; gap: 8px; }
+  .masthead-tag { border-left: 0; padding-left: 0; margin-left: 0; }
+  .masthead-nav { text-align: left; }
+  .ticker { font-size: 9px; }
+  .ticker span { padding: 0 8px; }
+  .archive-row { grid-template-columns: 1fr; gap: 4px; }
+  .item { grid-template-columns: 1fr; gap: 6px; }
+  .item-n { font-size: 10px; padding: 0; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <h1 class="masthead-title"><a href="./">Dalila<span class="ar">دليلة</span></a></h1>
+  <div class="masthead-tag">METHODOLOGY</div>
+  <nav class="masthead-nav">
+    <a href="./">Home</a>
+    <a href="archive.html">Archive</a>
+    <a href="countries.html">Countries</a>
+    <a href="methodology.html" aria-current="page">Methodology</a>
+    <a href="about.html">About</a>
+  </nav>
+</header>
+
+<div class="methodology">
+<p class="kicker" style="font-style:italic;color:var(--type-dim);max-width:64ch;margin:14px 0 24px;font-size:15px;line-height:1.55;">Every numeric threshold, sampling rate, batch size, and model choice in this brief encodes a decision. This page is the source of truth for those decisions and the empirical evidence behind them. It is generated directly from <code>METHODOLOGY.md</code> in the repository — when a knob is tuned, the rationale here is updated in the same commit.</p>
+<h1>Dalila — Calibration Methodology</h1>
+<p>Every numeric threshold, sampling rate, batch size, and model choice in this codebase encodes a decision. This document records each one, the rationale behind it, and where to change it. <strong>Update this file when you tune a knob</strong> — the goal is that a new collaborator (or future you) can audit "why is this number 25 and not 50?" without git-archaeology.</p>
+<p>Organised by domain, ordered roughly by data-flow position (ingestion → prefilter → classify → dedupe → digest → cost).</p>
+<hr/>
+<h2>1. Ingestion cadence and volume caps</h2>
+<div class="method-table-wrap"><table class="method-table"><thead><tr>
+<th>Parameter</th>
+<th>Value</th>
+<th>Rationale</th>
+<th>File / Source</th>
+</tr></thead><tbody>
+<tr>
+<td>Live ingest interval</td>
+<td><strong>30 min</strong></td>
+<td>Balances news freshness against API politeness. Empirically, every-30m catches a 24h news cycle with ~98% timeliness; sub-15m yields diminishing returns and risks tripping Cloudflare / DataDome on RSS hosts.</td>
+<td><code>DALILA_INGEST_INTERVAL_MINUTES</code> env, default in <code>config.py</code></td>
+</tr>
+<tr>
+<td>GDELT live poll items/slice</td>
+<td><strong>300</strong></td>
+<td>GKG slices contain ~2-5k rows. We sample the most-recent 300 — enough that the prefilter (~80% drop) still surfaces 30-60 useful items/slice without bloating ingest time.</td>
+<td><code>GDELT_MAX_ITEMS_PER_POLL</code> in <code>gdelt.py</code></td>
+</tr>
+<tr>
+<td>GDELT backfill slice cadence</td>
+<td><strong>60 min</strong> (1 of 4 quarter-hour slices)</td>
+<td>Full coverage would be 96 slices/day × 132 days = 12,672 zips for a Jan→May backfill. At 1/hour it's 3,168 — manageable in ~10 min at 8 workers. Lower (15m) for full coverage, higher (240m) for light sample.</td>
+<td><code>--gdelt-step</code> flag, default in <code>cli.py</code></td>
+</tr>
+<tr>
+<td>GDELT backfill items/slice cap</td>
+<td><strong>60</strong></td>
+<td>Down-samples each slice's rows so a single huge slice doesn't blow up the queue.</td>
+<td><code>items_per_slice</code> in <code>gdelt.iter_items_range</code></td>
+</tr>
+<tr>
+<td>GDELT backfill concurrency</td>
+<td><strong>8</strong> workers</td>
+<td>Per-IP rate limits on <code>data.gdeltproject.org</code>; tested at 4/8/16 — 8 hits steady-state throughput without 429s.</td>
+<td><code>concurrency</code> in <code>gdelt.iter_items_range</code></td>
+</tr>
+<tr>
+<td>Sitemap backfill max URLs/source</td>
+<td><strong>4000</strong></td>
+<td>Per-source cap so WAM's ~10k-URL sitemap doesn't dominate a backfill. 4k × 3 sources ≈ 12k items, plenty for prefilter to chew on. Raise with <code>--max-per-source</code>.</td>
+<td><code>cli.py backfill --max-per-source</code></td>
+</tr>
+<tr>
+<td>Sitemap backfill concurrency</td>
+<td><strong>12</strong> workers</td>
+<td>Higher than GDELT because each fetch is one HTML page (smaller than a zip), and Cloudflare/Arc tolerate ~10-15 parallel hits from a single IP before throttling.</td>
+<td><code>--concurrency</code> flag</td>
+</tr>
+<tr>
+<td>Sitemap article inter-fetch sleep</td>
+<td><strong>0s</strong> (was 0.3s pre-parallelization)</td>
+<td>When concurrent, the kernel's TCP/SSL setup overhead is the natural rate limiter; explicit sleep just under-utilises workers.</td>
+<td><code>article_sleep_s</code> in <code>sitemap.iter_items</code></td>
+</tr>
+<tr>
+<td>ACLED OAuth token TTL</td>
+<td><strong>24h − 60s</strong> safety margin</td>
+<td>ACLED returns <code>expires_in: 86400</code>. We refresh 60s before expiry so a mid-request renewal can't happen.</td>
+<td><code>_get_access_token</code> in <code>acled.py</code></td>
+</tr>
+<tr>
+<td>ACLED priority countries</td>
+<td><strong>16</strong></td>
+<td>Curated to match <code>entities.yaml</code> priority list. Captures all current major conflict zones without bloating the API call.</td>
+<td><code>PRIORITY_COUNTRIES</code> in <code>acled.py</code></td>
+</tr>
+</tbody></table></div>
+<h2>2. Prefilter</h2>
+<div class="method-table-wrap"><table class="method-table"><thead><tr>
+<th>Parameter</th>
+<th>Value</th>
+<th>Rationale</th>
+<th>File / Source</th>
+</tr></thead><tbody>
+<tr>
+<td>Prefilter mechanism</td>
+<td><strong>Keyword + entity substring match, case-insensitive</strong></td>
+<td>Drops ~80% of global wire items before they hit a $-cost LLM call. Match against title+body.</td>
+<td><code>_prefilter_match</code> in <code>pipeline.py</code></td>
+</tr>
+<tr>
+<td>Source-level auto-pass tags</td>
+<td><strong><code>uae</code>, <code>state</code>, <code>entity</code></strong></td>
+<td>UAE state/entity sources are low-volume + high-signal by definition; filtering them statistically just throws out signal.</td>
+<td><code>run_ingest</code> in <code>pipeline.py</code></td>
+</tr>
+<tr>
+<td>Prefilter keyword list</td>
+<td><strong>~25 terms</strong> (UAE / humanitarian / displacement / donor / etc.)</td>
+<td>Tuned 2026-05 to maximize recall of UAE-relevant items at ~80% global-wire drop rate. Each added keyword broadens recall but costs LLM calls.</td>
+<td><code>prefilter_keywords</code> in <code>sources.yaml</code></td>
+</tr>
+<tr>
+<td>Entity watchlist</td>
+<td><strong>~250 aliases</strong> across ~80 entities</td>
+<td>Includes UAE leadership, institutions, peer foundations, multilateral bodies. Aliases catch transliteration variants.</td>
+<td><code>entities.yaml</code></td>
+</tr>
+</tbody></table></div>
+<h2>3. Classification</h2>
+<div class="method-table-wrap"><table class="method-table"><thead><tr>
+<th>Parameter</th>
+<th>Value</th>
+<th>Rationale</th>
+<th>File / Source</th>
+</tr></thead><tbody>
+<tr>
+<td>Live classifier model</td>
+<td><strong>Haiku 4.5</strong> (<code>claude-haiku-4-5</code>) via Claude CLI</td>
+<td>Shares Pro/Max subscription rate pool with editor + doctrine. Pinning to one Haiku-tier model lets cache hit rate compound.</td>
+<td><code>llm.HAIKU</code> constant</td>
+</tr>
+<tr>
+<td>Backfill classifier model</td>
+<td><strong>DeepSeek v4-flash</strong> (<code>deepseek-v4-flash</code>) via REST</td>
+<td>~1/20 the cost of Haiku-via-API, ~28s/batch vs Haiku CLI's 56s, no contention with shared subscription pool. <strong>Opt-in only</strong> via <code>--backend deepseek</code>. Day-to-day stays Haiku per CLAUDE.md invariant.</td>
+<td><code>dalila.deepseek.classify_batch</code></td>
+</tr>
+<tr>
+<td>Classifier batch size</td>
+<td><strong>25</strong> items</td>
+<td>Empirically tuned on Linux/Windows + Claude Code 2.1: single-item ~33s; size-25/30 ~2.5s/item (13× speedup). Past 30, Haiku's output tokens scale linearly with batch size with no latency benefit. Below 10, CLI spawn overhead dominates.</td>
+<td><code>batch_size</code> in <code>cli.py classify</code></td>
+</tr>
+<tr>
+<td>DeepSeek classify workers (backfill)</td>
+<td><strong>5</strong></td>
+<td>Each call ~28s, output-token-bound. Five concurrent calls = ~5× throughput. DeepSeek's published rate limit is 1M tokens/min on chat — 5 × 5k output tokens = 25k tokens/min, well under.</td>
+<td><code>--workers</code> flag, recommended in <code>cli.py</code></td>
+</tr>
+<tr>
+<td>Daily classifier call cap</td>
+<td><strong>2000</strong> calls/day</td>
+<td>Soft cost circuit-breaker. At 25 items/call = 50k items/day capacity. Live ingest's actual daily volume is ~200-500 items so this never triggers in normal operation; it exists to bound a runaway loop.</td>
+<td><code>DALILA_DAILY_CLASSIFIER_CALL_CAP</code> env</td>
+</tr>
+<tr>
+<td>Editor model</td>
+<td><strong>Haiku 4.5</strong></td>
+<td>Originally specced Sonnet; pinned to Haiku for cache pool reasons. Reversible — change <code>model=llm.HAIKU</code> → <code>llm.SONNET</code> in <code>editor.compose_digest</code>.</td>
+<td><code>editor.py</code></td>
+</tr>
+<tr>
+<td>Deep-dive model</td>
+<td><strong>Haiku 4.5</strong></td>
+<td>Same pool reason. Deep-dives are user-triggered + rare; could justify Sonnet if quality complaints arise.</td>
+<td><code>editor.py</code></td>
+</tr>
+<tr>
+<td>Doctrine model</td>
+<td><strong>Haiku 4.5</strong></td>
+<td>Doctrine extraction runs every 15min only on items the classifier flagged for it; volume is 0-5 items/run typically. Cheap, fits in pool.</td>
+<td><code>doctrine.py</code></td>
+</tr>
+<tr>
+<td>Classifier system prompt</td>
+<td><strong>Static</strong> (instructions + entity watchlist, no per-call variables)</td>
+<td>Stable system prompt is the precondition for Claude Code's prompt cache. Interpolating timestamps / request IDs would defeat caching and re-spend on every call.</td>
+<td><code>prompts/classifier.md</code></td>
+</tr>
+</tbody></table></div>
+<h2>4. Deduplication</h2>
+<div class="method-table-wrap"><table class="method-table"><thead><tr>
+<th>Parameter</th>
+<th>Value</th>
+<th>Rationale</th>
+<th>File / Source</th>
+</tr></thead><tbody>
+<tr>
+<td>URL-hash dedup</td>
+<td>**`hash(url</td>
+<td></td>
+<td>title)`** UNIQUE constraint</td>
+<td>Catches exact re-ingests. Title fallback handles RSS feeds that change the URL between polls.</td>
+<td><code>items.url_hash</code> schema</td>
+</tr>
+<tr>
+<td>SimHash title threshold</td>
+<td><strong>12 bits Hamming distance</strong> on 64-bit hash</td>
+<td>Empirically: cross-outlet reposts are ~6-10 bits apart, unrelated stories are ~28-40 bits apart. 12 is the sweet-spot middle.</td>
+<td><code>is_near_duplicate</code> in <code>simhash.py</code></td>
+</tr>
+<tr>
+<td>Cross-digest dedup window</td>
+<td><strong>7 days</strong></td>
+<td>An item used in Monday's brief shouldn't reappear in Friday's. Seven days is the half-life of a news cycle — story X mentioned a week later is fresh angle, not stale repost.</td>
+<td><code>dedupe_against_recent_digests</code> in <code>pipeline.run_compose_digest</code></td>
+</tr>
+<tr>
+<td>Forecast snapshot grain</td>
+<td><strong><code>(source, country, metric)</code></strong> unique</td>
+<td>One row per data series. Allows a single forecast feed to track multiple metrics per country (e.g. HungerMap could track both food_insecure_count and price_inflation).</td>
+<td><code>forecast_snapshots</code> schema</td>
+</tr>
+</tbody></table></div>
+<h2>5. Forecast & alert thresholds (the "change-only" rule)</h2>
+<p>Each forecast/index source only emits an item when the metric crosses a threshold. The first-ever run for a source records baselines silently — no items. Subsequent runs surface deltas only.</p>
+<div class="method-table-wrap"><table class="method-table"><thead><tr>
+<th>Source</th>
+<th>Threshold</th>
+<th>Rationale</th>
+<th>Authority</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>ACLED CAST</strong> (conflict risk)</td>
+<td><strong>Δ ≥ 1.0</strong> on 0–10 scale</td>
+<td>ACLED's own CAST methodology doc calls Δ≥1.0 "notable"; stable-country month-to-month noise is ~0.3, so 0.5 would over-trigger.</td>
+<td>ACLED CAST methodology (2024)</td>
+</tr>
+<tr>
+<td><strong>ACAPS INFORM</strong> (crisis severity)</td>
+<td><strong>Δ ≥ 0.5</strong> on 0–5 scale</td>
+<td>ACAPS tier boundaries (Very Low / Low / Medium / High / Very High) sit at 1/2/3/4. 0.5 = one tier-crossing's worth of movement.</td>
+<td>ACAPS INFORM technical handbook</td>
+</tr>
+<tr>
+<td><strong>GDACS</strong> (disaster alerts)</td>
+<td><strong>Any tier change</strong> (Green ↔ Orange ↔ Red ↔ Extreme)</td>
+<td>GDACS's own alert system is the tier transition — no useful numeric threshold exists.</td>
+<td>GDACS doctrine</td>
+</tr>
+<tr>
+<td><strong>WFP HungerMap LIVE</strong></td>
+<td><strong>(≥10% relative AND ≥100k absolute) OR ≥500k absolute</strong></td>
+<td>WFP's methodology flags ≥10% week-over-week as significant. The 100k floor avoids noise in small populations (10% of 50k = 5k is meaningless). The 500k absolute "always notable" catches large-population shifts that look small in percentage terms.</td>
+<td>WFP HungerMap LIVE methodology</td>
+</tr>
+<tr>
+<td><strong>New tracking entry</strong></td>
+<td>Any first observation <strong>after</strong> baseline established</td>
+<td>Fires only when a country newly enters a forecast feed (e.g. ACLED adds Country X to CAST coverage). Uses 🆕 emoji. <strong>Never</strong> fires on the first-ever run of a source — that's pure baseline.</td>
+<td><code>is_baseline_run</code> in <code>forecast.py</code></td>
+</tr>
+</tbody></table></div>
+<p><strong>Emoji semantics in the brief's <code>🔭 Foresight</code> section:</strong></p>
+<div class="method-table-wrap"><table class="method-table"><thead><tr>
+<th>Emoji</th>
+<th>Meaning</th>
+</tr></thead><tbody>
+<tr>
+<td>🔴</td>
+<td>Metric worsened (↑ violence, ↑ hunger, ↑ severity, alert tier escalated)</td>
+</tr>
+<tr>
+<td>🟢</td>
+<td>Metric improved (↓ violence, ↓ hunger, ↓ severity, alert cleared)</td>
+</tr>
+<tr>
+<td>🆕</td>
+<td>Country newly entered tracking <em>after</em> baseline was already established for this source</td>
+</tr>
+<tr>
+<td>🟡</td>
+<td>Non-directional categorical change</td>
+</tr>
+</tbody></table></div>
+<h2>6. Digest assembly</h2>
+<div class="method-table-wrap"><table class="method-table"><thead><tr>
+<th>Parameter</th>
+<th>Value</th>
+<th>Rationale</th>
+<th>File / Source</th>
+</tr></thead><tbody>
+<tr>
+<td>Daily digest send time</td>
+<td><strong>06:30 GST</strong></td>
+<td>Ary's preference; aligns with the start of his working day before the markets and meetings cycle.</td>
+<td><code>DALILA_DIGEST_TIME</code> env, default <code>06:30</code></td>
+</tr>
+<tr>
+<td>Digest minimum relevance score</td>
+<td><strong>0.4</strong> (uae_relevance ≥ 0.4)</td>
+<td>Empirically, scores below 0.4 are about Sudan/Yemen/etc. without any UAE-specific angle; the brief is UAE-lensed so they don't earn a slot.</td>
+<td><code>min_relevance</code> in <code>pipeline.run_compose_digest</code></td>
+</tr>
+<tr>
+<td>Digest max items</td>
+<td><strong>25</strong></td>
+<td>Telegram message-length friendly (under ~4k chars). Editor prunes harder in practice; 25 is the ceiling, not the target.</td>
+<td><code>max_items</code> in <code>pipeline.run_compose_digest</code></td>
+</tr>
+<tr>
+<td>Foresight section cap</td>
+<td><strong>Top 5 movers</strong> by absolute delta</td>
+<td>Keeps the section tight. If >5 movers exist, prefer those with <code>uae_relevance ≥ 0.4</code> first, then by magnitude.</td>
+<td><code>prompts/editor.md</code> rule 5a</td>
+</tr>
+<tr>
+<td>Empty-digest fallback threshold</td>
+<td><strong><3 items</strong> above relevance</td>
+<td>Better to send "Quiet news cycle. N items reviewed, none above threshold." than a one-bullet brief.</td>
+<td><code>run_compose_digest</code></td>
+</tr>
+<tr>
+<td>Brief word target</td>
+<td><strong>800–1500 words</strong></td>
+<td>Read-on-phone-with-coffee length. Below 800 feels thin; above 1500 risks fatigue.</td>
+<td><code>prompts/editor.md</code></td>
+</tr>
+</tbody></table></div>
+<h2>7. Rate limits & error handling</h2>
+<div class="method-table-wrap"><table class="method-table"><thead><tr>
+<th>Parameter</th>
+<th>Value</th>
+<th>Rationale</th>
+<th>File / Source</th>
+</tr></thead><tbody>
+<tr>
+<td>Claude rate-limit backoff (fallback)</td>
+<td><strong>30 min</strong></td>
+<td>When the CLI error doesn't carry a parseable reset time, sleep 30m and retry. Long enough to clear most transient buckets without idling all day.</td>
+<td><code>_RATE_LIMIT_BACKOFF</code> in <code>scheduler.py</code></td>
+</tr>
+<tr>
+<td>Claude rate-limit exact-reset parsing</td>
+<td><strong>regex on CLI stderr</strong></td>
+<td>Parses "resets 5:30pm (Asia/Dubai)" → exact UTC datetime → sleeps precisely until then.</td>
+<td><code>parse_rate_limit_reset</code> in <code>pipeline.py</code></td>
+</tr>
+<tr>
+<td>DeepSeek HTTP retry semantics</td>
+<td><strong>No auto-retry</strong> (raises <code>LLMError</code>)</td>
+<td>DeepSeek rate limits are generous; the right retry is the <em>next</em> tick of the scheduler, not an in-call loop. 429 / 5xx mapped to <code>&quot;rate limit / transient&quot;</code> so pipeline catches them.</td>
+<td><code>_call_chat</code> in <code>deepseek.py</code></td>
+</tr>
+<tr>
+<td>GDELT slice timeout</td>
+<td><strong>25s read, 10s connect</strong></td>
+<td>GKG zips are 1-3MB CDN-served; anything slower is effectively dead. Tight timeouts prevent worker starvation.</td>
+<td><code>iter_items_range</code> in <code>gdelt.py</code></td>
+</tr>
+</tbody></table></div>
+<h2>8. Scheduler cadence (when <code>dalila bot</code> runs)</h2>
+<div class="method-table-wrap"><table class="method-table"><thead><tr>
+<th>Job</th>
+<th>Cadence</th>
+<th>Notes</th>
+</tr></thead><tbody>
+<tr>
+<td>ingest</td>
+<td>every <code>ingest_interval_minutes</code> (default 30m)</td>
+<td>replace_existing</td>
+</tr>
+<tr>
+<td>classify</td>
+<td>every 5m</td>
+<td>pauses exactly until rate-limit window resets (parsed from CLI error)</td>
+</tr>
+<tr>
+<td>doctrine</td>
+<td>every 15m</td>
+<td>independent rate-limit back-off; cheap when queue is empty</td>
+</tr>
+<tr>
+<td>digest</td>
+<td>daily at <code>digest_time</code> GST</td>
+<td>also runs <code>classify(200)</code> first to flush backlog</td>
+</tr>
+<tr>
+<td><strong>(planned)</strong> CAST</td>
+<td>once per month, day 5</td>
+<td>catches the first-week-of-month update window</td>
+</tr>
+<tr>
+<td><strong>(planned)</strong> INFORM</td>
+<td>once per month</td>
+<td>aligns with ACAPS publishing cadence</td>
+</tr>
+<tr>
+<td><strong>(planned)</strong> HungerMap</td>
+<td>daily</td>
+<td>granularity is daily; snapshot dedup makes that cheap</td>
+</tr>
+<tr>
+<td><strong>(planned)</strong> GDACS</td>
+<td>every 30m</td>
+<td>matches the live ingest pulse</td>
+</tr>
+</tbody></table></div>
+<h2>9. Cost envelope</h2>
+<div class="method-table-wrap"><table class="method-table"><thead><tr>
+<th>Lever</th>
+<th>Designed cost</th>
+<th>Why</th>
+</tr></thead><tbody>
+<tr>
+<td>Single Claude Pro/Max subscription</td>
+<td><strong>$200/mo fixed</strong></td>
+<td>All Haiku calls share this pool. No per-token API spend in the day-to-day path.</td>
+</tr>
+<tr>
+<td>DeepSeek for backfill only</td>
+<td><strong><$5/backfill</strong></td>
+<td>One-shot historical pulls only. 13k items × ~$0.0001/call ≈ $1.30.</td>
+</tr>
+<tr>
+<td>SQLite single-file storage</td>
+<td><strong>$0</strong></td>
+<td>No Postgres, no Redis, no managed DB.</td>
+</tr>
+<tr>
+<td>Free-tier GCP e2-micro VM</td>
+<td><strong>$0/mo</strong></td>
+<td>24/7 host. Survives reboot via systemd.</td>
+</tr>
+<tr>
+<td>External data</td>
+<td><strong>$0</strong></td>
+<td>Free sources only per CLAUDE.md invariant. No paid X / NewsAPI / Devex tier.</td>
+</tr>
+</tbody></table></div>
+<hr/>
+<h2>Editing this file</h2>
+<p>When you tune a knob:</p>
+<p>1. <strong>Change the value in code.</strong> 2. <strong>Update the row in this table</strong> — value, rationale, and (if the rationale is new) the empirical evidence or doc citation that backs it. 3. <strong>Commit both together</strong> so <code>git log -- METHODOLOGY.md</code> is a chronological record of how the calibration evolved.</p>
+<p>Don't add rows for <em>defaults you didn't choose</em> (e.g. Python's hash function, sqlite's row size). Only document the parameters where a different value would change behaviour and someone might reasonably want to change.</p>
+</div>
+<footer class="foot"><span>© 2026 Dalila — daily intelligence brief</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Submit a suggestion</a></span></footer>
+</div>
+</body>
+</html>

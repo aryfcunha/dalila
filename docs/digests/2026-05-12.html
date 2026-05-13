@@ -346,6 +346,204 @@ a:hover {
 }
 .source-block li .note { color: var(--muted); margin-left: 4px; }
 
+/* Methodology page */
+.methodology {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 12px 0 32px;
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--type);
+}
+.methodology h1 { display: none; }  /* MASTHEAD already shows title */
+.methodology h2 {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--amber);
+  border-top: 1px solid var(--rule-strong);
+  padding-top: 18px;
+  margin: 28px 0 12px;
+}
+.methodology h3 {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--type);
+  margin: 18px 0 8px;
+}
+.methodology p { margin: 0 0 12px; }
+.methodology ul { margin: 0 0 14px; padding-left: 22px; }
+.methodology li { margin: 4px 0; }
+.methodology hr { border: none; border-top: 1px dashed var(--rule); margin: 24px 0; }
+.methodology code {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 0.88em; color: var(--amber); background: var(--bg-deep);
+  padding: 1px 5px; border: 1px solid var(--rule-strong);
+}
+.method-table-wrap { overflow-x: auto; margin: 8px 0 18px; }
+.method-table {
+  width: 100%; border-collapse: collapse;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+}
+.method-table th, .method-table td {
+  border: 1px solid var(--rule-strong);
+  padding: 8px 10px; text-align: left; vertical-align: top;
+}
+.method-table thead th {
+  background: var(--bg-deep);
+  color: var(--amber);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.method-table td:first-child { color: var(--type); font-weight: 600; }
+.method-table td strong { color: var(--amber); }
+
+/* ---------- countries view ---------- */
+.country-controls {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin: 6px 0 22px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.country-controls label { color: var(--muted); margin-right: 4px; }
+.region-pill {
+  display: inline-block;
+  padding: 3px 8px;
+  border: 1px solid var(--rule-strong);
+  color: var(--type-dim);
+  cursor: pointer;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.region-pill:hover { color: var(--amber); border-color: var(--amber-deep); }
+.region-pill.active { color: var(--bg); background: var(--amber); border-color: var(--amber); }
+
+.region-block { margin: 0 0 22px; }
+.region-head {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  justify-content: space-between;
+}
+.region-head .count { color: var(--muted); }
+.tile-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.tile {
+  width: 44px; height: 44px;
+  background: var(--bg-deep);
+  border: 1px solid var(--rule-strong);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--type-dim);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.12s ease, color 0.12s ease;
+  position: relative;
+}
+.tile:hover { border-color: var(--amber); color: var(--type); z-index: 2; }
+.tile .num {
+  font-size: 9px;
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+  margin-top: 1px;
+}
+.tile.selected {
+  border-color: var(--amber);
+  color: var(--bg);
+  background: var(--amber);
+}
+.tile.selected .num { color: rgba(10,10,10,0.6); }
+.tile.dim { opacity: 0.28; }
+.tile.empty { color: var(--muted); }
+/* Heatmap shades (data-h attribute set by JS) */
+.tile[data-h="1"] { background: #1a1409; border-color: #2a1f12; color: var(--type-dim); }
+.tile[data-h="2"] { background: #2c1f0a; border-color: #3d2912; color: var(--type-dim); }
+.tile[data-h="3"] { background: #4a3110; border-color: #5d3e14; color: var(--type); }
+.tile[data-h="4"] { background: #75501a; border-color: #8a611f; color: var(--type); }
+.tile[data-h="5"] { background: #a47424; border-color: #b88229; color: var(--bg); }
+.tile[data-h="6"] { background: var(--amber-deep); border-color: var(--amber); color: var(--bg); }
+
+#country-detail {
+  margin: 28px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule-strong);
+}
+.country-detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.country-detail-head h2 {
+  margin: 0;
+  font-family: "Iowan Old Style", Georgia, serif;
+  font-size: 22px;
+  color: var(--amber);
+  font-weight: 700;
+}
+.country-detail-head .meta {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.country-cofreq {
+  font-size: 11px;
+  color: var(--type-dim);
+  margin: 0 0 14px;
+  letter-spacing: 0.04em;
+}
+.country-cofreq .pair {
+  display: inline-block;
+  margin-right: 12px;
+  margin-bottom: 4px;
+  padding: 2px 6px;
+  border: 1px solid var(--rule-strong);
+  color: var(--type-dim);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+.country-cofreq .pair b { color: var(--amber); font-weight: 700; margin-left: 4px; }
+.country-news-empty {
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+  padding: 28px 0;
+  text-align: center;
+}
+
 /* ---------- print + mobile ---------- */
 @media print {
   html,body { background: white; color: black; }
@@ -374,6 +572,8 @@ a:hover {
   <nav class="masthead-nav">
     <a href="../">Home</a>
     <a href="../archive.html">Archive</a>
+    <a href="../countries.html">Countries</a>
+    <a href="../methodology.html">Methodology</a>
     <a href="../about.html">About</a>
   </nav>
 </header>
@@ -383,15 +583,17 @@ a:hover {
   <span>TUESDAY 12 MAY 2026</span>
   <span><b>25</b> ITEMS</span>
   <span><b>25</b> REVIEWED 24H</span>
-  <span>COMPOSED 20:11 +04</span>
+  <span>COMPOSED 04:00 +04</span>
 </div>
 
-<section class="top"><div class="top-head"><span class="label">▌ Top stories</span><span class="count">03 of 03</span></div><ol><li><a href="https://www.thenationalnews.com/news/2026/05/12/iran-could-enrich-uranium-to-weapons-grade-if-attacked-by-us-amid-collapsing-ceasefire/">Iran could enrich uranium to weapons-grade if attacked by US amid collapsing ceasefire</a><span class="ref">#2</span></li>
-<li><a href="https://www.internal-displacement.org/spotlight/palestine-escalating-violence-and-protracted-displacement">Palestine - Escalating violence and protracted displacement</a><span class="ref">#3</span></li>
-<li><a href="https://www.nytimes.com/2026/05/05/world/middleeast/iran-us-ceasefire-attacks.html">Trump Says U.S. Pausing Efforts to Guide Ships Through Strait Blocked by Iran</a><span class="ref">#4</span></li></ol></section>
-<section class="section"><div class="section-head"><span class="label">▌ HUMANITARIAN</span><span class="count">15 ITEMS</span></div><article class="item" id="item-3"><span class="item-n">#03</span><div class="item-body"><h3 class="title"><a href="https://www.internal-displacement.org/spotlight/palestine-escalating-violence-and-protracted-displacement" target="_blank" rel="noopener">Palestine - Escalating violence and protracted displacement</a></h3><p class="summary">Escalating violence and protracted displacement affecting Palestine and Gaza.</p><div class="meta"><span class="src">IDMC — Internal Displacement Monitoring Centre</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.85</span></div></div></article><article class="item" id="item-4"><span class="item-n">#04</span><div class="item-body"><h3 class="title"><a href="https://www.nytimes.com/2026/05/05/world/middleeast/iran-us-ceasefire-attacks.html" target="_blank" rel="noopener">Trump Says U.S. Pausing Efforts to Guide Ships Through Strait Blocked by Iran</a></h3><p class="summary">US pauses efforts to guide ships through Strait of Hormuz amid Iran conflict.</p><div class="meta"><span class="src">New York Times — Middle East</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.80</span></div></div></article><article class="item" id="item-5"><span class="item-n">#05</span><div class="item-body"><h3 class="title"><a href="https://www.nytimes.com/2026/05/09/world/middleeast/strait-hormuz-ships-blockade-us-iran.html" target="_blank" rel="noopener">Strait of Hormuz Remains Effectively Blocked After Naval Skirmishes</a></h3><p class="summary">US Navy blockade of Strait of Hormuz remains effective; ships avoid passage.</p><div class="meta"><span class="src">New York Times — Middle East</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.80</span></div></div></article><article class="item" id="item-6"><span class="item-n">#06</span><div class="item-body"><h3 class="title"><a href="https://www.nytimes.com/2026/05/10/world/middleeast/lebanon-family-funeral-israel-strikes.html" target="_blank" rel="noopener">Lebanese Mourn Eight Members of One Family Killed in Israeli Strike</a></h3><p class="summary">Israeli strike kills eight Lebanese including six-month-old as Israel-Hezbollah truce unravels.</p><div class="meta"><span class="src">New York Times — World</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.90</span></div></div></article><article class="item" id="item-9"><span class="item-n">#09</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/05/11/searching-in-gazas-rubble-for-24-dead-relatives/" target="_blank" rel="noopener">Searching in Gaza&#x27;s rubble for 24 dead relatives</a></h3><p class="summary">Man searches Gaza rubble for remains of 24 relatives as territory struggles to rebuild.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.75</span> · <span class="sev">SEV 0.80</span></div></div></article><article class="item" id="item-11"><span class="item-n">#11</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/05/12/razing-southern-lebanon-inside-israels-campaign-of-wanton-destruction/" target="_blank" rel="noopener">Razing southern Lebanon: Inside Israel’s campaign of wanton destruction</a></h3><p class="summary">Legal experts cite &#x27;wanton destruction&#x27; in southern Lebanon; 100k+ civilian structures destroyed by Israel.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.65</span> · <span class="sev">SEV 0.80</span></div></div></article><article class="item" id="item-15"><span class="item-n">#15</span><div class="item-body"><h3 class="title"><a href="https://reliefweb.int/report/sudan/dtm-focused-flash-alert-blue-nile-state-update-002" target="_blank" rel="noopener">Sudan: DTM Focused Flash Alert: Blue Nile State (Update 002)</a></h3><p class="summary">IOM displacement tracking matrix update on Blue Nile State, Sudan.</p><div class="meta"><span class="src">ReliefWeb</span> · <span class="rel">REL 0.85</span> · <span class="sev">SEV 0.60</span></div></div></article><article class="item" id="item-16"><span class="item-n">#16</span><div class="item-body"><h3 class="title"><a href="https://www.internal-displacement.org/spotlight/democratic-republic-of-the-congo-conflict-and-violence-trigger-a-record-high-of-nearly-10-million-movements" target="_blank" rel="noopener">Democratic Republic of the Congo - Conflict and violence trigger a record high of nearly 10 million movements</a></h3><p class="summary">Record 10 million displacement movements in DRC driven by ongoing conflict and violence.</p><div class="meta"><span class="src">IDMC — Internal Displacement Monitoring Centre</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.70</span></div></div></article><article class="item" id="item-18"><span class="item-n">#18</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/05/11/senior-rsf-commander-switches-sides-in-sudans-civil-war/" target="_blank" rel="noopener">Senior RSF commander switches sides in Sudan&#x27;s civil war</a></h3><p class="summary">Senior RSF commander defects to Sudan army, third such desertion since 2024.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.40</span></div></div></article><article class="item" id="item-19"><span class="item-n">#19</span><div class="item-body"><h3 class="title"><a href="https://story.internal-displacement.org/burkina-faso-People-caught-in-a-perfect-storm-of-conflict-displacement-and-food-insecurity/" target="_blank" rel="noopener">Burkina Faso: People caught in a perfect storm of conflict, displacement and food insecurity</a></h3><p class="summary">Conflict, food insecurity and displacement converge in Burkina Faso crisis.</p><div class="meta"><span class="src">IDMC — Internal Displacement Monitoring Centre</span> · <span class="rel">REL 0.65</span> · <span class="sev">SEV 0.70</span></div></div></article><article class="item" id="item-20"><span class="item-n">#20</span><div class="item-body"><h3 class="title"><a href="https://www.internal-displacement.org/features/nigeria-internal-displacement-crisis-conflict-floods" target="_blank" rel="noopener">North-east Nigeria: A massive internal displacement crisis</a></h3><p class="summary">Massive internal displacement crisis ongoing in north-east Nigeria from conflict.</p><div class="meta"><span class="src">IDMC — Internal Displacement Monitoring Centre</span> · <span class="rel">REL 0.60</span> · <span class="sev">SEV 0.75</span></div></div></article><article class="item" id="item-21"><span class="item-n">#21</span><div class="item-body"><h3 class="title"><a href="https://www.nytimes.com/2026/05/07/world/middleeast/trump-ceasefire-lincoln-memorial.html" target="_blank" rel="noopener">Trump Says Cease-Fire Is Intact After Trade of Attacks in Strait of Hormuz</a></h3><p class="summary">Trump claims ceasefire holds despite naval exchanges in Strait of Hormuz.</p><div class="meta"><span class="src">New York Times — Middle East</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.60</span></div></div></article><article class="item" id="item-22"><span class="item-n">#22</span><div class="item-body"><h3 class="title"><a href="https://www.nytimes.com/2026/05/10/us/politics/iran-war-us-peace-proposal-response.html" target="_blank" rel="noopener">Trump Says Iran’s Response to Latest U.S. Proposal ‘Totally Unacceptable’</a></h3><p class="summary">Trump rejects Iranian response to US peace proposal; conflict de-escalation efforts stall.</p><div class="meta"><span class="src">New York Times — Middle East</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.60</span></div></div></article><article class="item" id="item-24"><span class="item-n">#24</span><div class="item-body"><h3 class="title"><a href="https://reliefweb.int/report/lebanon/over-four-children-killed-or-injured-average-day-during-so-called-ceasefire-lebanon-0" target="_blank" rel="noopener">Over four children killed or injured on average a day during the ‘so- called’ ceasefire in Lebanon</a></h3><p class="summary">Save the Children reports 22 children killed in Lebanon ceasefire&#x27;s first 25 days; 1 million displaced, inadequate shelter conditions.</p><div class="meta"><span class="src">ReliefWeb</span> · <span class="rel">REL 0.50</span> · <span class="sev">SEV 0.75</span></div></div></article><article class="item" id="item-25"><span class="item-n">#25</span><div class="item-body"><h3 class="title"><a href="https://www.nytimes.com/2026/04/30/world/africa/nigeria-fulani-camp-amnesty.html" target="_blank" rel="noopener">Nigerian Military Runs a Fulani ‘Concentration Camp,’ Group Says</a></h3><p class="summary">Nigerian military detains 1,500 Fulani for months with deaths from disease and starvation.</p><div class="meta"><span class="src">New York Times — Africa</span> · <span class="rel">REL 0.40</span> · <span class="sev">SEV 0.80</span></div></div></article></section>
-<section class="section"><div class="section-head"><span class="label">▌ UAE FOREIGN-POLICY SIGNALS</span><span class="count">06 ITEMS</span></div><article class="item" id="item-1"><span class="item-n">#01</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/05/12/live-us-iran-war-kuwait-inflitration/" target="_blank" rel="noopener">Iran war latest: UAE condemns IRGC&#x27;s attempted infiltration of Kuwait</a></h3><p class="summary">UAE condemns IRGC&#x27;s attempted infiltration of Kuwaiti territory amid regional conflict.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.70</span></div></div></article><article class="item" id="item-2"><span class="item-n">#02</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/2026/05/12/iran-could-enrich-uranium-to-weapons-grade-if-attacked-by-us-amid-collapsing-ceasefire/" target="_blank" rel="noopener">Iran could enrich uranium to weapons-grade if attacked by US amid collapsing ceasefire</a></h3><p class="summary">Iranian MP warns Iran could enrich uranium to 90% if US attacks amid ceasefire collapse.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 1.00</span></div></div></article><article class="item" id="item-10"><span class="item-n">#10</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/gulf/2026/05/12/why-did-kuwaits-bubiyan-island-interest-irgc-infiltrators/" target="_blank" rel="noopener">Why did Kuwait&#x27;s Bubiyan Island interest IRGC infiltrators?</a></h3><p class="summary">Four IRGC-linked suspects arrested attempting to infiltrate Kuwait&#x27;s strategic Bubiyan Island.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.80</span></div></div></article><article class="item" id="item-14"><span class="item-n">#14</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/05/11/president-sheikh-mohamed-discusses-iranian-attacks-on-uae-with-president-of-ukraine/" target="_blank" rel="noopener">Sheikh Mohamed and Ukraine&#x27;s Zelenskyy discuss Iranian attacks and trade deal</a></h3><p class="summary">President Sheikh Mohamed condemns Iranian strikes; discusses security cooperation and trade with Ukraine&#x27;s Zelenskyy.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.50</span></div></div></article><article class="item" id="item-17"><span class="item-n">#17</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/gulf/2026/05/12/bahrain-sentences-three-to-life-in-prison-over-links-to-irans-irgc/" target="_blank" rel="noopener">Bahrain sentences three to life in prison over links to Iran’s IRGC</a></h3><p class="summary">Bahrain sentences 24 people for IRGC espionage, infiltration, and support for Iranian attacks.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.70</span></div></div></article><article class="item" id="item-23"><span class="item-n">#23</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/energy/2026/05/12/trump-unlikely-to-persuade-xi-to-stop-buying-iranian-oil-analysts-say/" target="_blank" rel="noopener">Trump unlikely to persuade Xi to stop buying Iranian oil, analysts say</a></h3><p class="summary">Analysts say Trump unlikely to pressure China into stopping Iranian oil purchases.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.50</span></div></div></article></section>
-<section class="section"><div class="section-head"><span class="label">▌ UAE DOCTRINE</span><span class="count">03 ITEMS</span></div><article class="item" id="item-8"><span class="item-n">#08</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/future/technology/2026/05/11/uae-doubles-down-on-us-tech-and-ai-ambitions-amid-iran-war/" target="_blank" rel="noopener">UAE doubles down on US tech and AI ambitions amid Iran war</a></h3><p class="summary">UAE ambassador affirms deepened commitment to American AI and computing infrastructure.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article><article class="item" id="item-12"><span class="item-n">#12</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/05/10/sheikh-mohammed-bin-rashid-announces-scheme-to-eradicate-river-blindness/" target="_blank" rel="noopener">Sheikh Mohammed bin Rashid announces scheme to eradicate river blindness</a></h3><p class="summary">Sheikh Mohammed bin Rashid launches river blindness eradication initiative targeting 7M direct and 35.4M indirect beneficiaries by 2030.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.60</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article><article class="item" id="item-13"><span class="item-n">#13</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/future/technology/2026/05/10/uae-iran-hacking-cybersecurity/" target="_blank" rel="noopener">UAE cyber security priorities pay off amid Iran tensions, official says</a></h3><p class="summary">UAE cybersecurity investments successfully protected infrastructure against Iranian attacks.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.50</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article></section>
+<section class="top"><div class="top-head"><span class="label">▌ Top stories</span><span class="count">03 of 03</span></div><ol><li><a href="https://www.internal-displacement.org/spotlight/palestine-escalating-violence-and-protracted-displacement">Palestine - Escalating violence and protracted displacement</a><span class="ref">#1</span></li>
+<li><a href="https://www.thenationalnews.com/news/mena/2026/05/12/live-us-iran-war-kuwait-inflitration/">Iran war latest: UAE condemns IRGC&#x27;s attempted infiltration of Kuwait</a><span class="ref">#2</span></li>
+<li><a href="https://www.thenationalnews.com/news/uae/2026/05/11/president-sheikh-mohamed-discusses-iranian-attacks-on-uae-with-president-of-ukraine/">Sheikh Mohamed and Ukraine&#x27;s Zelenskyy discuss Iranian attacks and trade deal</a><span class="ref">#3</span></li></ol></section>
+<section class="section"><div class="section-head"><span class="label">▌ HUMANITARIAN</span><span class="count">06 ITEMS</span></div><article class="item" id="item-1"><span class="item-n">#01</span><div class="item-body"><h3 class="title"><a href="https://www.internal-displacement.org/spotlight/palestine-escalating-violence-and-protracted-displacement" target="_blank" rel="noopener">Palestine - Escalating violence and protracted displacement</a></h3><p class="summary">Palestine experiences escalating violence and protracted internal displacement.</p><div class="meta"><span class="src">IDMC — Internal Displacement Monitoring Centre</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.90</span></div></div></article><article class="item" id="item-5"><span class="item-n">#05</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/05/11/searching-in-gazas-rubble-for-24-dead-relatives/" target="_blank" rel="noopener">Searching in Gaza&#x27;s rubble for 24 dead relatives</a></h3><p class="summary">Gaza man searches rubble for 24 relatives; 8,000+ bodies unrecovered.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.80</span> · <span>PS</span> · <span>HUMANITARIAN</span></div></div></article><article class="item" id="item-6"><span class="item-n">#06</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/05/12/razing-southern-lebanon-inside-israels-campaign-of-wanton-destruction/" target="_blank" rel="noopener">Razing southern Lebanon: Inside Israel’s campaign of wanton destruction</a></h3><p class="summary">Israel demolishes southern Lebanon civilian structures; 100,000 buildings destroyed/damaged.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.60</span> · <span class="sev">SEV 0.80</span> · <span>LB · IL</span> · <span>HUMANITARIAN</span></div></div></article><article class="item" id="item-8"><span class="item-n">#08</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/05/11/senior-rsf-commander-switches-sides-in-sudans-civil-war/" target="_blank" rel="noopener">Senior RSF commander switches sides in Sudan&#x27;s civil war</a></h3><p class="summary">Senior RSF commander defects to Sudan army; third such desertion since 2024.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.60</span> · <span>SD</span> · <span>HUMANITARIAN</span></div></div></article><article class="item" id="item-9"><span class="item-n">#09</span><div class="item-body"><h3 class="title"><a href="https://www.nytimes.com/2026/05/11/world/middleeast/israel-oct-7-prosecutions-palestinians-trial.html" target="_blank" rel="noopener">Israel Prepares to Prosecute First Suspects in Oct. 7 Attack Led by Hamas</a></h3><p class="summary">Israel legalizes military trials for hundreds of Palestinians over Oct. 7 attack.</p><div class="meta"><span class="src">New York Times — World</span> · <span class="rel">REL 0.50</span> · <span class="sev">SEV 0.60</span> · <span>IL · PS</span> · <span>HUMANITARIAN</span></div></div></article><article class="item" id="item-10"><span class="item-n">#10</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/05/11/narges-mohammadi-must-never-return-to-iranian-prison-after-release-for-medical-care-say-family/" target="_blank" rel="noopener">Narges Mohammadi must never return to Iranian prison after release for medical care, say family</a></h3><p class="summary">Nobel laureate Narges Mohammadi released from Iranian prison for urgent medical care.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.50</span> · <span class="sev">SEV 0.60</span> · <span>IR</span> · <span>HUMANITARIAN</span></div></div></article></section>
+<section class="section"><div class="section-head"><span class="label">▌ REPORTS &amp; EVIDENCE</span><span class="count">04 ITEMS</span></div><article class="item" id="item-11"><span class="item-n">#11</span><div class="item-body"><h3 class="title"><a href="https://www.bbc.com/news/articles/c202wp2rl09o?at_medium=RSS&amp;at_campaign=rss" target="_blank" rel="noopener">EU agrees sanctions on Israeli settlers over West Bank violence</a></h3><p class="summary">EU imposes sanctions on Israeli settlers over West Bank violence.</p><div class="meta"><span class="src">BBC News — World</span> · <span class="rel">REL 0.60</span> · <span class="sev">SEV 0.60</span></div></div></article><article class="item" id="item-16"><span class="item-n">#16</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/energy/2026/05/11/opec-uae-oil/" target="_blank" rel="noopener">Don&#x27;t be fooled by cheap oil</a></h3><p class="summary">Oil prices remain calm despite 10% global export disruption from Iran war.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.70</span></div></div></article><article class="item" id="item-20"><span class="item-n">#20</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/energy/2026/05/11/oil-prices-trump-iran-hormuz/" target="_blank" rel="noopener">Oil prices surge after Trump dismisses Iran offer</a></h3><p class="summary">Oil prices surge 5% as Trump rejects Iran&#x27;s latest peace proposal.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.70</span></div></div></article><article class="item" id="item-24"><span class="item-n">#24</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/opinion/comment/2026/05/11/uae-emirates-health-wellbeing-obesity-weight-loss-nutrition-medication-drug/" target="_blank" rel="noopener">The UAE&#x27;s approach to tackling obesity goes beyond prescribing a magic pill</a></h3><p class="summary">UAE approves oral obesity treatment; integrated patient-centered health approach.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span>AE</span> · <span>HEALTH</span></div></div></article></section>
+<section class="section"><div class="section-head"><span class="label">▌ CONFERENCES &amp; EVENTS</span><span class="count">01 ITEM</span></div><article class="item" id="item-15"><span class="item-n">#15</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/sport/combat-sports/2026/05/11/emirati-trailblazer-mohammad-yahya-proud-to-headline-pfl-in-dubai-and-tells-fans-to-expect-fireworks/" target="_blank" rel="noopener">Emirati trailblazer Mohammad Yahya proud to headline PFL in Dubai and tells fans to expect &#x27;fireworks&#x27;</a></h3><p class="summary">First Emirati fighter headlines PFL sporting event in Dubai May 24.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.85</span></div></div></article></section>
+<section class="section"><div class="section-head"><span class="label">▌ UAE FOREIGN-POLICY SIGNALS</span><span class="count">08 ITEMS</span></div><article class="item" id="item-2"><span class="item-n">#02</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/05/12/live-us-iran-war-kuwait-inflitration/" target="_blank" rel="noopener">Iran war latest: UAE condemns IRGC&#x27;s attempted infiltration of Kuwait</a></h3><p class="summary">UAE condemns IRGC&#x27;s attempted infiltration of Kuwait as security threat.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.60</span></div></div></article><article class="item" id="item-3"><span class="item-n">#03</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/05/11/president-sheikh-mohamed-discusses-iranian-attacks-on-uae-with-president-of-ukraine/" target="_blank" rel="noopener">Sheikh Mohamed and Ukraine&#x27;s Zelenskyy discuss Iranian attacks and trade deal</a></h3><p class="summary">Sheikh Mohamed condemns Iran strikes to Zelenskyy; discusses security, trade.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.60</span> · <span>AE · UA · IR</span></div></div></article><article class="item" id="item-4"><span class="item-n">#04</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/05/11/houthis-expanding-weapons-cache-with-drones-and-missiles-from-iran/" target="_blank" rel="noopener">Houthis expand arsenal with drones and missiles from Iran</a></h3><p class="summary">Houthis expand arsenal with advanced Iranian missiles and underwater weapons.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.70</span> · <span>YE · IR</span></div></div></article><article class="item" id="item-7"><span class="item-n">#07</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/05/11/iran-war-peace-proposal-talks/" target="_blank" rel="noopener">One page, 14 points, no deal: Diplomacy to end Iran war stalls</a></h3><p class="summary">US-Iran nuclear diplomacy stalls; Strait of Hormuz becomes central pressure point.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.60</span> · <span class="sev">SEV 0.70</span> · <span>IR · US</span></div></div></article><article class="item" id="item-12"><span class="item-n">#12</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/05/12/how-egypts-balancing-act-aims-to-preserve-relations-and-prevent-war/" target="_blank" rel="noopener">How Egypt&#x27;s balancing act aims to preserve relations and prevent war</a></h3><p class="summary">Egypt balances Gulf alliance with Tehran negotiation to prevent regional war.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.40</span> · <span>EG · IR</span></div></div></article><article class="item" id="item-13"><span class="item-n">#13</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uk/2026/05/11/iranian-drug-trafficking-network-sanctioned-for-carrying-out-attacks-on-uk/" target="_blank" rel="noopener">Iranian drug trafficking network sanctioned for carrying out attacks on UK</a></h3><p class="summary">UK, EU sanction Iranian drug network and intelligence officer for UK attacks.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.50</span> · <span class="sev">SEV 0.50</span> · <span>IR · GB</span></div></div></article><article class="item" id="item-14"><span class="item-n">#14</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/05/11/syria-aiming-for-stable-relations-with-israel-says-minister-al-shibani/" target="_blank" rel="noopener">Syria aiming for stable relations with Israel, says minister Al Shibani</a></h3><p class="summary">Syria&#x27;s FM seeks calm, stable relations with Israel while rebuilding.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.50</span> · <span class="sev">SEV 0.40</span> · <span>SY · IL</span></div></div></article><article class="item" id="item-19"><span class="item-n">#19</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/future/technology/2026/05/11/uae-doubles-down-on-us-tech-and-ai-ambitions-amid-iran-war/" target="_blank" rel="noopener">UAE doubles down on US tech and AI ambitions amid Iran war</a></h3><p class="summary">UAE ambassador reaffirms sovereign AI partnership with US despite regional conflict.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span></div></div></article></section>
+<section class="section"><div class="section-head"><span class="label">▌ UAE ECOSYSTEM</span><span class="count">06 ITEMS</span></div><article class="item" id="item-17"><span class="item-n">#17</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/energy/2026/05/11/adnoc-drilling-posts-q1-profit-rise-on-high-fleet-activity-and-long-term-contracts/" target="_blank" rel="noopener">Adnoc Drilling posts Q1 profit with no pause in Gulf orders</a></h3><p class="summary">ADNOC Drilling posts record Q1 profit from UAE upstream expansion projects.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span></div></div></article><article class="item" id="item-18"><span class="item-n">#18</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/property/2026/05/11/emaar-reports-35-surge-in-first-quarter-profit-despite-uncertainty-driven-by-war/" target="_blank" rel="noopener">Emaar reports 35% surge in first quarter profit despite uncertainty driven by war</a></h3><p class="summary">Emaar Properties reports 35% Q1 profit surge despite regional conflict.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span></div></div></article><article class="item" id="item-21"><span class="item-n">#21</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/05/11/dubais-salik-reports-decline-of-13-million-journeys-and-revenue-drop-amid-iran-war/" target="_blank" rel="noopener">Dubai&#x27;s Salik reports decline of 13 million journeys and revenue drop amid Iran war</a></h3><p class="summary">Dubai&#x27;s Salik toll operator reports 13M fewer journeys from Iran war impact.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span></div></div></article><article class="item" id="item-22"><span class="item-n">#22</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/05/11/date-palms-from-uaes-expo-pavilion-to-help-rebuilding-efforts-in-earthquake-hit-japanese-city/" target="_blank" rel="noopener">Date palms from UAE&#x27;s Expo pavilion to help rebuilding efforts in earthquake-hit Japanese city</a></h3><p class="summary">UAE Expo pavilion date palms donated for Wajima earthquake reconstruction center.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span>AE · JP</span> · <span>HUMANITARIAN</span></div></div></article><article class="item" id="item-23"><span class="item-n">#23</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/economy/2026/05/11/abu-dhabi-uae-public-private-partnership/" target="_blank" rel="noopener">Abu Dhabi launches $15bn pipeline of public-private partnership projects</a></h3><p class="summary">Abu Dhabi launches Dh55bn public-private partnership infrastructure pipeline.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span>AE</span> · <span>TRADE</span></div></div></article><article class="item" id="item-25"><span class="item-n">#25</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/2026/05/11/uae-and-syria-hold-first-business-forum-since-assads-fall/" target="_blank" rel="noopener">UAE and Syria hold first business forum since Assad&#x27;s fall</a></h3><p class="summary">UAE-Syria first business forum convenes; DP World $800M port agreement signed.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span>AE · SY</span> · <span>TRADE</span></div></div></article></section>
 <footer class="foot"><span>© 2026 Dalila — daily intelligence brief</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Submit a suggestion</a></span></footer>
 </div>
 </body>
