@@ -65,6 +65,12 @@ def main(argv: list[str] | None = None) -> int:
     p_bf.add_argument("--until", default=None, help="ISO date YYYY-MM-DD (inclusive; default today)")
     p_bf.add_argument("--source", default=None,
                        help="Single source id: wam_en, the_national, gulf_news, gdelt_v2, or acled. Default: all five.")
+    p_bf.add_argument("--no-body", action="store_true",
+                       help="Skip per-article HTML fetch for sitemap sources (10x faster; classifier works off title-from-URL-slug + sitemap lastmod).")
+    p_bf.add_argument("--concurrency", type=int, default=12,
+                       help="Parallel article fetches per sitemap source (default 12).")
+    p_bf.add_argument("--max-per-source", type=int, default=4000,
+                       help="Cap candidate URLs per sitemap source (default 4000).")
     p_doctrine = sub.add_parser("doctrine", help="Run the doctrine extraction pass over pending classified items")
     p_doctrine.add_argument("--limit", type=int, default=20, help="Max items to process this run")
     sub.add_parser("verify-sources", help="Probe every enabled source and report fetched count + sample title")
@@ -186,7 +192,12 @@ def main(argv: list[str] | None = None) -> int:
         except ValueError as exc:
             print(f"ERROR: bad date format: {exc}", file=sys.stderr)
             return 2
-        stats = run_backfill(since=since, until=until, source=args.source)
+        stats = run_backfill(
+            since=since, until=until, source=args.source,
+            fetch_body=not args.no_body,
+            concurrency=args.concurrency,
+            max_per_source=args.max_per_source,
+        )
         print(f"\nBackfill complete (since={since}, until={until or 'today'}):")
         for sid, s in stats.items():
             print(f"  {sid:20s}  fetched={s['fetched']:5d}  new={s['new']:5d}  "

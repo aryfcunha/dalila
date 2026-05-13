@@ -36,6 +36,7 @@ import io
 import logging
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime, timedelta, timezone
 from urllib.parse import urljoin
 from xml.etree import ElementTree as ET
@@ -259,7 +260,8 @@ def iter_items(
     until: date | None = None,
     *,
     max_per_source: int = 4000,
-    article_sleep_s: float = 0.3,
+    article_sleep_s: float = 0.0,
+    concurrency: int = 12,
 ):
     """Yield RawItems for `source_id` between `since` and `until` (inclusive).
 
@@ -318,34 +320,62 @@ def iter_items(
 
     log.info("backfill[%s]: %d candidate article URLs gathered", source_id, len(article_urls))
 
-    # Step 3: fetch each article HTML and yield a RawItem.
+    # Step 3: fetch each article HTML in parallel and yield a RawItem.
+    # Serial fetch with a 0.3s sleep on 5000+ URLs is 25+ minutes of pure waiting;
+    # a small thread pool brings that down to single-digit minutes per source.
     fetched = 0
-    for url, lm in article_urls[:max_per_source]:
-        if src.get("fetch_body", True):
+    todo = article_urls[:max_per_source]
+    fetch_body = src.get("fetch_body", True)
+
+    def _process(url_lm: tuple[str, datetime | None]) -> RawItem | None:
+        url, lm = url_lm
+        if fetch_body:
             blob = _http_get(url)
             if blob is None:
-                continue
+                return None
             title, body, pub_dt = _extract_article(blob, url)
-            time.sleep(article_sleep_s)
+            if article_sleep_s:
+                time.sleep(article_sleep_s)
         else:
-            title, body, pub_dt = "", None, None
-            # Try to recover something from the URL itself
             slug = url.rstrip("/").rsplit("/", 1)[-1].replace("-", " ").replace("_", " ")
-            title = slug[:200]
+            title, body, pub_dt = slug[:200], None, None
         if not title:
-            continue
+            return None
         published_at = pub_dt or lm or _date_from_url(url)
-        # Skip articles outside the requested window (sitemaps sometimes lie).
         if published_at and published_at < since_dt:
-            continue
-        yield RawItem(
+            return None
+        return RawItem(
             source_id=source_id,
             title=title[:300],
             url=url,
             body=body[:2000] if body else None,
             published_at=published_at,
         )
-        fetched += 1
+
+    if concurrency <= 1 or not fetch_body:
+        # No pool needed when we're not making HTTP calls per article.
+        for ul in todo:
+            it = _process(ul)
+            if it is not None:
+                fetched += 1
+                yield it
+                if fetched % 200 == 0:
+                    log.info("backfill[%s]: yielded %d / %d so far", source_id, fetched, len(todo))
+    else:
+        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+            futures = [pool.submit(_process, ul) for ul in todo]
+            for fut in as_completed(futures):
+                try:
+                    it = fut.result()
+                except Exception as exc:
+                    log.debug("backfill[%s]: worker failed: %s", source_id, exc)
+                    continue
+                if it is not None:
+                    fetched += 1
+                    yield it
+                    if fetched % 200 == 0:
+                        log.info("backfill[%s]: yielded %d / %d so far",
+                                 source_id, fetched, len(todo))
     log.info("backfill[%s]: yielded %d items", source_id, fetched)
 
 

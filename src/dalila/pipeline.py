@@ -246,6 +246,9 @@ def run_backfill(
     until: "date | None" = None,
     *,
     source: str | None = None,
+    fetch_body: bool = True,
+    concurrency: int = 12,
+    max_per_source: int = 4000,
 ) -> dict:
     """Historical backfill from the dated archives of one or all backfill sources.
 
@@ -322,7 +325,16 @@ def run_backfill(
                 elif sid == "acled":
                     iterator = acled_mod.iter_items_range(sid, since, until)
                 else:
-                    iterator = sitemap_mod.iter_items(sid, since, until)
+                    # Per-source override: respect fetch_body unless the source
+                    # already opted out via its BACKFILL_SOURCES recipe.
+                    src_recipe = sitemap_mod.BACKFILL_SOURCES.get(sid, {}).copy()
+                    src_recipe["fetch_body"] = fetch_body and src_recipe.get("fetch_body", True)
+                    sitemap_mod.BACKFILL_SOURCES[sid] = src_recipe
+                    iterator = sitemap_mod.iter_items(
+                        sid, since, until,
+                        max_per_source=max_per_source,
+                        concurrency=concurrency,
+                    )
 
                 for it in iterator:
                     seen_count += 1
