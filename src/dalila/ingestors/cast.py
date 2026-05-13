@@ -33,13 +33,18 @@ import httpx
 from dalila import db
 from dalila.config import get_config, load_countries
 from dalila.ingestors.acled import _auth_headers
-from dalila.ingestors.forecast import format_title, record_observation
+from dalila.ingestors.forecast import (
+    format_title, is_baseline_run, record_observation,
+)
 from dalila.models import RawItem
 
 log = logging.getLogger(__name__)
 
 CAST_URL = "https://acleddata.com/api/cast/read"
-CAST_DELTA_THRESHOLD = 0.5     # 0–10 scale; ~5% of full range
+# ACLED's own CAST methodology defines a "notable shift" as Δ ≥ 1.0 on the
+# 0-10 risk scale. Month-to-month noise for stable countries is ~0.3, so
+# 0.5 would over-trigger. See METHODOLOGY.md for the calibration rationale.
+CAST_DELTA_THRESHOLD = 1.0
 SOURCE_ID = "cast"
 
 # ISO-3 → ISO-2 fallback for when the API returns alpha-3 country codes.
@@ -167,6 +172,11 @@ def fetch(src: dict) -> list[RawItem]:
     stable = 0
 
     with db.connect() as conn:
+        seeding = is_baseline_run(conn, SOURCE_ID)
+        if seeding:
+            log.info("CAST: first-ever run for this source — recording baselines "
+                     "silently; no items emitted. Next monthly run will surface "
+                     "deltas ≥ %.1f only.", CAST_DELTA_THRESHOLD)
         for row in rows:
             iso = _resolve_iso2(row, name_lookup)
             if not iso:
@@ -197,6 +207,7 @@ def fetch(src: dict) -> list[RawItem]:
                 observed_at=observed_at,
                 threshold_abs=CAST_DELTA_THRESHOLD,
                 notes=notes,
+                seed_baseline=seeding,
             )
             if change is None:
                 stable += 1

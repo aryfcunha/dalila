@@ -43,19 +43,38 @@ class ForecastChange:
 
     @property
     def emoji(self) -> str:
-        """🔴 = worsening, 🟢 = improving, ⚪ = new tracking entry without a baseline.
+        """Visual semantic on the brief:
 
-        For most humanitarian/conflict metrics, going UP is bad (more violence,
-        more hunger, higher severity). Sources that invert this semantic
-        (e.g. a "stability score" where up = good) should override at the
-        ingestor level by flipping `direction` before passing the change to
-        `format_title`.
+          🔴 worsening   — metric moved up (more violence/hunger/severity)
+          🟢 improving   — metric moved down, or a previously-tracked alert cleared
+          🆕 newly tracked — country entered tracking AFTER baseline already existed
+                             for this source. Never fires on the first-ever run
+                             (see `is_baseline_run`); only when a country joins later.
+          🟡 categorical change — non-directional movement on a text-valued metric
+
+        For sources that invert the semantic (e.g. a "stability score" where
+        up = good), the ingestor flips `direction` before constructing the
+        change so the emoji line up correctly with reality.
         """
         if self.direction == "up":     return "🔴"
         if self.direction == "down":   return "🟢"
-        if self.direction == "new":    return "⚪"
+        if self.direction == "new":    return "🆕"
         if self.direction == "cleared":return "🟢"
         return "🟡"
+
+
+def is_baseline_run(conn: sqlite3.Connection, source_id: str) -> bool:
+    """True if forecast_snapshots has zero rows for this source — i.e. we've
+    never seen this forecast feed before. In that state the ingestor should
+    record every observation silently (no items emitted) so the next run
+    has a real comparison point. After baseline establishment, a country
+    appearing for the FIRST time fires a 🆕 item; same-country movements
+    fire 🔴/🟢."""
+    row = conn.execute(
+        "SELECT 1 FROM forecast_snapshots WHERE source_id = ? LIMIT 1",
+        (source_id,),
+    ).fetchone()
+    return row is None
 
 
 def record_observation(
@@ -71,25 +90,28 @@ def record_observation(
     threshold_rel: float | None = None,
     threshold_text_change: bool = False,
     notes: str | None = None,
+    seed_baseline: bool = False,
 ) -> ForecastChange | None:
     """Persist a new observation and return a ForecastChange iff it's meaningful.
 
-    Returns None when:
-      - This is the first-ever observation for (source, country, metric) AND
-        the caller didn't ask for "new entries are interesting too" (i.e. they
-        only care about movements, not baselines).
-      - The numeric delta is below `threshold_abs` AND below `threshold_rel`
-        (relative threshold expressed as a fraction, e.g. 0.05 = 5%).
-      - For categorical metrics: the text is unchanged.
+    `seed_baseline=True` (passed by the ingestor when `is_baseline_run()` is
+    True) suppresses ALL emissions for this run — observations are recorded
+    silently so the next run has a comparison point. This prevents the
+    first-ever CAST run from dumping ~190 "🆕 newly tracked" items.
 
-    Returns a ForecastChange when:
-      - Numeric value moved by at least one of the thresholds.
-      - Categorical value changed (only relevant when threshold_text_change=True).
-      - This is the first observation AND threshold_abs/threshold_rel are not
-        both set (callers like GDACS treat any first sighting as "new alert").
+    Returns None when:
+      - seed_baseline=True (always silent on the first-ever run for a source).
+      - Numeric value moved less than both thresholds.
+      - Categorical metric is unchanged.
+
+    Returns a ForecastChange when (and only when):
+      - Numeric value moved by at least one of the thresholds (abs OR rel).
+      - Categorical value changed and threshold_text_change=True.
+      - A country appears for the first time AFTER baseline establishment
+        (only when callers ask for it via threshold_abs=None & threshold_rel=None).
 
     Side effect: the snapshot row is upserted regardless of whether a change
-    is returned — so future calls compare against the latest value.
+    is returned, so the next call has a baseline.
     """
     iso = (country_iso2 or "").strip().upper()
     if len(iso) != 2 or not iso.isalpha():
@@ -108,7 +130,17 @@ def record_observation(
 
     change: ForecastChange | None = None
 
-    if value is not None:
+    # Baseline-establishment mode: record silently, emit nothing. The upsert
+    # at the bottom still runs so the next observation has a comparison point.
+    # Skip all delta computation by short-circuiting.
+    if seed_baseline:
+        value_to_change = None
+    elif value is not None:
+        value_to_change = value
+    else:
+        value_to_change = None
+
+    if value_to_change is not None:
         if is_first:
             # First sighting — only surface if caller didn't set both thresholds
             # (i.e. didn't say "I only care about movements").
@@ -121,7 +153,7 @@ def record_observation(
                     observed_at=observed_at, notes=notes,
                 )
         else:
-            delta = value - (prev_num or 0)
+            delta = value_to_change - (prev_num or 0)
             abs_ok = threshold_abs is not None and abs(delta) >= threshold_abs
             rel_ok = (
                 threshold_rel is not None
@@ -132,12 +164,12 @@ def record_observation(
                 direction = "up" if delta > 0 else "down"
                 change = ForecastChange(
                     country_iso2=iso, metric_key=metric_key,
-                    value_now=value, value_prev=prev_num,
+                    value_now=value_to_change, value_prev=prev_num,
                     text_now=text, text_prev=prev_text,
                     direction=direction, delta=delta,
                     observed_at=observed_at, notes=notes,
                 )
-    elif threshold_text_change and text is not None and text != prev_text:
+    elif not seed_baseline and threshold_text_change and text is not None and text != prev_text:
         direction = "change"
         if prev_text and not text:
             direction = "cleared"
