@@ -668,6 +668,7 @@ def run_publish_site(out_dir: "Path") -> dict:
     from dalila.config import load_countries, load_sources
     from dalila.html_digest import (
         render_about, render_archive, render_countries, render_digest, render_index,
+        render_methodology,
     )
 
     out_dir = Path(out_dir)
@@ -755,6 +756,13 @@ def run_publish_site(out_dir: "Path") -> dict:
     about_html = render_about(sources)
     (out_dir / "about.html").write_text(about_html, encoding="utf-8")
 
+    # 3b. Methodology page (generated from METHODOLOGY.md at repo root).
+    try:
+        methodology_html = render_methodology()
+        (out_dir / "methodology.html").write_text(methodology_html, encoding="utf-8")
+    except Exception:
+        log.exception("publish-site: methodology page generation failed")
+
     # 4. Countries view (region-grouped heatmap + per-country news on click)
     try:
         from dalila.config import load_countries
@@ -794,6 +802,7 @@ def run_publish_site(out_dir: "Path") -> dict:
             str(out_dir / "index.html"),
             str(out_dir / "archive.html"),
             str(out_dir / "countries.html"),
+            str(out_dir / "methodology.html"),
             str(out_dir / "about.html"),
         ] + [str(digests_dir / f"{d['slug']}.html") for d in written],
     }

@@ -402,6 +402,65 @@ a:hover {{
 }}
 .source-block li .note {{ color: var(--muted); margin-left: 4px; }}
 
+/* Methodology page */
+.methodology {{
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 12px 0 32px;
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--type);
+}}
+.methodology h1 {{ display: none; }}  /* MASTHEAD already shows title */
+.methodology h2 {{
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--amber);
+  border-top: 1px solid var(--rule-strong);
+  padding-top: 18px;
+  margin: 28px 0 12px;
+}}
+.methodology h3 {{
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--type);
+  margin: 18px 0 8px;
+}}
+.methodology p {{ margin: 0 0 12px; }}
+.methodology ul {{ margin: 0 0 14px; padding-left: 22px; }}
+.methodology li {{ margin: 4px 0; }}
+.methodology hr {{ border: none; border-top: 1px dashed var(--rule); margin: 24px 0; }}
+.methodology code {{
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 0.88em; color: var(--amber); background: var(--bg-deep);
+  padding: 1px 5px; border: 1px solid var(--rule-strong);
+}}
+.method-table-wrap {{ overflow-x: auto; margin: 8px 0 18px; }}
+.method-table {{
+  width: 100%; border-collapse: collapse;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+}}
+.method-table th, .method-table td {{
+  border: 1px solid var(--rule-strong);
+  padding: 8px 10px; text-align: left; vertical-align: top;
+}}
+.method-table thead th {{
+  background: var(--bg-deep);
+  color: var(--amber);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}}
+.method-table td:first-child {{ color: var(--type); font-weight: 600; }}
+.method-table td strong {{ color: var(--amber); }}
+
 /* ---------- countries view ---------- */
 .country-controls {{
   display: flex;
@@ -597,6 +656,7 @@ def _masthead(*, on_page: str, tag: str = "DAILY BRIEF", link_prefix: str = "") 
     <a href="{home_href}"{_attr("home")}>Home</a>
     <a href="{link_prefix}archive.html"{_attr("archive")}>Archive</a>
     <a href="{link_prefix}countries.html"{_attr("countries")}>Countries</a>
+    <a href="{link_prefix}methodology.html"{_attr("methodology")}>Methodology</a>
     <a href="{link_prefix}about.html"{_attr("about")}>About</a>
   </nav>
 </header>
@@ -1836,6 +1896,149 @@ def _country_view_script() -> str:
 """
 
 
+def render_methodology(
+    *,
+    md_path: "Path | str | None" = None,
+    contact_email: str = "dalila.dev.digest@gmail.com",
+    telegram_bot: str | None = "dalila_development_digest_bot",
+) -> str:
+    """Render METHODOLOGY.md into a styled HTML page.
+
+    Source of truth is the repo-root METHODOLOGY.md so the page never drifts
+    from the file commits track. Inline converter handles the markdown subset
+    we actually use (h1/h2/h3, paragraphs, fenced tables, lists, inline code,
+    bold, italic, links). No external dependency on python-markdown / mistune.
+    """
+    from pathlib import Path as _Path
+    if md_path is None:
+        # repo root is two levels up from src/dalila/
+        md_path = _Path(__file__).resolve().parents[2] / "METHODOLOGY.md"
+    md_path = _Path(md_path)
+    if not md_path.exists():
+        md_text = "# Methodology\n\n_METHODOLOGY.md not found at expected path._"
+    else:
+        md_text = md_path.read_text(encoding="utf-8")
+
+    body_md = _md_to_html(md_text)
+
+    body: list[str] = []
+    body.append(_masthead(on_page="methodology", tag="METHODOLOGY", link_prefix=""))
+    body.append('<div class="methodology">')
+    body.append(
+        '<p class="kicker" style="font-style:italic;color:var(--type-dim);'
+        'max-width:64ch;margin:14px 0 24px;font-size:15px;line-height:1.55;">'
+        'Every numeric threshold, sampling rate, batch size, and model choice '
+        'in this brief encodes a decision. This page is the source of truth '
+        'for those decisions and the empirical evidence behind them. '
+        'It is generated directly from <code>METHODOLOGY.md</code> in the '
+        'repository — when a knob is tuned, the rationale here is updated '
+        'in the same commit.</p>'
+    )
+    body.append(body_md)
+    body.append('</div>')
+    body.append(_footer(contact_email=contact_email, telegram_bot=telegram_bot))
+    return _doc("Dalila — Methodology", "\n".join(body))
+
+
+def _md_to_html(md: str) -> str:
+    """Minimal Markdown → HTML for the subset METHODOLOGY.md uses.
+
+    Handles: headings (#, ##, ###), paragraphs, GFM tables (with | separators
+    and the `---` divider row), unordered lists, bold (**x** or __x__),
+    italic (*x* or _x_), inline code (`x`), and links ([text](url)).
+    Code fences and HTML blocks are passed through verbatim.
+
+    Deliberately not using `markdown` / `mistune` to avoid a runtime dep
+    for what is ~80 lines of recognisable regex.
+    """
+    import re
+
+    lines = md.split("\n")
+    out: list[str] = []
+    i = 0
+    in_ul = False
+
+    def close_ul():
+        nonlocal in_ul
+        if in_ul:
+            out.append("</ul>")
+            in_ul = False
+
+    def inline(s: str) -> str:
+        # Code first so other patterns don't touch its content
+        s = re.sub(r"`([^`]+)`", lambda m: f"<code>{html.escape(m.group(1))}</code>", s)
+        # Links
+        s = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', s)
+        # Bold
+        s = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", s)
+        # Italic
+        s = re.sub(r"(?<!\*)\*([^*\n]+)\*(?!\*)", r"<em>\1</em>", s)
+        return s
+
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.strip()
+
+        # Horizontal rule
+        if stripped == "---":
+            close_ul()
+            out.append("<hr/>")
+            i += 1; continue
+
+        # Headings
+        for level in (3, 2, 1):
+            prefix = "#" * level + " "
+            if stripped.startswith(prefix):
+                close_ul()
+                out.append(f"<h{level}>{inline(stripped[len(prefix):])}</h{level}>")
+                i += 1; break
+        else:
+            # GFM table — line starts with | and next line is the divider
+            if stripped.startswith("|") and i + 1 < len(lines) and re.match(r"\|[-:\s|]+\|", lines[i+1].strip()):
+                close_ul()
+                # Header row
+                header_cells = [c.strip() for c in stripped.strip("|").split("|")]
+                out.append('<div class="method-table-wrap"><table class="method-table"><thead><tr>')
+                for c in header_cells:
+                    out.append(f"<th>{inline(c)}</th>")
+                out.append("</tr></thead><tbody>")
+                i += 2  # skip header and divider
+                while i < len(lines) and lines[i].strip().startswith("|"):
+                    row_cells = [c.strip() for c in lines[i].strip().strip("|").split("|")]
+                    out.append("<tr>")
+                    for c in row_cells:
+                        out.append(f"<td>{inline(c)}</td>")
+                    out.append("</tr>")
+                    i += 1
+                out.append("</tbody></table></div>")
+                continue
+
+            # Unordered list
+            if stripped.startswith("- ") or stripped.startswith("* "):
+                if not in_ul:
+                    out.append("<ul>")
+                    in_ul = True
+                out.append(f"<li>{inline(stripped[2:])}</li>")
+                i += 1; continue
+
+            # Blank line: close any open list, emit paragraph break
+            if not stripped:
+                close_ul()
+                i += 1; continue
+
+            # Default: paragraph (greedily eat consecutive non-blank lines)
+            close_ul()
+            buf = [inline(stripped)]
+            i += 1
+            while i < len(lines) and lines[i].strip() and not lines[i].lstrip().startswith(("#", "|", "- ", "* ", "---")):
+                buf.append(inline(lines[i].strip()))
+                i += 1
+            out.append("<p>" + " ".join(buf) + "</p>")
+
+    close_ul()
+    return "\n".join(out)
+
+
 def render_about(
     sources: list[dict],
     *,
@@ -1901,8 +2104,9 @@ def render_about(
         'development, and philanthropy ecosystem &mdash; with a sharp focus '
         'on the UAE&rsquo;s role within it. It exists both as a website and '
         f'a Telegram bot ({sub_anchor}). Dalila skims through dozens of news '
-        'sources to get development practitioners the context they need to '
-        'make informed decisions.</p>'
+        'sources, multilateral feeds, and forecast indices to get '
+        'development practitioners the context they need to make informed '
+        'decisions.</p>'
     )
 
     body.append('<h2>How it works</h2>')
@@ -1916,6 +2120,23 @@ def render_about(
         f'digest from the previous 24 hours of classified items above '
         f'threshold. The digest is shared with subscribers on Telegram '
         f'({sub_anchor}).</p>'
+    )
+    body.append(
+        '<p>Alongside the news feeds, Dalila ingests <strong>forecast and '
+        'early-warning indices</strong> (ACLED CAST for conflict escalation; '
+        'ACAPS INFORM for crisis severity; WFP HungerMap for food insecurity; '
+        'GDACS for real-time disaster alerts). These appear in the digest&rsquo;s '
+        '<em>Foresight</em> section, but with a strict rule: only '
+        '<strong>changes</strong> are surfaced, never states. Sudan being '
+        'hungry every day produces zero items; Sudan getting hungrier produces '
+        'one, tagged 🔴 (worsening) or 🟢 (improving) and showing the delta '
+        'against the prior observation.</p>'
+    )
+    body.append(
+        '<p>Every numeric threshold, sampling rate, and model choice in this '
+        f'pipeline is documented in the <a href="methodology.html">methodology '
+        f'page</a> with its rationale and the empirical evidence behind it. '
+        'When a knob is tuned, the rationale is updated in the same commit.</p>'
     )
     body.append(
         '<p>Subscribers can ask for a deeper dive on a topic '
