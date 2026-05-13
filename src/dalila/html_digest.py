@@ -2389,20 +2389,17 @@ def render_about(
     # about.html sits at the site root → no path prefix needed
     body.append(_masthead(on_page="about", tag="ABOUT", link_prefix=""))
     body.append('<div class="about">')
-    sub_anchor = (
-        f'<a href="#subscribe">steps to subscribe</a>'
-    )
-    bot_href = (
-        f'https://t.me/{telegram_bot}' if telegram_bot else '#subscribe'
-    )
+    # The subscribe block lives lower on the page; both phrases that
+    # reference it link straight to that anchor (no awkward parenthetical).
+    sub_href = '#subscribe'
 
     body.append(
         '<p style="font-size:17px;color:var(--type);margin-top:18px;">'
         'Dalila is a daily intelligence brief on the global humanitarian, '
         'development, and philanthropy ecosystem &mdash; with a sharp focus '
         'on the UAE&rsquo;s role within it. It exists both as a website and '
-        f'a Telegram bot ({sub_anchor}). Dalila skims through dozens of news '
-        'sources, multilateral feeds, and forecast indices to get '
+        f'a <a href="{sub_href}">Telegram bot</a>. Dalila skims through dozens '
+        'of news sources, multilateral feeds, and forecast indices to get '
         'development practitioners the context they need to make informed '
         'decisions.</p>'
     )
@@ -2415,26 +2412,25 @@ def render_about(
         'Surviving items go through a classifier that assigns a category, '
         'UAE-relevance score, severity, and topical tags. Near-duplicates '
         'are deduplicated. At 06:30 GST an editor model composes the morning '
-        f'digest from the previous 24 hours of classified items above '
-        f'threshold. The digest is shared with subscribers on Telegram '
-        f'({sub_anchor}).</p>'
+        'digest from the previous 24 hours of classified items above '
+        f'threshold. The digest is shared with <a href="{sub_href}">subscribers '
+        f'on Telegram</a>.</p>'
     )
     body.append(
-        '<p>Alongside the news feeds, Dalila ingests <strong>forecast and '
-        'early-warning indices</strong> (ACLED CAST for conflict escalation; '
+        '<p>Alongside the news feeds, Dalila ingests forecast and '
+        'early-warning indices (ACLED CAST for conflict escalation; '
         'ACAPS INFORM for crisis severity; WFP HungerMap for food insecurity; '
         'GDACS for real-time disaster alerts). These appear in the digest&rsquo;s '
-        '<em>Foresight</em> section, but with a strict rule: only '
-        '<strong>changes</strong> are surfaced, never states. Sudan being '
-        'hungry every day produces zero items; Sudan getting hungrier produces '
-        'one, tagged 🔴 (worsening) or 🟢 (improving) and showing the delta '
-        'against the prior observation.</p>'
+        '<em>Foresight</em> section, but with a strict rule: only changes '
+        'are surfaced, never states. Sudan being hungry every day produces '
+        'zero items; Sudan getting hungrier produces one, tagged 🔴 '
+        '(worsening) or 🟢 (improving) and showing the delta against the '
+        'prior observation.</p>'
     )
     body.append(
-        '<p>Every numeric threshold, sampling rate, and model choice in this '
-        f'pipeline is documented in the <a href="methodology.html">methodology '
-        f'page</a> with its rationale and the empirical evidence behind it. '
-        'When a knob is tuned, the rationale is updated in the same commit.</p>'
+        '<p>Every numeric threshold, sampling rate, and editorial rule in '
+        'this pipeline is documented in the <a href="methodology.html">'
+        'methodology page</a>, along with the rationale for each.</p>'
     )
     body.append(
         '<p>Subscribers can ask for a deeper dive on a topic '
