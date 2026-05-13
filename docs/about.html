@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dalila — About</title>
+<style>
+:root {
+  --bg:#FAF9F5;
+  --ink:#1F2430;
+  --muted:#5A6068;
+  --rule:#E6E2D6;
+  --accent:#3F6E54;
+  --accent-deep:#2A4D3A;
+}
+html,body {
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+body {
+  margin: 0;
+  font-family: "Source Serif Pro", "Lora", "PT Serif", Georgia, "Times New Roman", serif;
+  font-size: 17px;
+  line-height: 1.55;
+}
+.mono {
+  font-family: "JetBrains Mono", "IBM Plex Mono", "SF Mono", Consolas, monospace;
+  font-size: 0.78em;
+  letter-spacing: 0.04em;
+}
+a { color: var(--ink); text-decoration: underline; text-decoration-color: rgba(31,36,48,0.25); text-underline-offset: 3px; }
+a:hover { text-decoration-color: var(--accent); color: var(--accent-deep); }
+.wrap { max-width: 700px; margin: 0 auto; padding: 56px 32px 96px; }
+hr.rule { border: 0; border-top: 1px solid var(--rule); margin: 28px 0; }
+
+/* ---------- masthead (shared across pages) ---------- */
+.masthead {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: 28px;
+}
+.masthead a { text-decoration: none; color: var(--ink); }
+.masthead-title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  line-height: 1;
+}
+.masthead-title .ar {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--accent);
+  margin-left: 8px;
+  font-size: 0.7em;
+  vertical-align: 2px;
+}
+.masthead-nav {
+  margin-left: auto;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.masthead-nav a { color: var(--muted); text-decoration: none; margin-left: 14px; }
+.masthead-nav a:hover { color: var(--accent-deep); }
+
+/* ---------- footer ---------- */
+.footer {
+  margin-top: 64px;
+  padding-top: 18px;
+  border-top: 1px solid var(--rule);
+  color: var(--muted);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.footer a { color: var(--muted); }
+
+/* ---------- digest-specific ---------- */
+.date-line {
+  color: var(--muted);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  margin: 0 0 6px;
+}
+.kicker {
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--ink);
+  margin: 0 0 36px;
+  max-width: 56ch;
+}
+.kicker .top-stat { color: var(--accent-deep); font-weight: 600; }
+
+.section { margin: 0 0 36px; }
+.section-title {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 6px;
+  margin: 0 0 18px;
+  display: flex;
+  align-items: baseline;
+}
+.section-title .count {
+  margin-left: auto;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.item { padding: 0 0 22px; margin-bottom: 22px; border-bottom: 1px dashed var(--rule); }
+.item:last-child { border-bottom: none; }
+.item-title { margin: 0 0 8px; font-size: 18px; line-height: 1.35; font-weight: 600; }
+.item-title a { color: var(--ink); }
+.item-summary { margin: 0 0 8px; color: var(--ink); line-height: 1.55; }
+.item-meta {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: baseline;
+}
+.item-meta .src { color: var(--ink); }
+.item-meta .rel { color: var(--accent-deep); }
+.item-meta a { color: var(--muted); text-decoration-color: var(--rule); }
+.item-meta a:hover { color: var(--accent-deep); }
+.doctrine-tag {
+  display: inline-block;
+  padding: 0 6px;
+  border: 1px solid var(--accent);
+  color: var(--accent-deep);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+
+/* ---------- top stories (no heavy panel, just a small block) ---------- */
+.top-stories { margin: 0 0 42px; }
+.top-stories ol { margin: 0; padding: 0; list-style: none; counter-reset: top; }
+.top-stories li {
+  counter-increment: top;
+  padding: 10px 0;
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 14px;
+  align-items: baseline;
+  border-top: 1px solid var(--rule);
+}
+.top-stories li:first-child { border-top: none; }
+.top-stories li::before {
+  content: counter(top);
+  color: var(--accent);
+  font-weight: 700;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 14px;
+}
+.top-stories a { color: var(--ink); font-size: 17px; line-height: 1.4; }
+
+/* ---------- index / archive ---------- */
+.archive-item {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--rule);
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 16px;
+  align-items: baseline;
+}
+.archive-date {
+  color: var(--muted);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.archive-title { font-size: 17px; line-height: 1.4; }
+.archive-preview { color: var(--muted); font-size: 14px; line-height: 1.5; margin-top: 6px; }
+
+/* ---------- about-page ---------- */
+.about h2 {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 6px;
+  margin: 36px 0 16px;
+}
+.about p { margin: 0 0 16px; max-width: 60ch; }
+.about ul { margin: 0 0 16px 24px; padding: 0; }
+.about li { margin-bottom: 6px; }
+.about .source-block {
+  border-left: 2px solid var(--rule);
+  padding: 4px 0 4px 14px;
+  margin: 0 0 18px;
+}
+.about .source-block strong { color: var(--ink); }
+.about .source-block .note { color: var(--muted); font-size: 14px; }
+.about .contact a {
+  color: var(--accent-deep);
+  text-decoration-color: var(--accent);
+}
+
+/* ---------- print ---------- */
+@media print {
+  body { background: white; }
+  .wrap { max-width: none; padding: 24px 32px; }
+  .item, .section { page-break-inside: avoid; }
+  .masthead-nav, .footer { display: none; }
+}
+/* ---------- small screens ---------- */
+@media (max-width: 600px) {
+  .wrap { padding: 36px 22px 64px; }
+  .masthead { flex-wrap: wrap; }
+  .masthead-nav { margin-left: 0; }
+  .archive-item { grid-template-columns: 1fr; }
+  .archive-date { font-size: 11px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <h1 class="masthead-title"><a href="/">Dalila<span class="ar">دليلة</span></a></h1>
+  <nav class="masthead-nav">
+    <a href="/">Archive</a>
+    <a href="/about.html" aria-current="page">About</a>
+  </nav>
+</header>
+
+<div class="about">
+<p class="date-line">About</p>
+<p class="kicker">Dalila is a small daily intelligence brief on the global humanitarian, development, and philanthropy ecosystem — with a sharp focus on the UAE&rsquo;s role within it. It is built by one person, runs on free public sources, and exists to replace 30 to 60 minutes of fragmented morning reading.</p>
+<h2>How it works</h2>
+<p>Every 30 minutes, Dalila pulls new items from the sources listed below. A cheap keyword and entity prefilter drops items unrelated to the UAE-aid remit. Surviving items go through a classifier model that assigns a category, UAE-relevance score, severity, and topical tags. Items that cluster as the same story are deduplicated. At 06:30 GST, an editor model composes the morning digest from the previous 24 hours of classified items above threshold.</p>
+<p>Two-way commands let subscribers ask for a deeper dive on a topic (<code>/more &lt;topic&gt;</code>), review tracked UAE doctrine positions (<code>/doctrine</code>), or pull recent UAE financial commitments and bilateral meetings (<code>/commitments</code>, <code>/meetings</code>). Items are numbered so a reply with <code>link 3</code> returns the underlying source URL.</p>
+<h2>Sources</h2>
+<div class="source-block"><strong>UAE &amp; Gulf press</strong>
+<ul>
+<li><a href="https://gulfnews.com/feed" target="_blank" rel="noopener">Gulf News</a> <span class="note">— rss</span></li>
+<li><a href="https://www.thenationalnews.com/arc/outboundfeeds/rss/?outputType=xml" target="_blank" rel="noopener">The National</a> <span class="note">— rss</span></li>
+</ul></div>
+<div class="source-block"><strong>UN agencies</strong>
+<ul>
+<li><a href="https://www.iom.int/news/rss.xml" target="_blank" rel="noopener">IOM — International Organization for Migration</a> <span class="note">— rss</span></li>
+<li><a href="https://www.unocha.org/rss" target="_blank" rel="noopener">OCHA — Office for the Coordination of Humanitarian Affairs</a> <span class="note">— rss</span></li>
+<li><a href="https://www.ohchr.org/en/rss.xml" target="_blank" rel="noopener">OHCHR — UN Human Rights Office</a> <span class="note">— rss</span></li>
+<li><a href="https://news.un.org/feed/subscribe/en/news/all/rss.xml" target="_blank" rel="noopener">UN News</a> <span class="note">— rss</span></li>
+<li><a href="https://www.unhcr.org/news/rss.xml" target="_blank" rel="noopener">UNHCR — UN Refugee Agency</a> <span class="note">— rss</span></li>
+<li><a href="https://www.unicef.org/press-releases/rss.xml" target="_blank" rel="noopener">UNICEF — Press releases</a> <span class="note">— rss</span></li>
+<li><a href="https://www.who.int/feeds/entity/csr/don/en/rss.xml" target="_blank" rel="noopener">WHO Disease Outbreak News</a> <span class="note">— rss</span></li>
+<li><a href="https://www.wfp.org/news/news-releases.xml" target="_blank" rel="noopener">World Food Programme — News</a> <span class="note">— rss</span></li>
+</ul></div>
+<div class="source-block"><strong>Multilateral finance</strong>
+<ul>
+<li><a href="https://www.afdb.org/en/rss-feeds/all.rss" target="_blank" rel="noopener">African Development Bank — News</a> <span class="note">— rss</span></li>
+<li><a href="https://www.imf.org/en/News/RSS?Language=ENG" target="_blank" rel="noopener">IMF — News</a> <span class="note">— rss</span></li>
+<li><a href="https://reliefweb.int/updates/rss.xml" target="_blank" rel="noopener">ReliefWeb</a> <span class="note">— rss</span></li>
+<li><a href="https://www.worldbank.org/en/news/all.rss" target="_blank" rel="noopener">World Bank — News</a> <span class="note">— rss</span></li>
+</ul></div>
+<div class="source-block"><strong>Donor agencies (peer set)</strong>
+<ul>
+<li><a href="https://www.afd.fr/en/rss.xml" target="_blank" rel="noopener">AFD — Agence Française de Développement</a> <span class="note">— rss</span></li>
+<li><a href="https://www.bmz.de/en/feed-news-7320" target="_blank" rel="noopener">BMZ — German Federal Ministry for Economic Cooperation</a> <span class="note">— rss</span></li>
+<li><a href="https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom" target="_blank" rel="noopener">FCDO — UK Foreign, Commonwealth &amp; Development Office</a> <span class="note">— rss</span></li>
+<li><a href="https://www.jica.go.jp/english/news/press/rss.xml" target="_blank" rel="noopener">JICA — Japan International Cooperation Agency</a> <span class="note">— rss</span></li>
+<li><a href="https://www.norad.no/en/front/feed/" target="_blank" rel="noopener">Norad — Norwegian Agency for Development Cooperation</a> <span class="note">— rss</span></li>
+<li><a href="https://www.sida.se/en/news/feed" target="_blank" rel="noopener">Sida — Swedish International Development Cooperation Agency</a> <span class="note">— rss</span></li>
+<li><a href="https://www.usaid.gov/news-information/press-releases/feed" target="_blank" rel="noopener">USAID — Press releases</a> <span class="note">— rss</span></li>
+</ul></div>
+<div class="source-block"><strong>Specialist trade press</strong>
+<ul>
+<li><a href="https://www.alliancemagazine.org/feed/" target="_blank" rel="noopener">Alliance Magazine — Philanthropy</a> <span class="note">— rss</span></li>
+<li><a href="https://www.cgdev.org/rss/all" target="_blank" rel="noopener">Center for Global Development — Blog</a> <span class="note">— rss</span></li>
+<li><a href="https://www.climatechangenews.com/feed/" target="_blank" rel="noopener">Climate Home News</a> <span class="note">— rss</span></li>
+<li>Gmail newsletters — CGD / Economist / Devex <span class="note">— gmail</span></li>
+<li><a href="https://odi.org/en/insights/rss/" target="_blank" rel="noopener">ODI — Insights</a> <span class="note">— rss</span></li>
+<li><a href="https://philanthropynewsdigest.org/rss/news.xml" target="_blank" rel="noopener">Philanthropy News Digest (Candid)</a> <span class="note">— rss</span></li>
+<li><a href="https://www.semafor.com/feed/africa.xml" target="_blank" rel="noopener">Semafor — Africa</a> <span class="note">— rss</span></li>
+<li><a href="https://ssir.org/site/rss_2.0/articles" target="_blank" rel="noopener">Stanford Social Innovation Review</a> <span class="note">— rss</span></li>
+</ul></div>
+<div class="source-block"><strong>Wires &amp; global news</strong>
+<ul>
+<li><a href="https://www.aljazeera.com/xml/rss/all.xml" target="_blank" rel="noopener">Al Jazeera English</a> <span class="note">— rss</span></li>
+<li><a href="http://feeds.bbci.co.uk/news/world/rss.xml" target="_blank" rel="noopener">BBC News — World</a> <span class="note">— rss</span></li>
+<li><a href="https://rss.dw.com/rdf/rss-en-all" target="_blank" rel="noopener">Deutsche Welle — Top stories</a> <span class="note">— rss</span></li>
+<li><a href="https://www.foreignaffairs.com/rss.xml" target="_blank" rel="noopener">Foreign Affairs — Table of Contents</a> <span class="note">— rss</span></li>
+<li><a href="https://foreignpolicy.com/feed/" target="_blank" rel="noopener">Foreign Policy</a> <span class="note">— rss</span></li>
+<li><a href="https://www.france24.com/en/rss" target="_blank" rel="noopener">France 24 English</a> <span class="note">— rss</span></li>
+<li><a href="https://rss.nytimes.com/services/xml/rss/nyt/Africa.xml" target="_blank" rel="noopener">New York Times — Africa</a> <span class="note">— rss</span></li>
+<li><a href="https://rss.nytimes.com/services/xml/rss/nyt/MiddleEast.xml" target="_blank" rel="noopener">New York Times — Middle East</a> <span class="note">— rss</span></li>
+<li><a href="https://rss.nytimes.com/services/xml/rss/nyt/World.xml" target="_blank" rel="noopener">New York Times — World</a> <span class="note">— rss</span></li>
+<li><a href="https://www.scmp.com/rss/91/feed" target="_blank" rel="noopener">South China Morning Post — Africa</a> <span class="note">— rss</span></li>
+<li><a href="http://feeds.washingtonpost.com/rss/world" target="_blank" rel="noopener">Washington Post — World</a> <span class="note">— rss</span></li>
+</ul></div>
+<div class="source-block"><strong>Humanitarian-specialist</strong>
+<ul>
+<li><a href="https://www.internal-displacement.org/rss.xml" target="_blank" rel="noopener">IDMC — Internal Displacement Monitoring Centre</a> <span class="note">— rss</span></li>
+<li>OCHA Financial Tracking Service <span class="note">— fts</span></li>
+</ul></div>
+<div class="source-block"><strong>Real-time event detection</strong>
+<ul>
+<li>ACLED — armed conflict events <span class="note">— acled</span></li>
+<li>GDELT 2.0 Events <span class="note">— gdelt</span></li>
+</ul></div>
+<div class="source-block"><strong>Aid-activity data</strong>
+<ul>
+<li>IATI Datastore — UAE-related activities <span class="note">— iati</span></li>
+</ul></div>
+<h2>Subscribe</h2>
+<p>1. Open Telegram and search for <a href="https://t.me/dalila_development_digest_bot">@dalila_development_digest_bot</a>.<br>2. Tap <strong>Start</strong> (or send <code>/start</code>).<br>3. The morning digest will arrive around 06:30 GST each day.</p>
+<p>To unsubscribe, send <code>/stop</code> in the same chat.</p>
+<h2>Suggestions</h2>
+<p class="contact">Feedback, source suggestions, bug reports, or requests for new features: <a href="mailto:dalila.dev.digest@gmail.com">dalila.dev.digest@gmail.com</a>.</p>
+</div>
+<footer class="footer"><span>© 2026 Dalila</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Suggestions</a></span></footer>
+</div>
+</body>
+</html>

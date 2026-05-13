@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dalila — Daily Development Brief</title>
+<style>
+:root {
+  --bg:#FAF9F5;
+  --ink:#1F2430;
+  --muted:#5A6068;
+  --rule:#E6E2D6;
+  --accent:#3F6E54;
+  --accent-deep:#2A4D3A;
+}
+html,body {
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+body {
+  margin: 0;
+  font-family: "Source Serif Pro", "Lora", "PT Serif", Georgia, "Times New Roman", serif;
+  font-size: 17px;
+  line-height: 1.55;
+}
+.mono {
+  font-family: "JetBrains Mono", "IBM Plex Mono", "SF Mono", Consolas, monospace;
+  font-size: 0.78em;
+  letter-spacing: 0.04em;
+}
+a { color: var(--ink); text-decoration: underline; text-decoration-color: rgba(31,36,48,0.25); text-underline-offset: 3px; }
+a:hover { text-decoration-color: var(--accent); color: var(--accent-deep); }
+.wrap { max-width: 700px; margin: 0 auto; padding: 56px 32px 96px; }
+hr.rule { border: 0; border-top: 1px solid var(--rule); margin: 28px 0; }
+
+/* ---------- masthead (shared across pages) ---------- */
+.masthead {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: 28px;
+}
+.masthead a { text-decoration: none; color: var(--ink); }
+.masthead-title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  line-height: 1;
+}
+.masthead-title .ar {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--accent);
+  margin-left: 8px;
+  font-size: 0.7em;
+  vertical-align: 2px;
+}
+.masthead-nav {
+  margin-left: auto;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.masthead-nav a { color: var(--muted); text-decoration: none; margin-left: 14px; }
+.masthead-nav a:hover { color: var(--accent-deep); }
+
+/* ---------- footer ---------- */
+.footer {
+  margin-top: 64px;
+  padding-top: 18px;
+  border-top: 1px solid var(--rule);
+  color: var(--muted);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.footer a { color: var(--muted); }
+
+/* ---------- digest-specific ---------- */
+.date-line {
+  color: var(--muted);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  margin: 0 0 6px;
+}
+.kicker {
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--ink);
+  margin: 0 0 36px;
+  max-width: 56ch;
+}
+.kicker .top-stat { color: var(--accent-deep); font-weight: 600; }
+
+.section { margin: 0 0 36px; }
+.section-title {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 6px;
+  margin: 0 0 18px;
+  display: flex;
+  align-items: baseline;
+}
+.section-title .count {
+  margin-left: auto;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.item { padding: 0 0 22px; margin-bottom: 22px; border-bottom: 1px dashed var(--rule); }
+.item:last-child { border-bottom: none; }
+.item-title { margin: 0 0 8px; font-size: 18px; line-height: 1.35; font-weight: 600; }
+.item-title a { color: var(--ink); }
+.item-summary { margin: 0 0 8px; color: var(--ink); line-height: 1.55; }
+.item-meta {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: baseline;
+}
+.item-meta .src { color: var(--ink); }
+.item-meta .rel { color: var(--accent-deep); }
+.item-meta a { color: var(--muted); text-decoration-color: var(--rule); }
+.item-meta a:hover { color: var(--accent-deep); }
+.doctrine-tag {
+  display: inline-block;
+  padding: 0 6px;
+  border: 1px solid var(--accent);
+  color: var(--accent-deep);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+
+/* ---------- top stories (no heavy panel, just a small block) ---------- */
+.top-stories { margin: 0 0 42px; }
+.top-stories ol { margin: 0; padding: 0; list-style: none; counter-reset: top; }
+.top-stories li {
+  counter-increment: top;
+  padding: 10px 0;
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 14px;
+  align-items: baseline;
+  border-top: 1px solid var(--rule);
+}
+.top-stories li:first-child { border-top: none; }
+.top-stories li::before {
+  content: counter(top);
+  color: var(--accent);
+  font-weight: 700;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 14px;
+}
+.top-stories a { color: var(--ink); font-size: 17px; line-height: 1.4; }
+
+/* ---------- index / archive ---------- */
+.archive-item {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--rule);
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 16px;
+  align-items: baseline;
+}
+.archive-date {
+  color: var(--muted);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.archive-title { font-size: 17px; line-height: 1.4; }
+.archive-preview { color: var(--muted); font-size: 14px; line-height: 1.5; margin-top: 6px; }
+
+/* ---------- about-page ---------- */
+.about h2 {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 6px;
+  margin: 36px 0 16px;
+}
+.about p { margin: 0 0 16px; max-width: 60ch; }
+.about ul { margin: 0 0 16px 24px; padding: 0; }
+.about li { margin-bottom: 6px; }
+.about .source-block {
+  border-left: 2px solid var(--rule);
+  padding: 4px 0 4px 14px;
+  margin: 0 0 18px;
+}
+.about .source-block strong { color: var(--ink); }
+.about .source-block .note { color: var(--muted); font-size: 14px; }
+.about .contact a {
+  color: var(--accent-deep);
+  text-decoration-color: var(--accent);
+}
+
+/* ---------- print ---------- */
+@media print {
+  body { background: white; }
+  .wrap { max-width: none; padding: 24px 32px; }
+  .item, .section { page-break-inside: avoid; }
+  .masthead-nav, .footer { display: none; }
+}
+/* ---------- small screens ---------- */
+@media (max-width: 600px) {
+  .wrap { padding: 36px 22px 64px; }
+  .masthead { flex-wrap: wrap; }
+  .masthead-nav { margin-left: 0; }
+  .archive-item { grid-template-columns: 1fr; }
+  .archive-date { font-size: 11px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <h1 class="masthead-title"><a href="/">Dalila<span class="ar">دليلة</span></a></h1>
+  <nav class="masthead-nav">
+    <a href="/" aria-current="page">Archive</a>
+    <a href="/about.html">About</a>
+  </nav>
+</header>
+
+<p class="date-line">Daily archive</p>
+<p class="kicker">Daily intelligence brief on humanitarian, development, and philanthropy — with a focus on the UAE. Composed at 06:30 GST.</p>
+<div class="archive-item"><div class="archive-date">Tuesday 12 May 2026</div><div><div class="archive-title"><a href="digests/2026-05-12.html">Morning digest — Tuesday 12 May 2026</a></div><div class="archive-preview">Iran war latest: UAE condemns IRGC&#x27;s attempted infiltration of Kuwait · Iran could enrich uranium to weapons-grade if attacked by US amid collapsing cea</div></div></div>
+<footer class="footer"><span>© 2026 Dalila</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Suggestions</a></span></footer>
+</div>
+</body>
+</html>
