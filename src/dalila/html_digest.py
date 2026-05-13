@@ -1859,8 +1859,12 @@ def _country_view_script() -> str:
       const dist = Math.hypot(dx, dy) || 1;
       const cx = (sx + tx) / 2 + (-dy / dist) * (dist * 0.22);
       const cy = (sy + ty) / 2 + ( dx / dist) * (dist * 0.22);
-      const w = 0.6 + 2.2 * (cnt / maxCount);
-      const op = 0.40 + 0.55 * (cnt / maxCount);
+      // sqrt(cnt/max) on a wider stroke range (0.6 → 5.5) so a single
+      // co-mention is visibly thinner than 10 co-mentions, and the
+      // top arc is clearly the thickest. Mirrors the heat-ramp curve.
+      const r = Math.sqrt(cnt / Math.max(maxCount, 1));
+      const w = 0.6 + 4.9 * r;
+      const op = 0.40 + 0.55 * r;
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.setAttribute('d', 'M ' + sx + ' ' + sy + ' Q ' + cx + ' ' + cy + ' ' + tx + ' ' + ty);
       path.setAttribute('stroke-width', w.toFixed(2));
