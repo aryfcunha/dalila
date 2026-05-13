@@ -1193,9 +1193,24 @@ def render_countries(
     # did, just between SVG path centroids instead of tile centres.
     body.append(
         '<div class="carto-wrap">'
-        '<div id="world-map" class="world-map" aria-label="World mention heatmap"></div>'
+        '<div id="world-map" class="world-map" aria-label="World mention heatmap">'
+        '<div class="map-loading">Loading world map…</div>'
+        '</div>'
         '<svg class="carto-overlay" aria-hidden="true"></svg>'
         '<div id="map-tooltip" class="map-tooltip" hidden></div>'
+        '<div class="map-legend" id="map-legend" aria-hidden="true">'
+        '<span class="legend-label">MENTIONS</span>'
+        '<span class="legend-swatch" data-h="0" title="0"></span>'
+        '<span class="legend-swatch" data-h="1"></span>'
+        '<span class="legend-swatch" data-h="2"></span>'
+        '<span class="legend-swatch" data-h="3"></span>'
+        '<span class="legend-swatch" data-h="4"></span>'
+        '<span class="legend-swatch" data-h="5"></span>'
+        '<span class="legend-swatch" data-h="6"></span>'
+        '<span class="legend-swatch" data-h="7"></span>'
+        '<span class="legend-low">low</span>'
+        '<span class="legend-high" id="legend-high">high</span>'
+        '</div>'
         '</div>'
     )
 
@@ -1348,6 +1363,37 @@ def _country_view_styles() -> str:
   }
   .map-tooltip b { color:var(--amber); }
 
+  /* loading hint shown until the topojson + D3 load */
+  .map-loading {
+    padding:120px 20px; text-align:center; color:var(--muted);
+    font:600 12px/1.3 "JetBrains Mono",Consolas,monospace;
+    letter-spacing:0.10em; text-transform:uppercase;
+  }
+
+  /* legend below the map */
+  .map-legend {
+    display:flex; align-items:center; gap:4px;
+    margin:10px 4px 0; padding-top:8px;
+    border-top:1px dashed var(--rule);
+    font:600 10px/1 "JetBrains Mono",Consolas,monospace;
+    letter-spacing:0.10em; color:var(--type-dim);
+  }
+  .legend-label { margin-right:8px; }
+  .legend-swatch {
+    width:22px; height:14px; display:inline-block;
+    border:1px solid #2a2218;
+  }
+  .legend-swatch[data-h="0"] { background:#1a1612; }
+  .legend-swatch[data-h="1"] { background:#2c1f0a; }
+  .legend-swatch[data-h="2"] { background:#4a3110; }
+  .legend-swatch[data-h="3"] { background:#75501a; }
+  .legend-swatch[data-h="4"] { background:#a47424; }
+  .legend-swatch[data-h="5"] { background:#cf8b1e; }
+  .legend-swatch[data-h="6"] { background:#e9a230; }
+  .legend-swatch[data-h="7"] { background:#ffb454; }
+  .legend-low { margin-left:6px; color:var(--muted); }
+  .legend-high { margin-left:auto; color:var(--amber); }
+
   /* detail panel */
   .detail { margin:24px 0 12px; }
   .detail-head {
@@ -1492,6 +1538,10 @@ def _country_view_script() -> str:
       .fitExtent([[6, 6], [WIDTH - 6, HEIGHT - 6]], countriesGeo);
     pathGen = d3.geoPath(projection);
 
+    // Remove the "Loading world map…" placeholder.
+    const loader = mapEl.querySelector('.map-loading');
+    if (loader) loader.remove();
+
     const svg = d3.select(mapEl).append("svg")
       .attr("viewBox", "0 0 " + WIDTH + " " + HEIGHT)
       .attr("preserveAspectRatio", "xMidYMid meet");
@@ -1611,6 +1661,9 @@ def _country_view_script() -> str:
       const label = windowDays === 0 ? 'ALL TIME' : ('LAST ' + windowDays + 'D');
       stats.textContent = label + ' · ' + totalTags + ' TAGS · ' + countriesSeen + ' COUNTRIES';
     }
+    // Update legend's "high" label so users can decode the colour ramp.
+    const legendHigh = document.getElementById('legend-high');
+    if (legendHigh) legendHigh.textContent = 'high (' + max + ')';
     // Per-region totals on the region buttons.
     document.querySelectorAll('.region-btn').forEach(b => {
       const slug = b.dataset.region;
@@ -1770,6 +1823,14 @@ def _country_view_script() -> str:
     });
   });
   window.addEventListener('resize', () => { if (selectedIso) drawArcs(selectedIso); });
+
+  // Click on empty ocean / outside any country path clears the selection.
+  // (Country clicks are stopped by the SVG path handler via mouseleave logic.)
+  mapEl.addEventListener('click', e => {
+    if (e.target.tagName !== 'path' || !e.target.classList.contains('country')) {
+      if (selectedIso) clearSelection();
+    }
+  });
 })();
 </script>
 """
