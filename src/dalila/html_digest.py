@@ -1664,6 +1664,15 @@ def _country_view_script() -> str:
 
   function buildMap(world) {
     countriesGeo = topojson.feature(world, world.objects.countries);
+    // world-atlas 50m has a duplicate id="036" — Australia mainland *and*
+    // Ashmore & Cartier Is. (a tiny offshore territory). When d3 binds
+    // features by id, the lookup non-deterministically picks one. Drop
+    // Ashmore by name so the AU lookup always resolves to mainland.
+    // (Verified via scripts/verify_capitals.py: this is the only
+    // duplicate-id collision among ISO-coded countries in the dataset.)
+    countriesGeo.features = countriesGeo.features.filter(f =>
+      ((f.properties || {}).name || "") !== "Ashmore and Cartier Is."
+    );
     // fitSize with land-only feature collection rather than the full sphere —
     // Natural Earth's actual landmass extents fill the viewport better than
     // fitExtent against the polar regions, which were leaving empty bands.
