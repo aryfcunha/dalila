@@ -71,6 +71,8 @@ def main(argv: list[str] | None = None) -> int:
                        help="Parallel article fetches per sitemap source (default 12).")
     p_bf.add_argument("--max-per-source", type=int, default=4000,
                        help="Cap candidate URLs per sitemap source (default 4000).")
+    p_bf.add_argument("--gdelt-step", type=int, default=60,
+                       help="GDELT slice cadence in minutes — 60=one per hour (default), 15=full coverage 4x/hr, 240=light sample. Lower = more data, slower.")
     p_doctrine = sub.add_parser("doctrine", help="Run the doctrine extraction pass over pending classified items")
     p_doctrine.add_argument("--limit", type=int, default=20, help="Max items to process this run")
     sub.add_parser("verify-sources", help="Probe every enabled source and report fetched count + sample title")
@@ -197,6 +199,7 @@ def main(argv: list[str] | None = None) -> int:
             fetch_body=not args.no_body,
             concurrency=args.concurrency,
             max_per_source=args.max_per_source,
+            gdelt_step_minutes=args.gdelt_step,
         )
         print(f"\nBackfill complete (since={since}, until={until or 'today'}):")
         for sid, s in stats.items():

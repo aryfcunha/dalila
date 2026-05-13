@@ -230,23 +230,48 @@ def iter_items_range(
     *,
     step_minutes: int = 60,
     items_per_slice: int = 60,
+    concurrency: int = 8,
 ) -> Iterator[RawItem]:
     """Yield RawItems from GDELT GKG slices between since…until.
 
-    `step_minutes=60` samples one slice per hour (vs four). The default
-    `items_per_slice=60` further down-samples each slice — the prefilter is
-    where the real culling happens; we just need enough volume that genuine
-    UAE/humanitarian stories are statistically guaranteed to surface.
+    `step_minutes=60` samples one slice per hour. With ~24 slices/day and a
+    Jan→May span that's ~3,200 zips — serial fetch is ~hour-plus, so we run
+    a small ThreadPoolExecutor pool (default 8 workers). Items are yielded
+    out-of-order; that's fine because the DB inserts dedupe via url_hash.
     """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
     until = until or date.today()
-    for url in _iter_gkg_slices(since, until, step_minutes=step_minutes):
+    slice_urls = list(_iter_gkg_slices(since, until, step_minutes=step_minutes))
+    total = len(slice_urls)
+    log.info("gdelt backfill: %d slices to fetch (step=%dm, concurrency=%d)",
+             total, step_minutes, concurrency)
+
+    def _fetch_and_parse(url: str) -> list[RawItem]:
         try:
             resp = httpx.get(url, timeout=60)
             if resp.status_code != 200:
-                continue
-            zip_bytes = resp.content
+                return []
+            return _parse_slice(resp.content, source_id, cap=items_per_slice)
         except Exception as exc:
             log.debug("gdelt backfill: %s → %s", url, exc)
-            continue
-        for it in _parse_slice(zip_bytes, source_id, cap=items_per_slice):
-            yield it
+            return []
+
+    done = 0
+    total_yielded = 0
+    with ThreadPoolExecutor(max_workers=concurrency) as pool:
+        futures = [pool.submit(_fetch_and_parse, u) for u in slice_urls]
+        for fut in as_completed(futures):
+            done += 1
+            try:
+                batch = fut.result()
+            except Exception as exc:
+                log.debug("gdelt backfill: worker failed: %s", exc)
+                batch = []
+            for it in batch:
+                total_yielded += 1
+                yield it
+            if done % 50 == 0:
+                log.info("gdelt backfill: %d/%d slices processed, %d items yielded",
+                         done, total, total_yielded)
+    log.info("gdelt backfill: %d slices done, %d items total", done, total_yielded)

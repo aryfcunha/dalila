@@ -249,6 +249,7 @@ def run_backfill(
     fetch_body: bool = True,
     concurrency: int = 12,
     max_per_source: int = 4000,
+    gdelt_step_minutes: int = 60,
 ) -> dict:
     """Historical backfill from the dated archives of one or all backfill sources.
 
@@ -321,7 +322,11 @@ def run_backfill(
             error: str | None = None
             try:
                 if sid == "gdelt_v2":
-                    iterator = gdelt_mod.iter_items_range(sid, since, until)
+                    iterator = gdelt_mod.iter_items_range(
+                        sid, since, until,
+                        step_minutes=gdelt_step_minutes,
+                        concurrency=min(concurrency, 8),
+                    )
                 elif sid == "acled":
                     iterator = acled_mod.iter_items_range(sid, since, until)
                 else:
