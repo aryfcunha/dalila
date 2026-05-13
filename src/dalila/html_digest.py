@@ -1870,12 +1870,20 @@ def _country_view_script() -> str:
       const dist = Math.hypot(dx, dy) || 1;
       const cx = (sx + tx) / 2 + (-dy / dist) * (dist * 0.22);
       const cy = (sy + ty) / 2 + ( dx / dist) * (dist * 0.22);
-      // sqrt(cnt/max) on a wider stroke range (0.6 → 5.5) so a single
-      // co-mention is visibly thinner than 10 co-mentions, and the
-      // top arc is clearly the thickest. Mirrors the heat-ramp curve.
+      // Discrete-bucket visibility: each arc falls into one of 5 strength
+      // tiers based on sqrt(cnt/max). Stepped width + opacity together so
+      // arcs read as clearly "weak / medium / strong / very strong" rather
+      // than blending into a continuous gradient.
       const r = Math.sqrt(cnt / Math.max(maxCount, 1));
-      const w = 0.6 + 4.9 * r;
-      const op = 0.40 + 0.55 * r;
+      const TIERS = [
+        [0.4, 0.35],   // tier 0: faintest
+        [0.9, 0.50],
+        [1.5, 0.65],
+        [2.2, 0.80],
+        [3.0, 0.95],   // tier 4: top
+      ];
+      const tier = Math.min(TIERS.length - 1, Math.floor(r * TIERS.length));
+      const [w, op] = TIERS[tier];
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.setAttribute('d', 'M ' + sx + ' ' + sy + ' Q ' + cx + ' ' + cy + ' ' + tx + ' ' + ty);
       path.setAttribute('stroke-width', w.toFixed(2));
