@@ -1081,6 +1081,7 @@ def render_countries(
     window_days: int = 14,
     contact_email: str = "dalila.dev.digest@gmail.com",
     telegram_bot: str | None = "dalila_development_digest_bot",
+    timeline: dict[str, dict[str, int]] | None = None,
 ) -> str:
     """Country view: tile cartogram + co-mention curves + news list.
 
@@ -1157,6 +1158,20 @@ def render_countries(
         'Use the region buttons below to filter.</p>'
     )
 
+    # Timeline filter chips (client-side: re-bucket counts from the timeline payload)
+    # If no timeline supplied, hide the row — falls back to the server-side count window.
+    if timeline:
+        body.append(
+            '<div class="timeline-filter" id="timeline-filter">'
+            '<span class="tl-label">WINDOW</span>'
+            '<button class="tl-btn" data-days="7">7D</button>'
+            '<button class="tl-btn" data-days="30">30D</button>'
+            '<button class="tl-btn active" data-days="90">90D</button>'
+            '<button class="tl-btn" data-days="0">ALL</button>'
+            '<span class="tl-stats" id="tl-stats"></span>'
+            '</div>'
+        )
+
     # Region filter buttons
     btns: list[str] = ['<button class="region-btn active" data-region="all">ALL</button>']
     for slug in region_order:
@@ -1232,6 +1247,10 @@ def render_countries(
         },
         "regions": region_labels,
         "co": {iso: dict(co_map) for iso, co_map in cooccurrence.items() if co_map},
+        # {YYYY-MM-DD: {ISO2: count}} — used by client-side timeline chips to
+        # re-bucket the heatmap without a server roundtrip. Empty if caller
+        # didn't supply it; the JS will hide the chip row in that case.
+        "timeline": timeline or {},
         "items": {
             iso: [
                 {
@@ -1263,6 +1282,31 @@ def _country_view_styles() -> str:
     is doable; this is kept separate for readability of the component)."""
     return """
 <style>
+  /* timeline filter chips */
+  .timeline-filter {
+    display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+    margin:0 0 14px; padding:10px 0;
+    border-top:1px solid var(--rule); border-bottom:1px solid var(--rule);
+  }
+  .tl-label {
+    font:700 10px/1 "JetBrains Mono","IBM Plex Mono",Consolas,monospace;
+    letter-spacing:0.16em; color:var(--type-dim); margin-right:8px;
+  }
+  .tl-btn {
+    background:transparent; color:var(--muted); border:1px solid var(--rule-strong);
+    font:600 10px/1 "JetBrains Mono",Consolas,monospace;
+    letter-spacing:0.10em; padding:6px 10px; cursor:pointer;
+    transition:color .12s, border-color .12s;
+  }
+  .tl-btn:hover { color:var(--cyan,#7AB9C9); border-color:var(--cyan,#7AB9C9); }
+  .tl-btn.active {
+    color:var(--bg); background:var(--cyan,#7AB9C9); border-color:var(--cyan,#7AB9C9);
+  }
+  .tl-stats {
+    margin-left:auto; font:11px/1 "JetBrains Mono",Consolas,monospace;
+    color:var(--type-dim); letter-spacing:0.08em;
+  }
+
   /* region filter */
   .region-filter {
     display:flex; flex-wrap:wrap; gap:6px; margin:0 0 18px;
@@ -1400,6 +1444,69 @@ def _country_view_script() -> str:
   const DATA = JSON.parse(dataEl.textContent);
   let selectedIso = null;
   let activeRegion = 'all';
+  // Timeline state: window in days. 0 = ALL (no upper bound on age).
+  let windowDays = 90;
+
+  // Compute {ISO: count} restricted to the last `days` (0 = entire timeline).
+  // Falls back to server-supplied DATA.countries[iso].count if the timeline
+  // payload is empty (caller didn't pass timeline=).
+  function countsForWindow(days) {
+    const tl = DATA.timeline || {};
+    const dates = Object.keys(tl);
+    if (!dates.length) {
+      const out = {};
+      for (const [iso, c] of Object.entries(DATA.countries)) out[iso] = c.count || 0;
+      return out;
+    }
+    let cutoff = '';
+    if (days > 0) {
+      const d = new Date();
+      d.setUTCDate(d.getUTCDate() - days);
+      cutoff = d.toISOString().slice(0, 10);
+    }
+    const totals = {};
+    for (const date of dates) {
+      if (cutoff && date < cutoff) continue;
+      const bucket = tl[date] || {};
+      for (const [iso, n] of Object.entries(bucket)) {
+        totals[iso] = (totals[iso] || 0) + n;
+      }
+    }
+    return totals;
+  }
+
+  function repaintHeat() {
+    const counts = countsForWindow(windowDays);
+    const max = Math.max(1, ...Object.values(counts));
+    let totalTags = 0, countriesSeen = 0;
+    document.querySelectorAll('.tile').forEach(t => {
+      const iso = t.dataset.iso;
+      const cnt = counts[iso] || 0;
+      t.dataset.count = cnt;
+      t.style.setProperty('--intensity', (cnt / max).toFixed(3));
+      t.classList.toggle('zero', cnt === 0);
+      const name = (DATA.countries[iso] || {}).name || iso;
+      t.title = name + ' — ' + cnt + ' mention' + (cnt === 1 ? '' : 's');
+      if (cnt > 0) { totalTags += cnt; countriesSeen += 1; }
+    });
+    const stats = document.getElementById('tl-stats');
+    if (stats) {
+      const label = windowDays === 0 ? 'ALL TIME' : ('LAST ' + windowDays + 'D');
+      stats.textContent = label + ' · ' + totalTags + ' TAGS · ' + countriesSeen + ' COUNTRIES';
+    }
+    // Also refresh the per-region totals on the region buttons.
+    document.querySelectorAll('.region-btn').forEach(b => {
+      const slug = b.dataset.region;
+      if (slug === 'all') return;
+      let n = 0;
+      for (const [iso, c] of Object.entries(DATA.countries)) {
+        if ((c.region || '') === slug) n += counts[iso] || 0;
+      }
+      const span = b.querySelector('.rb-count');
+      if (span) span.textContent = n;
+    });
+    if (selectedIso) drawArcs(selectedIso);  // re-render arcs against new layout
+  }
 
   function tileFor(iso) { return root.querySelector('.tile[data-iso="' + iso + '"]'); }
 
@@ -1545,6 +1652,15 @@ def _country_view_script() -> str:
   document.querySelectorAll('.region-btn').forEach(b => {
     b.addEventListener('click', () => applyRegionFilter(b.dataset.region));
   });
+  document.querySelectorAll('.tl-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      windowDays = parseInt(b.dataset.days, 10);
+      document.querySelectorAll('.tl-btn').forEach(x => x.classList.toggle('active', x === b));
+      repaintHeat();
+    });
+  });
+  // Initial paint reflects the default window (90D) if timeline data present.
+  if (DATA.timeline && Object.keys(DATA.timeline).length) repaintHeat();
   window.addEventListener('resize', () => { if (selectedIso) drawArcs(selectedIso); });
 })();
 </script>

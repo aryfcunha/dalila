@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 import pytz
 
 from dalila import db
-from dalila.classifier import classify_batch
+from dalila.classifier import classify_batch as classify_batch_claude
 from dalila.config import (
     get_config,
     load_entity_aliases,
@@ -128,11 +128,32 @@ def parse_rate_limit_reset(err_msg: str, now: datetime | None = None) -> datetim
     return candidate.astimezone(timezone.utc)
 
 
-def run_classify(limit: int = 100, batch_size: int = 25) -> dict:
+def _resolve_classifier(backend: str):
+    """Return the classify_batch function for the chosen backend.
+
+    `backend` is one of:
+      - "claude" (default) → Haiku 4.5 via the `claude` CLI. The architectural
+        default per CLAUDE.md.
+      - "deepseek"         → DeepSeek `deepseek-chat` over HTTP. Opt-in,
+        intended for cost-bounded historical backfills. Requires
+        DEEPSEEK_API_KEY env var.
+    """
+    if backend == "deepseek":
+        from dalila.deepseek import classify_batch as classify_batch_deepseek
+        return classify_batch_deepseek
+    if backend in ("claude", "haiku", ""):
+        return classify_batch_claude
+    raise ValueError(f"unknown classifier backend: {backend!r} (expected 'claude' or 'deepseek')")
+
+
+def run_classify(limit: int = 100, batch_size: int = 25, *, backend: str = "claude") -> dict:
     """Classify up to `limit` prefilter-passed items in batches of `batch_size`.
 
-    Each batch goes to Haiku in a single CLI call — far cheaper than one-call-
-    per-item (amortises CLI process spawn + system-prompt re-send).
+    `backend` selects the LLM ("claude" = Haiku via CLI, default; "deepseek" =
+    DeepSeek API for backfill jobs). See `_resolve_classifier`.
+
+    Each batch goes to the chosen model in a single call — far cheaper than
+    one-call-per-item (amortises spawn + system-prompt re-send).
 
     Error handling:
       - Transient error (rate limit / network / timeout) → abort run, leave
@@ -141,6 +162,7 @@ def run_classify(limit: int = 100, batch_size: int = 25) -> dict:
         to one-at-a-time for that batch so we mark only the bad item, not
         the whole batch.
     """
+    classify_batch = _resolve_classifier(backend)
     cfg = get_config()
     classified = 0
     errors = 0
@@ -148,6 +170,7 @@ def run_classify(limit: int = 100, batch_size: int = 25) -> dict:
     rate_limit_reset_at: datetime | None = None
     rate_limit_message: str | None = None
     batches_done = 0
+    log.info("classify: using backend=%s", backend)
 
     with db.connect() as conn:
         if db.todays_classifier_call_count(conn) >= cfg.daily_classifier_call_cap:
@@ -510,21 +533,27 @@ def run_publish_site(out_dir: "Path") -> dict:
         from dalila.html_digest import render_countries
 
         cat = load_countries()
-        window_days = 14
+        # window_days is now just the initial-display window; the timeline
+        # payload carries up to 180 days of per-day per-country counts so the
+        # client-side chips (7/30/90/All) can re-bucket without a server call.
+        window_days = 90
+        timeline_days = 180
         with db.connect() as conn:
-            counts = db.country_mention_counts(conn, since_hours=window_days * 24)
+            counts = db.country_mention_counts(conn, since_hours=timeline_days * 24)
             items_by_country: dict[str, list[dict]] = {}
             cooccurrence: dict[str, dict[str, int]] = {}
             for iso in counts.keys():
                 items_by_country[iso] = db.items_for_country(
-                    conn, iso, since_hours=window_days * 24, limit=30,
+                    conn, iso, since_hours=timeline_days * 24, limit=30,
                 )
                 cooccurrence[iso] = db.country_cooccurrence(
-                    conn, iso, since_hours=window_days * 24,
+                    conn, iso, since_hours=timeline_days * 24,
                 )
+            timeline = db.country_timeline(conn, since_hours=timeline_days * 24)
         countries_html = render_countries(
             cat["countries"], cat["regions"], counts,
             items_by_country, cooccurrence, window_days=window_days,
+            timeline=timeline,
         )
         (out_dir / "countries.html").write_text(countries_html, encoding="utf-8")
     except Exception:

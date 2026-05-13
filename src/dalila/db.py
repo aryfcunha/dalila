@@ -791,6 +791,36 @@ def country_mention_counts(conn: sqlite3.Connection, since_hours: int = 720) -> 
     return counts
 
 
+def country_timeline(
+    conn: sqlite3.Connection, since_hours: int = 24 * 180,
+) -> dict[str, dict[str, int]]:
+    """Per-day per-country mention counts for the timeline chips on the
+    country-view page.
+
+    Returns {YYYY-MM-DD: {ISO-2: count}}. The date used is the item's
+    `published_at` (when the news happened), falling back to `ingested_at`
+    for sources that don't supply one — same semantic as `items_for_digest`.
+
+    The browser-side filter slices this map by date range when the user picks
+    a chip (7d / 30d / 90d / all). One server-side aggregate, infinite
+    re-slicing on the client.
+    """
+    out: dict[str, dict[str, int]] = {}
+    for r in _classified_window_rows(conn, since_hours):
+        try:
+            isos = [str(c).strip().upper() for c in (json.loads(r["country_focus_json"]) or [])]
+        except Exception:
+            continue
+        when = (r["published_at"] or r["ingested_at"] or "")[:10]
+        if len(when) != 10:
+            continue
+        bucket = out.setdefault(when, {})
+        for iso in isos:
+            if len(iso) == 2 and iso.isalpha():
+                bucket[iso] = bucket.get(iso, 0) + 1
+    return out
+
+
 def country_cooccurrence(
     conn: sqlite3.Connection, iso2: str, since_hours: int = 720
 ) -> dict[str, int]:

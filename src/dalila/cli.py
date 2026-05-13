@@ -37,7 +37,9 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("ingest", help="Run one ingest pass across all enabled sources")
     p_classify = sub.add_parser("classify", help="Classify pending items")
     p_classify.add_argument("--limit", type=int, default=100, help="Max items to classify in this run")
-    p_classify.add_argument("--batch-size", type=int, default=25, help="Items per Haiku call (default 25, empirically tuned)")
+    p_classify.add_argument("--batch-size", type=int, default=25, help="Items per call (default 25, empirically tuned for Claude CLI; safe for DeepSeek too)")
+    p_classify.add_argument("--backend", choices=("claude", "deepseek"), default="claude",
+                            help="LLM backend (default 'claude'). Use 'deepseek' for cost-bounded backfill — requires DEEPSEEK_API_KEY env var.")
     p_digest = sub.add_parser("digest", help="Compose today's digest and print to stdout")
     p_digest.add_argument("--since-hours", type=int, default=24)
     p_digest.add_argument("--min-relevance", type=float, default=0.4)
@@ -52,6 +54,12 @@ def main(argv: list[str] | None = None) -> int:
     p_back = sub.add_parser("backfill-digests", help="Compose a brief for each of the past N days (one LLM call per day)")
     p_back.add_argument("--days", type=int, default=5, help="How many days back to backfill (default 5)")
     p_back.add_argument("--min-relevance", type=float, default=0.4)
+    p_back.add_argument("--classify-first", action="store_true",
+                        help="Run a classify pass over all unclassified items before composing (recommended for deep historical backfills).")
+    p_back.add_argument("--backend", choices=("claude", "deepseek"), default="claude",
+                        help="LLM backend for the classify pass when --classify-first is set (default 'claude'). Digests themselves always use Claude.")
+    p_back.add_argument("--classify-limit", type=int, default=2000,
+                        help="Max items to classify in the pre-pass when --classify-first is set (default 2000).")
     p_doctrine = sub.add_parser("doctrine", help="Run the doctrine extraction pass over pending classified items")
     p_doctrine.add_argument("--limit", type=int, default=20, help="Max items to process this run")
     sub.add_parser("verify-sources", help="Probe every enabled source and report fetched count + sample title")
@@ -109,7 +117,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "classify":
         from dalila.pipeline import run_classify
         db.init_db()
-        result = run_classify(limit=args.limit, batch_size=args.batch_size)
+        result = run_classify(limit=args.limit, batch_size=args.batch_size, backend=args.backend)
         print(f"classify done: {result}")
         return 0
 
@@ -150,8 +158,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.cmd == "backfill-digests":
-        from dalila.pipeline import run_backfill_digests
+        from dalila.pipeline import run_backfill_digests, run_classify
         db.init_db()
+        if args.classify_first:
+            print(f"pre-pass: classifying up to {args.classify_limit} pending items (backend={args.backend})…")
+            cres = run_classify(limit=args.classify_limit, backend=args.backend)
+            print(f"  → classified={cres.get('classified')} errors={cres.get('errors')} "
+                  f"rate_limited={cres.get('rate_limited')}")
         results = run_backfill_digests(days=args.days, min_relevance=args.min_relevance)
         print(f"Backfilled {len(results)} brief(s):")
         for r in results:
