@@ -159,6 +159,46 @@ async def cmd_digest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     await _send_long(update, content)
 
 
+async def cmd_html(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Send the current digest as a self-contained HTML attachment.
+
+    Pure presentation over already-classified items — no LLM call. The
+    attachment opens in any browser, prints cleanly, and works through
+    corporate firewalls that block Telegram's markdown formatting or
+    truncate long messages.
+    """
+    if not update.message or not update.effective_chat:
+        return
+    await update.message.reply_text("Rendering HTML digest…")
+    try:
+        from dalila.pipeline import run_render_html_digest
+        html_str, items = run_render_html_digest()
+    except Exception as exc:
+        log.exception("HTML digest render failed")
+        await update.message.reply_text(f"Sorry, HTML render failed: {exc}")
+        return
+
+    if not items:
+        await update.message.reply_text(
+            "No items above threshold yet — try again after the next classify tick."
+        )
+        return
+
+    import io
+    from datetime import datetime
+    import pytz
+    cfg = get_config()
+    tz = pytz.timezone(cfg.timezone)
+    fname = f"dalila-{datetime.now(tz).strftime('%Y-%m-%d')}.html"
+    buf = io.BytesIO(html_str.encode("utf-8"))
+    buf.name = fname
+    await update.message.reply_document(
+        document=buf,
+        filename=fname,
+        caption=f"📰 Dalila — {len(items)} items. Open in any browser.",
+    )
+
+
 async def cmd_commitments(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Recent UAE financial commitments extracted from news items."""
     if not update.message:
@@ -573,6 +613,7 @@ def build_application() -> Application:
     app.add_handler(CommandHandler("stop", cmd_stop))
     app.add_handler(CommandHandler("help", cmd_help))
     app.add_handler(CommandHandler("digest", cmd_digest))
+    app.add_handler(CommandHandler("html", cmd_html))
     app.add_handler(CommandHandler("more", cmd_more))
     app.add_handler(CommandHandler("doctrine", cmd_doctrine))
     app.add_handler(CommandHandler("commitments", cmd_commitments))

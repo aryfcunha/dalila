@@ -272,3 +272,25 @@ def run_compose_digest(since_hours: int = 24, min_relevance: float = 0.4, max_it
         date_label = datetime.now(tz).strftime("%A %d %B %Y")
         digest_id = db.save_digest(conn, date_label=date_label, content=content, item_ids=[i["id"] for i in items])
     return digest_id, content
+
+
+def run_render_html_digest(
+    since_hours: int = 24, min_relevance: float = 0.4, max_items: int = 25,
+) -> tuple[str, list[dict]]:
+    """Render an HTML digest from the same item set as the Markdown editor.
+
+    No LLM call — purely a presentation layer over already-classified items.
+    Returns (html_string, items_used). Useful when:
+      * Telegram is firewall-blocked and you want a printable office artifact
+      * You want an archive-quality version of the brief
+      * You want to share a single link rather than a long Markdown message
+    """
+    from dalila.html_digest import render as render_html
+    with db.connect() as conn:
+        items = db.items_for_digest(conn, since_hours=since_hours, min_relevance=min_relevance)
+        # Capture total before dedup/cap so the masthead can show 'N reviewed'
+        total = len(items)
+        items = _dedupe_by_simhash(items)
+        items = items[:max_items]
+    html_str = render_html(items, total_ingested=total)
+    return html_str, items

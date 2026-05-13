@@ -250,6 +250,298 @@ sources:
     window_days: 30
     rows: 50
 
+  - id: ocha_fts
+    name: OCHA Financial Tracking Service
+    # Humanitarian funding flows tracked by OCHA: pledges, commitments, and
+    # disbursements against UN-coordinated appeals. Each flow becomes an item
+    # whose body lists donor + recipient + appeal + USD amount + date, feeding
+    # the classifier's financial_commitments extraction. Free public API.
+    kind: fts
+    url: ""
+    quality: 5
+    tags: [humanitarian, dev-finance, structured]
+    enabled: true
+    # Optional tuning:
+    window_days: 14
+
+  # =====================================================================
+  # UN agencies — the aid system's nervous system
+  # =====================================================================
+  - id: un_news
+    name: UN News
+    kind: rss
+    url: https://news.un.org/feed/subscribe/en/news/all/rss.xml
+    quality: 5
+    tags: [un, multilateral]
+    enabled: true
+
+  - id: ocha_news
+    name: OCHA — Office for the Coordination of Humanitarian Affairs
+    kind: rss
+    # OCHA news lives on ReliefWeb / unocha.org; try the latter first.
+    url: https://www.unocha.org/rss
+    quality: 5
+    tags: [un, humanitarian, ocha]
+    enabled: true
+
+  - id: unhcr
+    name: UNHCR — UN Refugee Agency
+    kind: rss
+    url: https://www.unhcr.org/news/rss.xml
+    quality: 5
+    tags: [un, humanitarian, refugees]
+    enabled: true
+
+  - id: wfp_news
+    name: World Food Programme — News
+    kind: rss
+    url: https://www.wfp.org/news/news-releases.xml
+    quality: 5
+    tags: [un, food-security, humanitarian]
+    enabled: true
+
+  - id: unicef
+    name: UNICEF — Press releases
+    kind: rss
+    url: https://www.unicef.org/press-releases/rss.xml
+    quality: 5
+    tags: [un, children, humanitarian]
+    enabled: true
+
+  - id: who_don
+    name: WHO Disease Outbreak News
+    # High-signal real-time outbreak alerts (cholera, mpox, novel pathogens).
+    # Per the foresight-tool data-sources doc — directly relevant to breaking
+    # alerts and to humanitarian category.
+    kind: rss
+    url: https://www.who.int/feeds/entity/csr/don/en/rss.xml
+    quality: 5
+    tags: [un, health, outbreak, breaking-candidate]
+    enabled: true
+
+  - id: iom
+    name: IOM — International Organization for Migration
+    kind: rss
+    url: https://www.iom.int/news/rss.xml
+    quality: 4
+    tags: [un, migration]
+    enabled: true
+
+  - id: ohchr
+    name: OHCHR — UN Human Rights Office
+    kind: rss
+    url: https://www.ohchr.org/en/rss.xml
+    quality: 4
+    tags: [un, human-rights]
+    enabled: true
+
+  # =====================================================================
+  # Multilateral finance
+  # =====================================================================
+  - id: world_bank
+    name: World Bank — News
+    kind: rss
+    url: https://www.worldbank.org/en/news/all.rss
+    quality: 5
+    tags: [multilateral, dev-finance]
+    enabled: true
+
+  - id: imf
+    name: IMF — News
+    kind: rss
+    url: https://www.imf.org/en/News/RSS?Language=ENG
+    quality: 4
+    tags: [multilateral, dev-finance, macro]
+    enabled: true
+
+  - id: afdb
+    name: African Development Bank — News
+    kind: rss
+    url: https://www.afdb.org/en/rss-feeds/all.rss
+    quality: 4
+    tags: [multilateral, dev-finance, africa]
+    enabled: true
+
+  # =====================================================================
+  # Donor peer agencies (Western)
+  # =====================================================================
+  - id: usaid
+    name: USAID — Press releases
+    kind: rss
+    url: https://www.usaid.gov/news-information/press-releases/feed
+    quality: 5
+    tags: [donor, usa]
+    enabled: true
+
+  - id: fcdo
+    name: FCDO — UK Foreign, Commonwealth & Development Office
+    kind: rss
+    # gov.uk publishes per-organisation RSS feeds.
+    url: https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom
+    quality: 5
+    tags: [donor, uk]
+    enabled: true
+
+  - id: bmz
+    name: BMZ — German Federal Ministry for Economic Cooperation
+    kind: rss
+    url: https://www.bmz.de/en/feed-news-7320
+    quality: 4
+    tags: [donor, germany]
+    enabled: true
+
+  - id: afd
+    name: AFD — Agence Française de Développement
+    kind: rss
+    url: https://www.afd.fr/en/rss.xml
+    quality: 4
+    tags: [donor, france]
+    enabled: true
+
+  - id: sida
+    name: Sida — Swedish International Development Cooperation Agency
+    kind: rss
+    url: https://www.sida.se/en/news/feed
+    quality: 3
+    tags: [donor, sweden]
+    enabled: true
+
+  - id: norad
+    name: Norad — Norwegian Agency for Development Cooperation
+    kind: rss
+    url: https://www.norad.no/en/front/feed/
+    quality: 3
+    tags: [donor, norway]
+    enabled: true
+
+  - id: jica
+    name: JICA — Japan International Cooperation Agency
+    kind: rss
+    url: https://www.jica.go.jp/english/news/press/rss.xml
+    quality: 3
+    tags: [donor, japan, asia]
+    enabled: true
+
+  # =====================================================================
+  # Specialist trade press (where deals are announced first)
+  # =====================================================================
+  - id: alliance_magazine
+    name: Alliance Magazine — Philanthropy
+    kind: rss
+    url: https://www.alliancemagazine.org/feed/
+    quality: 5
+    tags: [specialist, philanthropy]
+    enabled: true
+
+  - id: climate_home
+    name: Climate Home News
+    kind: rss
+    url: https://www.climatechangenews.com/feed/
+    quality: 5
+    tags: [specialist, climate-finance]
+    enabled: true
+
+  - id: odi_insights
+    name: ODI — Insights
+    kind: rss
+    url: https://odi.org/en/insights/rss/
+    quality: 5
+    tags: [specialist, dev, think-tank]
+    enabled: true
+
+  - id: cgd_blog
+    name: Center for Global Development — Blog
+    kind: rss
+    url: https://www.cgdev.org/rss/all
+    quality: 5
+    tags: [specialist, dev, think-tank]
+    enabled: true
+
+  - id: ssir
+    name: Stanford Social Innovation Review
+    kind: rss
+    url: https://ssir.org/site/rss_2.0/articles
+    quality: 4
+    tags: [specialist, philanthropy, social-innovation]
+    enabled: true
+
+  - id: pnd
+    name: Philanthropy News Digest (Candid)
+    kind: rss
+    url: https://philanthropynewsdigest.org/rss/news.xml
+    quality: 4
+    tags: [specialist, philanthropy]
+    enabled: true
+
+  - id: semafor_africa
+    name: Semafor — Africa
+    kind: rss
+    url: https://www.semafor.com/feed/africa.xml
+    quality: 5
+    tags: [specialist, africa, newsletter]
+    enabled: true
+
+  # =====================================================================
+  # Wires — non-Anglosphere & long-form
+  # =====================================================================
+  - id: france24_en
+    name: France 24 English
+    kind: rss
+    url: https://www.france24.com/en/rss
+    quality: 4
+    tags: [wire, francophone]
+    enabled: true
+
+  - id: deutsche_welle
+    name: Deutsche Welle — Top stories
+    kind: rss
+    url: https://rss.dw.com/rdf/rss-en-all
+    quality: 4
+    tags: [wire, germany]
+    enabled: true
+
+  - id: scmp_africa
+    name: South China Morning Post — Africa
+    kind: rss
+    # SCMP RSS lives under a category path; Africa is under World/Africa.
+    url: https://www.scmp.com/rss/91/feed
+    quality: 4
+    tags: [wire, china, africa]
+    enabled: true
+
+  - id: foreign_policy
+    name: Foreign Policy
+    kind: rss
+    url: https://foreignpolicy.com/feed/
+    quality: 5
+    tags: [wire, analysis, opinion]
+    enabled: true
+
+  - id: foreign_affairs
+    name: Foreign Affairs — Table of Contents
+    kind: rss
+    url: https://www.foreignaffairs.com/rss.xml
+    quality: 5
+    tags: [wire, analysis, opinion, long-form]
+    enabled: true
+
+  # =====================================================================
+  # Email-subscription firehose (dalila.dev.digest@gmail.com)
+  # CGD, The Economist, Devex Newswire — all delivered via newsletter to
+  # the bot's dedicated Gmail account. Ingestor pulls via IMAP, treats each
+  # email as one item, parses links out of the body.
+  # =====================================================================
+  - id: gmail_newsletters
+    name: Gmail newsletters — CGD / Economist / Devex
+    kind: gmail
+    url: ""
+    quality: 5
+    tags: [specialist, newsletter, email]
+    enabled: true
+    # IMAP credentials come from GMAIL_USER and GMAIL_APP_PASSWORD env vars.
+    # See README → Gmail ingestion setup.
+    window_days: 1
+
 # Pre-filter: items must match at least one of these keywords or one entity from
 # entities.yaml before being sent to the Haiku classifier. Drops ~80% of global-wire
 # volume before paying LLM cost. Case-insensitive substring match against title+body.

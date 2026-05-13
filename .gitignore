@@ -25,3 +25,10 @@ policy_text.txt
 policy_text.*
 foreign_aid_policy*
 UAE_Foreign_Aid_Policy*
+# Local-only artifacts produced by `dalila html-digest`, benchmarks, etc.
+digest.html
+digest-preview.png
+benchmark_results.txt
+*.log
+drain.log
+login.log

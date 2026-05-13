@@ -35,5 +35,11 @@ def ingest_source(src: dict) -> list[RawItem]:
     if kind == "iati":
         from dalila.ingestors import iati
         return iati.fetch(src)
+    if kind == "fts":
+        from dalila.ingestors import fts
+        return fts.fetch(src)
+    if kind == "gmail":
+        from dalila.ingestors import gmail
+        return gmail.fetch(src)
     log.warning("unknown source kind=%r for source %s; skipping", kind, src.get("id"))
     return []

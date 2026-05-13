@@ -41,6 +41,11 @@ def main(argv: list[str] | None = None) -> int:
     p_digest.add_argument("--since-hours", type=int, default=24)
     p_digest.add_argument("--min-relevance", type=float, default=0.4)
     p_digest.add_argument("--max-items", type=int, default=25)
+    p_html = sub.add_parser("html-digest", help="Render the digest as a self-contained HTML file (no LLM call)")
+    p_html.add_argument("--since-hours", type=int, default=24)
+    p_html.add_argument("--min-relevance", type=float, default=0.4)
+    p_html.add_argument("--max-items", type=int, default=25)
+    p_html.add_argument("--out", type=str, default="digest.html", help="Output path (default ./digest.html)")
     p_doctrine = sub.add_parser("doctrine", help="Run the doctrine extraction pass over pending classified items")
     p_doctrine.add_argument("--limit", type=int, default=20, help="Max items to process this run")
     sub.add_parser("verify-sources", help="Probe every enabled source and report fetched count + sample title")
@@ -87,6 +92,20 @@ def main(argv: list[str] | None = None) -> int:
         )
         print(f"--- Digest #{digest_id} ---\n")
         print(content)
+        return 0
+
+    if args.cmd == "html-digest":
+        from pathlib import Path
+        from dalila.pipeline import run_render_html_digest
+        db.init_db()
+        html_str, items = run_render_html_digest(
+            since_hours=args.since_hours,
+            min_relevance=args.min_relevance,
+            max_items=args.max_items,
+        )
+        out = Path(args.out).resolve()
+        out.write_text(html_str, encoding="utf-8")
+        print(f"Wrote {out}  ({len(items)} items, {len(html_str):,} bytes)")
         return 0
 
     if args.cmd == "doctrine":
