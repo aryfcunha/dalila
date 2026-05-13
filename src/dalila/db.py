@@ -260,18 +260,33 @@ def items_for_digest(
     min_relevance: float = 0.4,
     *,
     as_of: datetime | None = None,
+    exclude_ids: set[int] | None = None,
 ) -> list[dict]:
     """Items classified within the [as_of − since_hours, as_of] window.
 
+    Two filters applied here that the SQL layer should enforce (cheap and
+    deterministic, doesn't need the editor to dance around bad data):
+      * Items whose title is essentially just a URL are dropped (these come
+        from GDELT and a few RSS feeds with broken title fields; classifier
+        wastes a slot on them).
+      * Items in `exclude_ids` are dropped — used by run_backfill_digests
+        so the same item never appears in two consecutive briefs.
+
     `as_of` defaults to "now" (UTC). Set it to a past datetime for backfill —
     e.g. to compose yesterday's digest, pass `as_of=yesterday-06:30-utc`.
-    The window is a sliding 24-hour cut against `classified_at`, so this
-    reflects items the bot had on hand at that moment in time.
     """
     end = as_of or datetime.now(timezone.utc)
     start = end - timedelta(hours=since_hours)
+
+    exclude_clause = ""
+    params: list = [start.isoformat(), end.isoformat(), min_relevance]
+    if exclude_ids:
+        placeholders = ",".join("?" * len(exclude_ids))
+        exclude_clause = f" AND i.id NOT IN ({placeholders}) "
+        params.extend(int(x) for x in exclude_ids)
+
     rows = conn.execute(
-        """
+        f"""
         SELECT i.id, i.title, i.url, i.body, i.one_line_summary, i.category,
                i.uae_relevance, i.severity, i.entities_json, i.doctrine_relation,
                i.title_simhash,
@@ -283,10 +298,15 @@ def items_for_digest(
           AND i.classified_at <= ?
           AND COALESCE(i.uae_relevance, 0) >= ?
           AND i.category != 'other'
+          AND TRIM(COALESCE(i.title, '')) != ''
+          AND COALESCE(i.title, '') NOT LIKE 'http://%'
+          AND COALESCE(i.title, '') NOT LIKE 'https://%'
+          AND COALESCE(i.title, '') NOT LIKE 'www.%'
+          {exclude_clause}
         ORDER BY (i.uae_relevance * COALESCE(i.severity, 0.5) * s.quality) DESC,
                  i.ingested_at DESC
         """,
-        (start.isoformat(), end.isoformat(), min_relevance),
+        params,
     ).fetchall()
     out = []
     for r in rows:
@@ -303,6 +323,27 @@ def items_for_digest(
             "doctrine_relation": r["doctrine_relation"],
             "title_simhash": r["title_simhash"],
         })
+    return out
+
+
+def previously_digested_item_ids(
+    conn: sqlite3.Connection, since_hours: int = 24 * 7
+) -> set[int]:
+    """Return the union of item-IDs that appeared in any digest composed in
+    the last N hours. Used to suppress duplicates across consecutive briefs
+    so the same story doesn't lead three mornings in a row."""
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=since_hours)).isoformat()
+    out: set[int] = set()
+    for r in conn.execute(
+        "SELECT item_ids_json FROM digests WHERE composed_at >= ?",
+        (cutoff,),
+    ):
+        try:
+            for x in (json.loads(r["item_ids_json"]) or []):
+                if isinstance(x, int):
+                    out.add(x)
+        except Exception:
+            continue
     return out
 
 
@@ -701,6 +742,104 @@ def latest_digest(conn: sqlite3.Connection) -> dict | None:
 def get_url_for_item(conn: sqlite3.Connection, item_id: int) -> str | None:
     row = conn.execute("SELECT url FROM items WHERE id = ?", (item_id,)).fetchone()
     return row["url"] if row else None
+
+
+# ---------------------------------------------------------------------------
+# Country / region aggregations — power the /country command + country view
+# ---------------------------------------------------------------------------
+
+def _classified_window_rows(conn: sqlite3.Connection, since_hours: int) -> list[sqlite3.Row]:
+    """Return id + country_focus_json + ingested_at + title etc. for items
+    classified in the last N hours (used by the country aggregators).
+    """
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=since_hours)).isoformat()
+    return list(conn.execute(
+        """SELECT i.id, i.title, i.url, i.one_line_summary, i.published_at,
+                  i.ingested_at, i.uae_relevance, i.severity, i.category,
+                  i.country_focus_json,
+                  s.name AS source_name
+           FROM items i LEFT JOIN sources s ON s.id = i.source_id
+           WHERE i.classified_at IS NOT NULL
+             AND i.classified_at >= ?
+             AND i.country_focus_json IS NOT NULL
+             AND i.country_focus_json != '[]'
+             AND TRIM(COALESCE(i.title, '')) != ''
+             AND COALESCE(i.title, '') NOT LIKE 'http://%'
+             AND COALESCE(i.title, '') NOT LIKE 'https://%'
+             AND COALESCE(i.title, '') NOT LIKE 'www.%'""",
+        (cutoff,),
+    ))
+
+
+def country_mention_counts(conn: sqlite3.Connection, since_hours: int = 720) -> dict[str, int]:
+    """{ISO-2: number of items mentioning that country in the window}. Default 30 days."""
+    counts: dict[str, int] = {}
+    for r in _classified_window_rows(conn, since_hours):
+        try:
+            for iso in (json.loads(r["country_focus_json"]) or []):
+                iso2 = str(iso).strip().upper()
+                if len(iso2) == 2:
+                    counts[iso2] = counts.get(iso2, 0) + 1
+        except Exception:
+            continue
+    return counts
+
+
+def country_cooccurrence(
+    conn: sqlite3.Connection, iso2: str, since_hours: int = 720
+) -> dict[str, int]:
+    """For items that mention `iso2`, count co-mentions of every other country.
+    Returns {other_iso: count}, descending order preserved by sort at call site.
+    """
+    iso2 = (iso2 or "").upper()
+    if len(iso2) != 2:
+        return {}
+    co: dict[str, int] = {}
+    for r in _classified_window_rows(conn, since_hours):
+        try:
+            countries = [str(c).strip().upper() for c in (json.loads(r["country_focus_json"]) or [])]
+        except Exception:
+            continue
+        if iso2 not in countries:
+            continue
+        for other in countries:
+            if other == iso2 or len(other) != 2:
+                continue
+            co[other] = co.get(other, 0) + 1
+    return co
+
+
+def items_for_country(
+    conn: sqlite3.Connection, iso2: str, since_hours: int = 720, limit: int = 50,
+) -> list[dict]:
+    """Items mentioning `iso2`, newest classification first."""
+    iso2 = (iso2 or "").upper()
+    if len(iso2) != 2:
+        return []
+    out: list[dict] = []
+    for r in _classified_window_rows(conn, since_hours):
+        try:
+            countries = [str(c).strip().upper() for c in (json.loads(r["country_focus_json"]) or [])]
+        except Exception:
+            continue
+        if iso2 not in countries:
+            continue
+        out.append({
+            "id": r["id"],
+            "title": r["title"],
+            "url": r["url"],
+            "summary": r["one_line_summary"] or "",
+            "category": r["category"],
+            "uae_relevance": r["uae_relevance"],
+            "severity": r["severity"],
+            "published_at": r["published_at"],
+            "ingested_at": r["ingested_at"],
+            "source": r["source_name"],
+            "country_focus": countries,
+        })
+    # Sort by published_at desc when available, ingested_at otherwise
+    out.sort(key=lambda x: x.get("published_at") or x.get("ingested_at") or "", reverse=True)
+    return out[:limit]
 
 
 def enabled_users(conn: sqlite3.Connection) -> list[sqlite3.Row]:

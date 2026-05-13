@@ -264,6 +264,8 @@ def run_compose_digest(
     max_items: int = 25,
     *,
     as_of: datetime | None = None,
+    exclude_ids: set[int] | None = None,
+    dedupe_against_recent_digests: bool = True,
 ) -> tuple[int, str]:
     """Compose a digest. Returns (digest_id, content).
 
@@ -271,6 +273,12 @@ def run_compose_digest(
     historical brief — the editor receives items classified in the 24h
     window ending at `as_of`, and the saved date_label / composed_at
     reflect that moment.
+
+    `exclude_ids` is a hard exclusion set (used during backfill to suppress
+    items already used in a more-recent brief from the same run).
+
+    `dedupe_against_recent_digests` (default True) additionally suppresses
+    item IDs that appeared in any digest persisted in the last 7 days.
     """
     import pytz
     cfg = get_config()
@@ -281,12 +289,18 @@ def run_compose_digest(
     date_label = end_local.strftime("%A %d %B %Y")
 
     with db.connect() as conn:
+        excluded: set[int] = set(exclude_ids or ())
+        if dedupe_against_recent_digests:
+            excluded |= db.previously_digested_item_ids(conn, since_hours=24 * 7)
         items = db.items_for_digest(
-            conn, since_hours=since_hours, min_relevance=min_relevance, as_of=end_utc,
+            conn,
+            since_hours=since_hours,
+            min_relevance=min_relevance,
+            as_of=end_utc,
+            exclude_ids=excluded or None,
         )
         items = _dedupe_by_simhash(items)
         items = items[:max_items]
-        # Compose with the local clock at `as_of`, not "now"
         content, _ = compose_digest(items, when=end_local)
         digest_id = db.save_digest(
             conn,
@@ -300,11 +314,9 @@ def run_compose_digest(
 def run_backfill_digests(days: int = 5, min_relevance: float = 0.4) -> list[dict]:
     """Compose `days` daily briefs, one per day for the past N days at 06:30 GST.
 
-    Each brief sees items classified in the 24h window ending at that day's
-    06:30 GST — the same window the live cron uses. Useful for populating the
-    archive on first deploy.
-
-    Returns a list of {as_of, digest_id, item_count, date_label} dicts.
+    Iterates from oldest to newest. Each composed brief's item_ids are added
+    to an in-run exclusion set so the same item never appears in two briefs.
+    Day boundaries are at 06:30 in cfg.timezone.
     """
     import pytz
     cfg = get_config()
@@ -312,31 +324,57 @@ def run_backfill_digests(days: int = 5, min_relevance: float = 0.4) -> list[dict
     hour, minute = (int(x) for x in cfg.digest_time.split(":"))
     today_local = datetime.now(tz).replace(hour=hour, minute=minute, second=0, microsecond=0)
 
+    # Build the list of as_of timestamps oldest → newest so the dedup set grows
+    # forward through time (later briefs exclude items used in earlier ones).
+    days_back = sorted(range(days), reverse=True)   # [days-1, days-2, ..., 0]
     results: list[dict] = []
-    for d in range(days):
+    used_ids: set[int] = set()
+
+    for d in days_back:
         as_of_local = today_local - timedelta(days=d)
-        # Skip future timestamps (e.g. if today's 06:30 hasn't happened yet)
         if as_of_local > datetime.now(tz):
             continue
         as_of_utc = as_of_local.astimezone(timezone.utc)
-        log.info("backfill: composing brief for %s (%s)",
-                 as_of_local.strftime("%A %d %B %Y"), as_of_utc.isoformat())
+        log.info(
+            "backfill: composing brief for %s (excluding %d already-used IDs)",
+            as_of_local.strftime("%A %d %B %Y"), len(used_ids),
+        )
         try:
             digest_id, content = run_compose_digest(
                 since_hours=24,
                 min_relevance=min_relevance,
                 max_items=25,
                 as_of=as_of_utc,
+                exclude_ids=used_ids,
+                # Backfill controls dedup via the in-run set; don't double-up
+                # by also pulling from the digests table (every digest we just
+                # composed in this run is in there too).
+                dedupe_against_recent_digests=False,
             )
         except Exception as exc:
-            log.warning("backfill: compose failed for %s: %s",
-                        as_of_local.date(), exc)
+            log.warning(
+                "backfill: compose failed for %s: %s", as_of_local.date(), exc,
+            )
             continue
+
+        # Track this brief's item IDs so the next (newer) day's compose skips them
+        with db.connect() as conn:
+            import json as _json
+            row = conn.execute(
+                "SELECT item_ids_json FROM digests WHERE id = ?", (digest_id,),
+            ).fetchone()
+            try:
+                ids_just_used = _json.loads(row["item_ids_json"]) or []
+            except Exception:
+                ids_just_used = []
+        used_ids.update(int(x) for x in ids_just_used if isinstance(x, int))
+
         results.append({
             "as_of": as_of_utc.isoformat(),
             "digest_id": digest_id,
             "char_count": len(content),
             "date_label": as_of_local.strftime("%A %d %B %Y"),
+            "items_used": len(ids_just_used),
         })
     return results
 

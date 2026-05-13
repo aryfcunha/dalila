@@ -33,6 +33,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("init", help="Create the SQLite DB and seed sources")
     sub.add_parser("check", help="Verify environment (claude CLI, telegram token, etc.)")
     sub.add_parser("status", help="DB and pipeline snapshot (queue, classified, top entities)")
+    sub.add_parser("country-debug", help="Show top-mentioned countries from country_focus_json (diagnostic)")
     sub.add_parser("ingest", help="Run one ingest pass across all enabled sources")
     p_classify = sub.add_parser("classify", help="Classify pending items")
     p_classify.add_argument("--limit", type=int, default=100, help="Max items to classify in this run")
@@ -71,6 +72,31 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "status":
         return _cmd_status()
+
+    if args.cmd == "country-debug":
+        db.init_db()
+        with db.connect() as conn:
+            n_total = conn.execute("SELECT COUNT(*) AS n FROM items WHERE classified_at IS NOT NULL").fetchone()["n"]
+            n_with_cf = conn.execute(
+                "SELECT COUNT(*) AS n FROM items "
+                "WHERE country_focus_json IS NOT NULL AND country_focus_json != '[]'"
+            ).fetchone()["n"]
+            print(f"items classified ever:                       {n_total}")
+            print(f"items with country_focus_json populated:     {n_with_cf}")
+            if n_with_cf == 0:
+                print()
+                print("→ ZERO items have country_focus_json populated.")
+                print("  Either no items have been classified since migration 004,")
+                print("  or the classifier isn't writing the field. Re-classify a")
+                print("  few items: `dalila classify --limit 20`")
+                return 0
+            counts = db.country_mention_counts(conn, since_hours=30 * 24)
+            top = sorted(counts.items(), key=lambda kv: kv[1], reverse=True)[:15]
+            print()
+            print(f"top countries (last 30d, {len(counts)} countries seen, {sum(counts.values())} total tags):")
+            for iso, n in top:
+                print(f"  {iso}  {n:>4d}")
+        return 0
 
     if args.cmd == "ingest":
         from dalila.pipeline import run_ingest
