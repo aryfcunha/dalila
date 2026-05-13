@@ -1,0 +1,1073 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dalila — Country view</title>
+<style>
+:root {
+  --bg:#0A0A0A;
+  --bg-deep:#000000;
+  --type:#E8E1D3;
+  --type-dim:#9A958A;
+  --muted:#6E6A60;
+  --amber:#FFB454;
+  --amber-deep:#D88E30;
+  --cyan:#7AB9C9;
+  --green:#7CB36E;
+  --red:#D67866;
+  --rule:#1F1B16;
+  --rule-strong:#3A332A;
+}
+html,body {
+  background: var(--bg);
+  color: var(--type);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+body {
+  margin: 0;
+  font-family: "JetBrains Mono", "IBM Plex Mono", "SF Mono", "Source Code Pro", Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.55;
+  letter-spacing: 0.01em;
+}
+.serif {
+  font-family: "Iowan Old Style", "Source Serif Pro", "PT Serif", Georgia, "Times New Roman", serif;
+  font-feature-settings: "kern", "liga", "calt";
+}
+a {
+  color: var(--cyan);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.12s ease, color 0.12s ease;
+}
+a:hover {
+  color: var(--amber);
+  border-bottom-color: var(--amber);
+}
+.wrap { max-width: 880px; margin: 0 auto; padding: 28px 32px 80px; }
+
+/* ---------- masthead ---------- */
+.masthead {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 18px;
+  align-items: baseline;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--amber);
+  margin-bottom: 18px;
+}
+.masthead-title {
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  margin: 0;
+  color: var(--type);
+}
+.masthead-title a { color: var(--type); border: 0; }
+.masthead-title .ar {
+  color: var(--amber);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 0.65em;
+  margin-left: 8px;
+  vertical-align: 3px;
+}
+.masthead-tag {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-left: 1px solid var(--rule-strong);
+  padding-left: 14px;
+  margin-left: 6px;
+}
+.masthead-nav {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: right;
+}
+.masthead-nav a {
+  color: var(--muted);
+  margin-left: 14px;
+  border: 0;
+}
+.masthead-nav a[aria-current=page] { color: var(--amber); }
+.masthead-nav a:hover { color: var(--type); }
+
+/* ---------- ticker strip ---------- */
+.ticker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0 0 18px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 24px;
+}
+.ticker span {
+  padding: 0 14px;
+  border-right: 1px solid var(--rule-strong);
+}
+.ticker span:first-child { padding-left: 0; }
+.ticker span:last-child { border-right: 0; }
+.ticker b { color: var(--amber); font-weight: 700; }
+
+/* ---------- top stories ---------- */
+.top { margin: 0 0 28px; }
+.top-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--amber);
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+}
+.top-head .label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+.top-head .count { color: var(--muted); font-size: 10px; letter-spacing: 0.14em; }
+.top ol { list-style: none; padding: 0; margin: 0; counter-reset: t; }
+.top li {
+  counter-increment: t;
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 14px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--rule);
+  align-items: baseline;
+}
+.top li:last-child { border-bottom: 0; }
+.top li::before {
+  content: counter(t, decimal-leading-zero);
+  color: var(--amber);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+.top a {
+  color: var(--type);
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 16px;
+  line-height: 1.4;
+  border-bottom: 1px solid transparent;
+}
+.top a:hover {
+  color: var(--amber);
+  border-bottom-color: var(--amber);
+}
+.top .ref { color: var(--muted); font-size: 10px; margin-left: 6px; letter-spacing: 0.08em; }
+
+/* ---------- sections ---------- */
+.section { margin: 0 0 30px; }
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+}
+.section-head .label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--type);
+}
+.section-head .count {
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+
+/* ---------- items ---------- */
+.item {
+  padding: 14px 0 16px;
+  border-bottom: 1px solid var(--rule);
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 14px;
+}
+.item:last-child { border-bottom: 0; }
+.item-n {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding-top: 2px;
+}
+.item-body .title {
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 16px;
+  line-height: 1.4;
+  font-weight: 600;
+  color: var(--type);
+  margin: 0 0 6px;
+}
+.item-body .title a {
+  color: var(--type);
+  border-bottom: 1px solid transparent;
+}
+.item-body .title a:hover {
+  color: var(--amber);
+  border-bottom-color: var(--amber);
+}
+.item-body .summary {
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 14px;
+  color: var(--type-dim);
+  margin: 0 0 8px;
+  line-height: 1.55;
+}
+.item-body .meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.item-body .meta .src { color: var(--type-dim); }
+.item-body .meta .rel { color: var(--amber); }
+.item-body .meta .sev { color: var(--muted); }
+.item-body .meta a { color: var(--cyan); border: 0; }
+.item-body .meta a:hover { color: var(--amber); }
+.doctrine-tag {
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  padding: 1px 6px;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  font-weight: 700;
+}
+
+/* ---------- footer ---------- */
+.foot {
+  margin-top: 56px;
+  padding-top: 14px;
+  border-top: 1px solid var(--amber);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.foot a { color: var(--muted); border: 0; }
+.foot a:hover { color: var(--amber); }
+
+/* ---------- archive ---------- */
+.archive-row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 18px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--rule);
+  align-items: baseline;
+}
+.archive-date {
+  color: var(--amber);
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.archive-title a {
+  color: var(--type);
+  font-family: "Iowan Old Style", Georgia, serif;
+  font-size: 16px;
+  line-height: 1.4;
+  border-bottom: 1px solid transparent;
+}
+.archive-title a:hover { color: var(--amber); border-bottom-color: var(--amber); }
+.archive-preview { color: var(--muted); font-size: 12px; margin-top: 6px; line-height: 1.5; }
+
+/* ---------- about ---------- */
+.about p, .about ul, .about li {
+  font-family: "Iowan Old Style", Georgia, serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--type-dim);
+  max-width: 64ch;
+}
+.about h2 {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--amber);
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 6px;
+  margin: 34px 0 14px;
+}
+.about strong { color: var(--type); }
+.about code {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 0.9em;
+  color: var(--amber);
+  background: var(--bg-deep);
+  padding: 1px 5px;
+  border: 1px solid var(--rule-strong);
+}
+.source-block {
+  margin: 0 0 22px;
+  padding: 8px 0 0 16px;
+  border-left: 1px solid var(--rule-strong);
+}
+.source-block strong {
+  display: block;
+  color: var(--amber);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.source-block ul { list-style: none; padding: 0; margin: 0; }
+.source-block li {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  color: var(--type-dim);
+  padding: 3px 0;
+}
+.source-block li .note { color: var(--muted); margin-left: 4px; }
+
+/* ---------- countries view ---------- */
+.country-controls {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin: 6px 0 22px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.country-controls label { color: var(--muted); margin-right: 4px; }
+.region-pill {
+  display: inline-block;
+  padding: 3px 8px;
+  border: 1px solid var(--rule-strong);
+  color: var(--type-dim);
+  cursor: pointer;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.region-pill:hover { color: var(--amber); border-color: var(--amber-deep); }
+.region-pill.active { color: var(--bg); background: var(--amber); border-color: var(--amber); }
+
+.region-block { margin: 0 0 22px; }
+.region-head {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  justify-content: space-between;
+}
+.region-head .count { color: var(--muted); }
+.tile-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.tile {
+  width: 44px; height: 44px;
+  background: var(--bg-deep);
+  border: 1px solid var(--rule-strong);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--type-dim);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.12s ease, color 0.12s ease;
+  position: relative;
+}
+.tile:hover { border-color: var(--amber); color: var(--type); z-index: 2; }
+.tile .num {
+  font-size: 9px;
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+  margin-top: 1px;
+}
+.tile.selected {
+  border-color: var(--amber);
+  color: var(--bg);
+  background: var(--amber);
+}
+.tile.selected .num { color: rgba(10,10,10,0.6); }
+.tile.dim { opacity: 0.28; }
+.tile.empty { color: var(--muted); }
+/* Heatmap shades (data-h attribute set by JS) */
+.tile[data-h="1"] { background: #1a1409; border-color: #2a1f12; color: var(--type-dim); }
+.tile[data-h="2"] { background: #2c1f0a; border-color: #3d2912; color: var(--type-dim); }
+.tile[data-h="3"] { background: #4a3110; border-color: #5d3e14; color: var(--type); }
+.tile[data-h="4"] { background: #75501a; border-color: #8a611f; color: var(--type); }
+.tile[data-h="5"] { background: #a47424; border-color: #b88229; color: var(--bg); }
+.tile[data-h="6"] { background: var(--amber-deep); border-color: var(--amber); color: var(--bg); }
+
+#country-detail {
+  margin: 28px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule-strong);
+}
+.country-detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.country-detail-head h2 {
+  margin: 0;
+  font-family: "Iowan Old Style", Georgia, serif;
+  font-size: 22px;
+  color: var(--amber);
+  font-weight: 700;
+}
+.country-detail-head .meta {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.country-cofreq {
+  font-size: 11px;
+  color: var(--type-dim);
+  margin: 0 0 14px;
+  letter-spacing: 0.04em;
+}
+.country-cofreq .pair {
+  display: inline-block;
+  margin-right: 12px;
+  margin-bottom: 4px;
+  padding: 2px 6px;
+  border: 1px solid var(--rule-strong);
+  color: var(--type-dim);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+.country-cofreq .pair b { color: var(--amber); font-weight: 700; margin-left: 4px; }
+.country-news-empty {
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+  padding: 28px 0;
+  text-align: center;
+}
+
+/* ---------- print + mobile ---------- */
+@media print {
+  html,body { background: white; color: black; }
+  a { color: black; text-decoration: underline; }
+  .masthead-nav, .foot { display: none; }
+}
+@media (max-width: 640px) {
+  .wrap { padding: 22px 18px 60px; }
+  .masthead { grid-template-columns: 1fr; gap: 8px; }
+  .masthead-tag { border-left: 0; padding-left: 0; margin-left: 0; }
+  .masthead-nav { text-align: left; }
+  .ticker { font-size: 9px; }
+  .ticker span { padding: 0 8px; }
+  .archive-row { grid-template-columns: 1fr; gap: 4px; }
+  .item { grid-template-columns: 1fr; gap: 6px; }
+  .item-n { font-size: 10px; padding: 0; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <h1 class="masthead-title"><a href="./">Dalila<span class="ar">دليلة</span></a></h1>
+  <div class="masthead-tag">COUNTRY VIEW</div>
+  <nav class="masthead-nav">
+    <a href="./">Home</a>
+    <a href="archive.html">Archive</a>
+    <a href="countries.html" aria-current="page">Countries</a>
+    <a href="about.html">About</a>
+  </nav>
+</header>
+
+<p class="date-line">LAST 14 DAYS · 298 ITEM TAGS · 59 COUNTRIES WITH ANY MENTIONS</p>
+<p class="kicker" style="color:var(--type-dim);font-family:Iowan Old Style,Source Serif Pro,Georgia,serif;font-size:15px;line-height:1.6;max-width:64ch;margin:8px 0 24px;">Mention density per country, grouped by region. Hover for the exact count; click a country to see which other countries appear alongside it (thicker arc = more co-mentions) and the underlying news. Use the region buttons below to filter.</p>
+<div class="region-filter"><button class="region-btn active" data-region="all">ALL</button><button class="region-btn" data-region="north-america" title="North America — 53 mentions">NORTH AMERICA<span class="rb-count">53</span></button><button class="region-btn" data-region="central-america" title="Central America — 4 mentions">CENTRAL AMERICA<span class="rb-count">4</span></button><button class="region-btn" data-region="south-america" title="South America — 4 mentions">SOUTH AMERICA<span class="rb-count">4</span></button><button class="region-btn" data-region="western-europe" title="Western Europe — 24 mentions">WESTERN EUROPE<span class="rb-count">24</span></button><button class="region-btn" data-region="eastern-europe" title="Eastern Europe — 19 mentions">EASTERN EUROPE<span class="rb-count">19</span></button><button class="region-btn" data-region="middle-east" title="Middle East — 119 mentions">MIDDLE EAST<span class="rb-count">119</span></button><button class="region-btn" data-region="north-africa" title="North Africa — 1 mentions">NORTH AFRICA<span class="rb-count">1</span></button><button class="region-btn" data-region="western-africa" title="Western Africa — 15 mentions">WESTERN AFRICA<span class="rb-count">15</span></button><button class="region-btn" data-region="eastern-africa" title="Eastern Africa — 11 mentions">EASTERN AFRICA<span class="rb-count">11</span></button><button class="region-btn" data-region="southern-africa" title="Southern Africa — 2 mentions">SOUTHERN AFRICA<span class="rb-count">2</span></button><button class="region-btn" data-region="central-asia" title="Central Asia — 2 mentions">CENTRAL ASIA<span class="rb-count">2</span></button><button class="region-btn" data-region="south-asia" title="South Asia — 25 mentions">SOUTH ASIA<span class="rb-count">25</span></button><button class="region-btn" data-region="north-east-asia" title="North East Asia — 11 mentions">NORTH EAST ASIA<span class="rb-count">11</span></button><button class="region-btn" data-region="south-east-asia" title="South East Asia — 6 mentions">SOUTH EAST ASIA<span class="rb-count">6</span></button><button class="region-btn" data-region="asia-pacific" title="Asia-Pacific — 1 mentions">ASIA-PACIFIC<span class="rb-count">1</span></button></div>
+<div class="carto-wrap"><svg class="carto-overlay" aria-hidden="true"></svg><div class="carto">
+<section class="region-row" data-region="north-america">
+<div class="region-label">North America</div>
+<div class="tiles">
+<button class="tile" data-iso="CA" data-count="7" style="--intensity:0.152;" title="Canada — 7 mentions"><span class="iso">CA</span></button>
+<button class="tile" data-iso="US" data-count="46" style="--intensity:1.000;" title="United States — 46 mentions"><span class="iso">US</span></button>
+</div>
+</section>
+<section class="region-row" data-region="central-america">
+<div class="region-label">Central America</div>
+<div class="tiles">
+<button class="tile zero" data-iso="BS" data-count="0" style="--intensity:0.000;" title="Bahamas — 0 mentions"><span class="iso">BS</span></button>
+<button class="tile zero" data-iso="BZ" data-count="0" style="--intensity:0.000;" title="Belize — 0 mentions"><span class="iso">BZ</span></button>
+<button class="tile zero" data-iso="CR" data-count="0" style="--intensity:0.000;" title="Costa Rica — 0 mentions"><span class="iso">CR</span></button>
+<button class="tile zero" data-iso="CU" data-count="0" style="--intensity:0.000;" title="Cuba — 0 mentions"><span class="iso">CU</span></button>
+<button class="tile" data-iso="DO" data-count="1" style="--intensity:0.022;" title="Dominican Republic — 1 mention"><span class="iso">DO</span></button>
+<button class="tile zero" data-iso="SV" data-count="0" style="--intensity:0.000;" title="El Salvador — 0 mentions"><span class="iso">SV</span></button>
+<button class="tile" data-iso="GT" data-count="1" style="--intensity:0.022;" title="Guatemala — 1 mention"><span class="iso">GT</span></button>
+<button class="tile" data-iso="HT" data-count="1" style="--intensity:0.022;" title="Haiti — 1 mention"><span class="iso">HT</span></button>
+<button class="tile" data-iso="HN" data-count="1" style="--intensity:0.022;" title="Honduras — 1 mention"><span class="iso">HN</span></button>
+<button class="tile zero" data-iso="JM" data-count="0" style="--intensity:0.000;" title="Jamaica — 0 mentions"><span class="iso">JM</span></button>
+<button class="tile zero" data-iso="MX" data-count="0" style="--intensity:0.000;" title="Mexico — 0 mentions"><span class="iso">MX</span></button>
+<button class="tile zero" data-iso="NI" data-count="0" style="--intensity:0.000;" title="Nicaragua — 0 mentions"><span class="iso">NI</span></button>
+<button class="tile zero" data-iso="PA" data-count="0" style="--intensity:0.000;" title="Panama — 0 mentions"><span class="iso">PA</span></button>
+<button class="tile zero" data-iso="TT" data-count="0" style="--intensity:0.000;" title="Trinidad and Tobago — 0 mentions"><span class="iso">TT</span></button>
+</div>
+</section>
+<section class="region-row" data-region="south-america">
+<div class="region-label">South America</div>
+<div class="tiles">
+<button class="tile" data-iso="AR" data-count="3" style="--intensity:0.065;" title="Argentina — 3 mentions"><span class="iso">AR</span></button>
+<button class="tile zero" data-iso="BO" data-count="0" style="--intensity:0.000;" title="Bolivia — 0 mentions"><span class="iso">BO</span></button>
+<button class="tile zero" data-iso="BR" data-count="0" style="--intensity:0.000;" title="Brazil — 0 mentions"><span class="iso">BR</span></button>
+<button class="tile" data-iso="CL" data-count="1" style="--intensity:0.022;" title="Chile — 1 mention"><span class="iso">CL</span></button>
+<button class="tile zero" data-iso="CO" data-count="0" style="--intensity:0.000;" title="Colombia — 0 mentions"><span class="iso">CO</span></button>
+<button class="tile zero" data-iso="EC" data-count="0" style="--intensity:0.000;" title="Ecuador — 0 mentions"><span class="iso">EC</span></button>
+<button class="tile zero" data-iso="GY" data-count="0" style="--intensity:0.000;" title="Guyana — 0 mentions"><span class="iso">GY</span></button>
+<button class="tile zero" data-iso="PY" data-count="0" style="--intensity:0.000;" title="Paraguay — 0 mentions"><span class="iso">PY</span></button>
+<button class="tile zero" data-iso="PE" data-count="0" style="--intensity:0.000;" title="Peru — 0 mentions"><span class="iso">PE</span></button>
+<button class="tile zero" data-iso="SR" data-count="0" style="--intensity:0.000;" title="Suriname — 0 mentions"><span class="iso">SR</span></button>
+<button class="tile zero" data-iso="UY" data-count="0" style="--intensity:0.000;" title="Uruguay — 0 mentions"><span class="iso">UY</span></button>
+<button class="tile zero" data-iso="VE" data-count="0" style="--intensity:0.000;" title="Venezuela — 0 mentions"><span class="iso">VE</span></button>
+</div>
+</section>
+<section class="region-row" data-region="western-europe">
+<div class="region-label">Western Europe</div>
+<div class="tiles">
+<button class="tile zero" data-iso="AT" data-count="0" style="--intensity:0.000;" title="Austria — 0 mentions"><span class="iso">AT</span></button>
+<button class="tile zero" data-iso="BE" data-count="0" style="--intensity:0.000;" title="Belgium — 0 mentions"><span class="iso">BE</span></button>
+<button class="tile zero" data-iso="DK" data-count="0" style="--intensity:0.000;" title="Denmark — 0 mentions"><span class="iso">DK</span></button>
+<button class="tile zero" data-iso="FI" data-count="0" style="--intensity:0.000;" title="Finland — 0 mentions"><span class="iso">FI</span></button>
+<button class="tile" data-iso="FR" data-count="3" style="--intensity:0.065;" title="France — 3 mentions"><span class="iso">FR</span></button>
+<button class="tile zero" data-iso="DE" data-count="0" style="--intensity:0.000;" title="Germany — 0 mentions"><span class="iso">DE</span></button>
+<button class="tile zero" data-iso="GR" data-count="0" style="--intensity:0.000;" title="Greece — 0 mentions"><span class="iso">GR</span></button>
+<button class="tile zero" data-iso="IS" data-count="0" style="--intensity:0.000;" title="Iceland — 0 mentions"><span class="iso">IS</span></button>
+<button class="tile zero" data-iso="IE" data-count="0" style="--intensity:0.000;" title="Ireland — 0 mentions"><span class="iso">IE</span></button>
+<button class="tile" data-iso="IT" data-count="1" style="--intensity:0.022;" title="Italy — 1 mention"><span class="iso">IT</span></button>
+<button class="tile zero" data-iso="LU" data-count="0" style="--intensity:0.000;" title="Luxembourg — 0 mentions"><span class="iso">LU</span></button>
+<button class="tile zero" data-iso="MT" data-count="0" style="--intensity:0.000;" title="Malta — 0 mentions"><span class="iso">MT</span></button>
+<button class="tile" data-iso="NL" data-count="2" style="--intensity:0.043;" title="Netherlands — 2 mentions"><span class="iso">NL</span></button>
+<button class="tile" data-iso="PT" data-count="1" style="--intensity:0.022;" title="Portugal — 1 mention"><span class="iso">PT</span></button>
+<button class="tile" data-iso="ES" data-count="4" style="--intensity:0.087;" title="Spain — 4 mentions"><span class="iso">ES</span></button>
+<button class="tile" data-iso="SE" data-count="1" style="--intensity:0.022;" title="Sweden — 1 mention"><span class="iso">SE</span></button>
+<button class="tile zero" data-iso="CH" data-count="0" style="--intensity:0.000;" title="Switzerland — 0 mentions"><span class="iso">CH</span></button>
+<button class="tile" data-iso="GB" data-count="12" style="--intensity:0.261;" title="United Kingdom — 12 mentions"><span class="iso">GB</span></button>
+</div>
+</section>
+<section class="region-row" data-region="eastern-europe">
+<div class="region-label">Eastern Europe</div>
+<div class="tiles">
+<button class="tile zero" data-iso="AL" data-count="0" style="--intensity:0.000;" title="Albania — 0 mentions"><span class="iso">AL</span></button>
+<button class="tile zero" data-iso="BY" data-count="0" style="--intensity:0.000;" title="Belarus — 0 mentions"><span class="iso">BY</span></button>
+<button class="tile zero" data-iso="BA" data-count="0" style="--intensity:0.000;" title="Bosnia and Herzegovina — 0 mentions"><span class="iso">BA</span></button>
+<button class="tile zero" data-iso="BG" data-count="0" style="--intensity:0.000;" title="Bulgaria — 0 mentions"><span class="iso">BG</span></button>
+<button class="tile zero" data-iso="HR" data-count="0" style="--intensity:0.000;" title="Croatia — 0 mentions"><span class="iso">HR</span></button>
+<button class="tile zero" data-iso="CZ" data-count="0" style="--intensity:0.000;" title="Czech Republic — 0 mentions"><span class="iso">CZ</span></button>
+<button class="tile zero" data-iso="EE" data-count="0" style="--intensity:0.000;" title="Estonia — 0 mentions"><span class="iso">EE</span></button>
+<button class="tile zero" data-iso="HU" data-count="0" style="--intensity:0.000;" title="Hungary — 0 mentions"><span class="iso">HU</span></button>
+<button class="tile zero" data-iso="XK" data-count="0" style="--intensity:0.000;" title="Kosovo — 0 mentions"><span class="iso">XK</span></button>
+<button class="tile zero" data-iso="LV" data-count="0" style="--intensity:0.000;" title="Latvia — 0 mentions"><span class="iso">LV</span></button>
+<button class="tile zero" data-iso="LT" data-count="0" style="--intensity:0.000;" title="Lithuania — 0 mentions"><span class="iso">LT</span></button>
+<button class="tile zero" data-iso="MD" data-count="0" style="--intensity:0.000;" title="Moldova — 0 mentions"><span class="iso">MD</span></button>
+<button class="tile zero" data-iso="ME" data-count="0" style="--intensity:0.000;" title="Montenegro — 0 mentions"><span class="iso">ME</span></button>
+<button class="tile zero" data-iso="MK" data-count="0" style="--intensity:0.000;" title="North Macedonia — 0 mentions"><span class="iso">MK</span></button>
+<button class="tile zero" data-iso="PL" data-count="0" style="--intensity:0.000;" title="Poland — 0 mentions"><span class="iso">PL</span></button>
+<button class="tile zero" data-iso="RO" data-count="0" style="--intensity:0.000;" title="Romania — 0 mentions"><span class="iso">RO</span></button>
+<button class="tile" data-iso="RU" data-count="7" style="--intensity:0.152;" title="Russia — 7 mentions"><span class="iso">RU</span></button>
+<button class="tile zero" data-iso="RS" data-count="0" style="--intensity:0.000;" title="Serbia — 0 mentions"><span class="iso">RS</span></button>
+<button class="tile zero" data-iso="SK" data-count="0" style="--intensity:0.000;" title="Slovakia — 0 mentions"><span class="iso">SK</span></button>
+<button class="tile zero" data-iso="SI" data-count="0" style="--intensity:0.000;" title="Slovenia — 0 mentions"><span class="iso">SI</span></button>
+<button class="tile" data-iso="UA" data-count="12" style="--intensity:0.261;" title="Ukraine — 12 mentions"><span class="iso">UA</span></button>
+</div>
+</section>
+<section class="region-row" data-region="middle-east">
+<div class="region-label">Middle East</div>
+<div class="tiles">
+<button class="tile" data-iso="BH" data-count="1" style="--intensity:0.022;" title="Bahrain — 1 mention"><span class="iso">BH</span></button>
+<button class="tile zero" data-iso="CY" data-count="0" style="--intensity:0.000;" title="Cyprus — 0 mentions"><span class="iso">CY</span></button>
+<button class="tile" data-iso="IR" data-count="32" style="--intensity:0.696;" title="Iran — 32 mentions"><span class="iso">IR</span></button>
+<button class="tile" data-iso="IQ" data-count="3" style="--intensity:0.065;" title="Iraq — 3 mentions"><span class="iso">IQ</span></button>
+<button class="tile" data-iso="IL" data-count="15" style="--intensity:0.326;" title="Israel — 15 mentions"><span class="iso">IL</span></button>
+<button class="tile zero" data-iso="JO" data-count="0" style="--intensity:0.000;" title="Jordan — 0 mentions"><span class="iso">JO</span></button>
+<button class="tile" data-iso="KW" data-count="4" style="--intensity:0.087;" title="Kuwait — 4 mentions"><span class="iso">KW</span></button>
+<button class="tile" data-iso="LB" data-count="8" style="--intensity:0.174;" title="Lebanon — 8 mentions"><span class="iso">LB</span></button>
+<button class="tile zero" data-iso="OM" data-count="0" style="--intensity:0.000;" title="Oman — 0 mentions"><span class="iso">OM</span></button>
+<button class="tile" data-iso="PS" data-count="6" style="--intensity:0.130;" title="Palestine — 6 mentions"><span class="iso">PS</span></button>
+<button class="tile zero" data-iso="QA" data-count="0" style="--intensity:0.000;" title="Qatar — 0 mentions"><span class="iso">QA</span></button>
+<button class="tile" data-iso="SA" data-count="2" style="--intensity:0.043;" title="Saudi Arabia — 2 mentions"><span class="iso">SA</span></button>
+<button class="tile" data-iso="SY" data-count="3" style="--intensity:0.065;" title="Syria — 3 mentions"><span class="iso">SY</span></button>
+<button class="tile zero" data-iso="TR" data-count="0" style="--intensity:0.000;" title="Türkiye — 0 mentions"><span class="iso">TR</span></button>
+<button class="tile" data-iso="AE" data-count="41" style="--intensity:0.891;" title="United Arab Emirates — 41 mentions"><span class="iso">AE</span></button>
+<button class="tile" data-iso="YE" data-count="4" style="--intensity:0.087;" title="Yemen — 4 mentions"><span class="iso">YE</span></button>
+</div>
+</section>
+<section class="region-row" data-region="north-africa">
+<div class="region-label">North Africa</div>
+<div class="tiles">
+<button class="tile zero" data-iso="DZ" data-count="0" style="--intensity:0.000;" title="Algeria — 0 mentions"><span class="iso">DZ</span></button>
+<button class="tile" data-iso="EG" data-count="1" style="--intensity:0.022;" title="Egypt — 1 mention"><span class="iso">EG</span></button>
+<button class="tile zero" data-iso="LY" data-count="0" style="--intensity:0.000;" title="Libya — 0 mentions"><span class="iso">LY</span></button>
+<button class="tile zero" data-iso="MR" data-count="0" style="--intensity:0.000;" title="Mauritania — 0 mentions"><span class="iso">MR</span></button>
+<button class="tile zero" data-iso="MA" data-count="0" style="--intensity:0.000;" title="Morocco — 0 mentions"><span class="iso">MA</span></button>
+<button class="tile zero" data-iso="TN" data-count="0" style="--intensity:0.000;" title="Tunisia — 0 mentions"><span class="iso">TN</span></button>
+</div>
+</section>
+<section class="region-row" data-region="western-africa">
+<div class="region-label">Western Africa</div>
+<div class="tiles">
+<button class="tile" data-iso="BJ" data-count="2" style="--intensity:0.043;" title="Benin — 2 mentions"><span class="iso">BJ</span></button>
+<button class="tile zero" data-iso="BF" data-count="0" style="--intensity:0.000;" title="Burkina Faso — 0 mentions"><span class="iso">BF</span></button>
+<button class="tile" data-iso="CV" data-count="1" style="--intensity:0.022;" title="Cabo Verde — 1 mention"><span class="iso">CV</span></button>
+<button class="tile" data-iso="CM" data-count="1" style="--intensity:0.022;" title="Cameroon — 1 mention"><span class="iso">CM</span></button>
+<button class="tile zero" data-iso="CF" data-count="0" style="--intensity:0.000;" title="Central African Republic — 0 mentions"><span class="iso">CF</span></button>
+<button class="tile zero" data-iso="TD" data-count="0" style="--intensity:0.000;" title="Chad — 0 mentions"><span class="iso">TD</span></button>
+<button class="tile" data-iso="CI" data-count="1" style="--intensity:0.022;" title="Côte d&#x27;Ivoire — 1 mention"><span class="iso">CI</span></button>
+<button class="tile" data-iso="CD" data-count="4" style="--intensity:0.087;" title="Democratic Republic of the Congo — 4 mentions"><span class="iso">CD</span></button>
+<button class="tile zero" data-iso="GQ" data-count="0" style="--intensity:0.000;" title="Equatorial Guinea — 0 mentions"><span class="iso">GQ</span></button>
+<button class="tile zero" data-iso="GA" data-count="0" style="--intensity:0.000;" title="Gabon — 0 mentions"><span class="iso">GA</span></button>
+<button class="tile zero" data-iso="GM" data-count="0" style="--intensity:0.000;" title="Gambia — 0 mentions"><span class="iso">GM</span></button>
+<button class="tile" data-iso="GH" data-count="1" style="--intensity:0.022;" title="Ghana — 1 mention"><span class="iso">GH</span></button>
+<button class="tile zero" data-iso="GN" data-count="0" style="--intensity:0.000;" title="Guinea — 0 mentions"><span class="iso">GN</span></button>
+<button class="tile zero" data-iso="GW" data-count="0" style="--intensity:0.000;" title="Guinea-Bissau — 0 mentions"><span class="iso">GW</span></button>
+<button class="tile zero" data-iso="LR" data-count="0" style="--intensity:0.000;" title="Liberia — 0 mentions"><span class="iso">LR</span></button>
+<button class="tile zero" data-iso="ML" data-count="0" style="--intensity:0.000;" title="Mali — 0 mentions"><span class="iso">ML</span></button>
+<button class="tile" data-iso="NE" data-count="1" style="--intensity:0.022;" title="Niger — 1 mention"><span class="iso">NE</span></button>
+<button class="tile" data-iso="NG" data-count="4" style="--intensity:0.087;" title="Nigeria — 4 mentions"><span class="iso">NG</span></button>
+<button class="tile zero" data-iso="CG" data-count="0" style="--intensity:0.000;" title="Republic of the Congo — 0 mentions"><span class="iso">CG</span></button>
+<button class="tile zero" data-iso="SN" data-count="0" style="--intensity:0.000;" title="Senegal — 0 mentions"><span class="iso">SN</span></button>
+<button class="tile zero" data-iso="SL" data-count="0" style="--intensity:0.000;" title="Sierra Leone — 0 mentions"><span class="iso">SL</span></button>
+<button class="tile zero" data-iso="ST" data-count="0" style="--intensity:0.000;" title="São Tomé and Príncipe — 0 mentions"><span class="iso">ST</span></button>
+<button class="tile zero" data-iso="TG" data-count="0" style="--intensity:0.000;" title="Togo — 0 mentions"><span class="iso">TG</span></button>
+</div>
+</section>
+<section class="region-row" data-region="eastern-africa">
+<div class="region-label">Eastern Africa</div>
+<div class="tiles">
+<button class="tile zero" data-iso="BI" data-count="0" style="--intensity:0.000;" title="Burundi — 0 mentions"><span class="iso">BI</span></button>
+<button class="tile zero" data-iso="KM" data-count="0" style="--intensity:0.000;" title="Comoros — 0 mentions"><span class="iso">KM</span></button>
+<button class="tile zero" data-iso="DJ" data-count="0" style="--intensity:0.000;" title="Djibouti — 0 mentions"><span class="iso">DJ</span></button>
+<button class="tile zero" data-iso="ER" data-count="0" style="--intensity:0.000;" title="Eritrea — 0 mentions"><span class="iso">ER</span></button>
+<button class="tile" data-iso="ET" data-count="1" style="--intensity:0.022;" title="Ethiopia — 1 mention"><span class="iso">ET</span></button>
+<button class="tile" data-iso="KE" data-count="3" style="--intensity:0.065;" title="Kenya — 3 mentions"><span class="iso">KE</span></button>
+<button class="tile zero" data-iso="MG" data-count="0" style="--intensity:0.000;" title="Madagascar — 0 mentions"><span class="iso">MG</span></button>
+<button class="tile zero" data-iso="MW" data-count="0" style="--intensity:0.000;" title="Malawi — 0 mentions"><span class="iso">MW</span></button>
+<button class="tile zero" data-iso="MU" data-count="0" style="--intensity:0.000;" title="Mauritius — 0 mentions"><span class="iso">MU</span></button>
+<button class="tile" data-iso="MZ" data-count="1" style="--intensity:0.022;" title="Mozambique — 1 mention"><span class="iso">MZ</span></button>
+<button class="tile zero" data-iso="RW" data-count="0" style="--intensity:0.000;" title="Rwanda — 0 mentions"><span class="iso">RW</span></button>
+<button class="tile zero" data-iso="SC" data-count="0" style="--intensity:0.000;" title="Seychelles — 0 mentions"><span class="iso">SC</span></button>
+<button class="tile" data-iso="SO" data-count="1" style="--intensity:0.022;" title="Somalia — 1 mention"><span class="iso">SO</span></button>
+<button class="tile zero" data-iso="SS" data-count="0" style="--intensity:0.000;" title="South Sudan — 0 mentions"><span class="iso">SS</span></button>
+<button class="tile" data-iso="SD" data-count="4" style="--intensity:0.087;" title="Sudan — 4 mentions"><span class="iso">SD</span></button>
+<button class="tile zero" data-iso="TZ" data-count="0" style="--intensity:0.000;" title="Tanzania — 0 mentions"><span class="iso">TZ</span></button>
+<button class="tile" data-iso="UG" data-count="1" style="--intensity:0.022;" title="Uganda — 1 mention"><span class="iso">UG</span></button>
+<button class="tile zero" data-iso="ZM" data-count="0" style="--intensity:0.000;" title="Zambia — 0 mentions"><span class="iso">ZM</span></button>
+<button class="tile zero" data-iso="ZW" data-count="0" style="--intensity:0.000;" title="Zimbabwe — 0 mentions"><span class="iso">ZW</span></button>
+</div>
+</section>
+<section class="region-row" data-region="southern-africa">
+<div class="region-label">Southern Africa</div>
+<div class="tiles">
+<button class="tile zero" data-iso="AO" data-count="0" style="--intensity:0.000;" title="Angola — 0 mentions"><span class="iso">AO</span></button>
+<button class="tile" data-iso="BW" data-count="1" style="--intensity:0.022;" title="Botswana — 1 mention"><span class="iso">BW</span></button>
+<button class="tile zero" data-iso="SZ" data-count="0" style="--intensity:0.000;" title="Eswatini — 0 mentions"><span class="iso">SZ</span></button>
+<button class="tile zero" data-iso="LS" data-count="0" style="--intensity:0.000;" title="Lesotho — 0 mentions"><span class="iso">LS</span></button>
+<button class="tile zero" data-iso="NA" data-count="0" style="--intensity:0.000;" title="Namibia — 0 mentions"><span class="iso">NA</span></button>
+<button class="tile" data-iso="ZA" data-count="1" style="--intensity:0.022;" title="South Africa — 1 mention"><span class="iso">ZA</span></button>
+</div>
+</section>
+<section class="region-row" data-region="central-asia">
+<div class="region-label">Central Asia</div>
+<div class="tiles">
+<button class="tile" data-iso="KZ" data-count="1" style="--intensity:0.022;" title="Kazakhstan — 1 mention"><span class="iso">KZ</span></button>
+<button class="tile" data-iso="KG" data-count="1" style="--intensity:0.022;" title="Kyrgyzstan — 1 mention"><span class="iso">KG</span></button>
+<button class="tile zero" data-iso="TJ" data-count="0" style="--intensity:0.000;" title="Tajikistan — 0 mentions"><span class="iso">TJ</span></button>
+<button class="tile zero" data-iso="TM" data-count="0" style="--intensity:0.000;" title="Turkmenistan — 0 mentions"><span class="iso">TM</span></button>
+<button class="tile zero" data-iso="UZ" data-count="0" style="--intensity:0.000;" title="Uzbekistan — 0 mentions"><span class="iso">UZ</span></button>
+</div>
+</section>
+<section class="region-row" data-region="south-asia">
+<div class="region-label">South Asia</div>
+<div class="tiles">
+<button class="tile" data-iso="AF" data-count="2" style="--intensity:0.043;" title="Afghanistan — 2 mentions"><span class="iso">AF</span></button>
+<button class="tile" data-iso="BD" data-count="5" style="--intensity:0.109;" title="Bangladesh — 5 mentions"><span class="iso">BD</span></button>
+<button class="tile zero" data-iso="BT" data-count="0" style="--intensity:0.000;" title="Bhutan — 0 mentions"><span class="iso">BT</span></button>
+<button class="tile" data-iso="IN" data-count="8" style="--intensity:0.174;" title="India — 8 mentions"><span class="iso">IN</span></button>
+<button class="tile zero" data-iso="MV" data-count="0" style="--intensity:0.000;" title="Maldives — 0 mentions"><span class="iso">MV</span></button>
+<button class="tile" data-iso="NP" data-count="1" style="--intensity:0.022;" title="Nepal — 1 mention"><span class="iso">NP</span></button>
+<button class="tile" data-iso="PK" data-count="9" style="--intensity:0.196;" title="Pakistan — 9 mentions"><span class="iso">PK</span></button>
+<button class="tile zero" data-iso="LK" data-count="0" style="--intensity:0.000;" title="Sri Lanka — 0 mentions"><span class="iso">LK</span></button>
+</div>
+</section>
+<section class="region-row" data-region="north-east-asia">
+<div class="region-label">North East Asia</div>
+<div class="tiles">
+<button class="tile" data-iso="CN" data-count="7" style="--intensity:0.152;" title="China — 7 mentions"><span class="iso">CN</span></button>
+<button class="tile zero" data-iso="HK" data-count="0" style="--intensity:0.000;" title="Hong Kong — 0 mentions"><span class="iso">HK</span></button>
+<button class="tile" data-iso="JP" data-count="2" style="--intensity:0.043;" title="Japan — 2 mentions"><span class="iso">JP</span></button>
+<button class="tile zero" data-iso="MO" data-count="0" style="--intensity:0.000;" title="Macao — 0 mentions"><span class="iso">MO</span></button>
+<button class="tile zero" data-iso="MN" data-count="0" style="--intensity:0.000;" title="Mongolia — 0 mentions"><span class="iso">MN</span></button>
+<button class="tile zero" data-iso="KP" data-count="0" style="--intensity:0.000;" title="North Korea — 0 mentions"><span class="iso">KP</span></button>
+<button class="tile" data-iso="KR" data-count="2" style="--intensity:0.043;" title="South Korea — 2 mentions"><span class="iso">KR</span></button>
+<button class="tile zero" data-iso="TW" data-count="0" style="--intensity:0.000;" title="Taiwan — 0 mentions"><span class="iso">TW</span></button>
+</div>
+</section>
+<section class="region-row" data-region="south-east-asia">
+<div class="region-label">South East Asia</div>
+<div class="tiles">
+<button class="tile zero" data-iso="BN" data-count="0" style="--intensity:0.000;" title="Brunei — 0 mentions"><span class="iso">BN</span></button>
+<button class="tile zero" data-iso="KH" data-count="0" style="--intensity:0.000;" title="Cambodia — 0 mentions"><span class="iso">KH</span></button>
+<button class="tile zero" data-iso="ID" data-count="0" style="--intensity:0.000;" title="Indonesia — 0 mentions"><span class="iso">ID</span></button>
+<button class="tile zero" data-iso="LA" data-count="0" style="--intensity:0.000;" title="Laos — 0 mentions"><span class="iso">LA</span></button>
+<button class="tile zero" data-iso="MY" data-count="0" style="--intensity:0.000;" title="Malaysia — 0 mentions"><span class="iso">MY</span></button>
+<button class="tile zero" data-iso="MM" data-count="0" style="--intensity:0.000;" title="Myanmar — 0 mentions"><span class="iso">MM</span></button>
+<button class="tile" data-iso="PH" data-count="5" style="--intensity:0.109;" title="Philippines — 5 mentions"><span class="iso">PH</span></button>
+<button class="tile" data-iso="SG" data-count="1" style="--intensity:0.022;" title="Singapore — 1 mention"><span class="iso">SG</span></button>
+<button class="tile zero" data-iso="TH" data-count="0" style="--intensity:0.000;" title="Thailand — 0 mentions"><span class="iso">TH</span></button>
+<button class="tile zero" data-iso="TL" data-count="0" style="--intensity:0.000;" title="Timor-Leste — 0 mentions"><span class="iso">TL</span></button>
+<button class="tile zero" data-iso="VN" data-count="0" style="--intensity:0.000;" title="Vietnam — 0 mentions"><span class="iso">VN</span></button>
+</div>
+</section>
+<section class="region-row" data-region="asia-pacific">
+<div class="region-label">Asia-Pacific</div>
+<div class="tiles">
+<button class="tile zero" data-iso="AU" data-count="0" style="--intensity:0.000;" title="Australia — 0 mentions"><span class="iso">AU</span></button>
+<button class="tile zero" data-iso="FJ" data-count="0" style="--intensity:0.000;" title="Fiji — 0 mentions"><span class="iso">FJ</span></button>
+<button class="tile zero" data-iso="KI" data-count="0" style="--intensity:0.000;" title="Kiribati — 0 mentions"><span class="iso">KI</span></button>
+<button class="tile zero" data-iso="MH" data-count="0" style="--intensity:0.000;" title="Marshall Islands — 0 mentions"><span class="iso">MH</span></button>
+<button class="tile zero" data-iso="FM" data-count="0" style="--intensity:0.000;" title="Micronesia — 0 mentions"><span class="iso">FM</span></button>
+<button class="tile zero" data-iso="NR" data-count="0" style="--intensity:0.000;" title="Nauru — 0 mentions"><span class="iso">NR</span></button>
+<button class="tile zero" data-iso="NZ" data-count="0" style="--intensity:0.000;" title="New Zealand — 0 mentions"><span class="iso">NZ</span></button>
+<button class="tile zero" data-iso="PW" data-count="0" style="--intensity:0.000;" title="Palau — 0 mentions"><span class="iso">PW</span></button>
+<button class="tile zero" data-iso="PG" data-count="0" style="--intensity:0.000;" title="Papua New Guinea — 0 mentions"><span class="iso">PG</span></button>
+<button class="tile zero" data-iso="WS" data-count="0" style="--intensity:0.000;" title="Samoa — 0 mentions"><span class="iso">WS</span></button>
+<button class="tile zero" data-iso="SB" data-count="0" style="--intensity:0.000;" title="Solomon Islands — 0 mentions"><span class="iso">SB</span></button>
+<button class="tile" data-iso="TO" data-count="1" style="--intensity:0.022;" title="Tonga — 1 mention"><span class="iso">TO</span></button>
+<button class="tile zero" data-iso="TV" data-count="0" style="--intensity:0.000;" title="Tuvalu — 0 mentions"><span class="iso">TV</span></button>
+<button class="tile zero" data-iso="VU" data-count="0" style="--intensity:0.000;" title="Vanuatu — 0 mentions"><span class="iso">VU</span></button>
+</div>
+</section>
+</div></div>
+<section class="detail" id="detail" hidden><div class="detail-head"><h2 id="detail-title"></h2><button class="detail-clear" id="detail-clear" type="button">CLEAR ×</button></div><div id="detail-co" class="detail-co"></div><ul id="detail-items" class="detail-items"></ul></section>
+<p id="empty-state" class="empty-state">Click a country to see co-mention links and recent news.</p>
+<script id="country-data" type="application/json">{"countries": {"CA": {"name": "Canada", "region": "north-america", "count": 7}, "US": {"name": "United States", "region": "north-america", "count": 46}, "BS": {"name": "Bahamas", "region": "central-america", "count": 0}, "BZ": {"name": "Belize", "region": "central-america", "count": 0}, "CR": {"name": "Costa Rica", "region": "central-america", "count": 0}, "CU": {"name": "Cuba", "region": "central-america", "count": 0}, "DO": {"name": "Dominican Republic", "region": "central-america", "count": 1}, "SV": {"name": "El Salvador", "region": "central-america", "count": 0}, "GT": {"name": "Guatemala", "region": "central-america", "count": 1}, "HT": {"name": "Haiti", "region": "central-america", "count": 1}, "HN": {"name": "Honduras", "region": "central-america", "count": 1}, "JM": {"name": "Jamaica", "region": "central-america", "count": 0}, "MX": {"name": "Mexico", "region": "central-america", "count": 0}, "NI": {"name": "Nicaragua", "region": "central-america", "count": 0}, "PA": {"name": "Panama", "region": "central-america", "count": 0}, "TT": {"name": "Trinidad and Tobago", "region": "central-america", "count": 0}, "AR": {"name": "Argentina", "region": "south-america", "count": 3}, "BO": {"name": "Bolivia", "region": "south-america", "count": 0}, "BR": {"name": "Brazil", "region": "south-america", "count": 0}, "CL": {"name": "Chile", "region": "south-america", "count": 1}, "CO": {"name": "Colombia", "region": "south-america", "count": 0}, "EC": {"name": "Ecuador", "region": "south-america", "count": 0}, "GY": {"name": "Guyana", "region": "south-america", "count": 0}, "PY": {"name": "Paraguay", "region": "south-america", "count": 0}, "PE": {"name": "Peru", "region": "south-america", "count": 0}, "SR": {"name": "Suriname", "region": "south-america", "count": 0}, "UY": {"name": "Uruguay", "region": "south-america", "count": 0}, "VE": {"name": "Venezuela", "region": "south-america", "count": 0}, "AT": {"name": "Austria", "region": "western-europe", "count": 0}, "BE": {"name": "Belgium", "region": "western-europe", "count": 0}, "DK": {"name": "Denmark", "region": "western-europe", "count": 0}, "FI": {"name": "Finland", "region": "western-europe", "count": 0}, "FR": {"name": "France", "region": "western-europe", "count": 3}, "DE": {"name": "Germany", "region": "western-europe", "count": 0}, "GR": {"name": "Greece", "region": "western-europe", "count": 0}, "IS": {"name": "Iceland", "region": "western-europe", "count": 0}, "IE": {"name": "Ireland", "region": "western-europe", "count": 0}, "IT": {"name": "Italy", "region": "western-europe", "count": 1}, "LU": {"name": "Luxembourg", "region": "western-europe", "count": 0}, "MT": {"name": "Malta", "region": "western-europe", "count": 0}, "NL": {"name": "Netherlands", "region": "western-europe", "count": 2}, "PT": {"name": "Portugal", "region": "western-europe", "count": 1}, "ES": {"name": "Spain", "region": "western-europe", "count": 4}, "SE": {"name": "Sweden", "region": "western-europe", "count": 1}, "CH": {"name": "Switzerland", "region": "western-europe", "count": 0}, "GB": {"name": "United Kingdom", "region": "western-europe", "count": 12}, "AL": {"name": "Albania", "region": "eastern-europe", "count": 0}, "BY": {"name": "Belarus", "region": "eastern-europe", "count": 0}, "BA": {"name": "Bosnia and Herzegovina", "region": "eastern-europe", "count": 0}, "BG": {"name": "Bulgaria", "region": "eastern-europe", "count": 0}, "HR": {"name": "Croatia", "region": "eastern-europe", "count": 0}, "CZ": {"name": "Czech Republic", "region": "eastern-europe", "count": 0}, "EE": {"name": "Estonia", "region": "eastern-europe", "count": 0}, "HU": {"name": "Hungary", "region": "eastern-europe", "count": 0}, "XK": {"name": "Kosovo", "region": "eastern-europe", "count": 0}, "LV": {"name": "Latvia", "region": "eastern-europe", "count": 0}, "LT": {"name": "Lithuania", "region": "eastern-europe", "count": 0}, "MD": {"name": "Moldova", "region": "eastern-europe", "count": 0}, "ME": {"name": "Montenegro", "region": "eastern-europe", "count": 0}, "MK": {"name": "North Macedonia", "region": "eastern-europe", "count": 0}, "PL": {"name": "Poland", "region": "eastern-europe", "count": 0}, "RO": {"name": "Romania", "region": "eastern-europe", "count": 0}, "RU": {"name": "Russia", "region": "eastern-europe", "count": 7}, "RS": {"name": "Serbia", "region": "eastern-europe", "count": 0}, "SK": {"name": "Slovakia", "region": "eastern-europe", "count": 0}, "SI": {"name": "Slovenia", "region": "eastern-europe", "count": 0}, "UA": {"name": "Ukraine", "region": "eastern-europe", "count": 12}, "BH": {"name": "Bahrain", "region": "middle-east", "count": 1}, "CY": {"name": "Cyprus", "region": "middle-east", "count": 0}, "IR": {"name": "Iran", "region": "middle-east", "count": 32}, "IQ": {"name": "Iraq", "region": "middle-east", "count": 3}, "IL": {"name": "Israel", "region": "middle-east", "count": 15}, "JO": {"name": "Jordan", "region": "middle-east", "count": 0}, "KW": {"name": "Kuwait", "region": "middle-east", "count": 4}, "LB": {"name": "Lebanon", "region": "middle-east", "count": 8}, "OM": {"name": "Oman", "region": "middle-east", "count": 0}, "PS": {"name": "Palestine", "region": "middle-east", "count": 6}, "QA": {"name": "Qatar", "region": "middle-east", "count": 0}, "SA": {"name": "Saudi Arabia", "region": "middle-east", "count": 2}, "SY": {"name": "Syria", "region": "middle-east", "count": 3}, "TR": {"name": "Türkiye", "region": "middle-east", "count": 0}, "AE": {"name": "United Arab Emirates", "region": "middle-east", "count": 41}, "YE": {"name": "Yemen", "region": "middle-east", "count": 4}, "DZ": {"name": "Algeria", "region": "north-africa", "count": 0}, "EG": {"name": "Egypt", "region": "north-africa", "count": 1}, "LY": {"name": "Libya", "region": "north-africa", "count": 0}, "MR": {"name": "Mauritania", "region": "north-africa", "count": 0}, "MA": {"name": "Morocco", "region": "north-africa", "count": 0}, "TN": {"name": "Tunisia", "region": "north-africa", "count": 0}, "BJ": {"name": "Benin", "region": "western-africa", "count": 2}, "BF": {"name": "Burkina Faso", "region": "western-africa", "count": 0}, "CV": {"name": "Cabo Verde", "region": "western-africa", "count": 1}, "CM": {"name": "Cameroon", "region": "western-africa", "count": 1}, "CF": {"name": "Central African Republic", "region": "western-africa", "count": 0}, "TD": {"name": "Chad", "region": "western-africa", "count": 0}, "CI": {"name": "Côte d'Ivoire", "region": "western-africa", "count": 1}, "CD": {"name": "Democratic Republic of the Congo", "region": "western-africa", "count": 4}, "GQ": {"name": "Equatorial Guinea", "region": "western-africa", "count": 0}, "GA": {"name": "Gabon", "region": "western-africa", "count": 0}, "GM": {"name": "Gambia", "region": "western-africa", "count": 0}, "GH": {"name": "Ghana", "region": "western-africa", "count": 1}, "GN": {"name": "Guinea", "region": "western-africa", "count": 0}, "GW": {"name": "Guinea-Bissau", "region": "western-africa", "count": 0}, "LR": {"name": "Liberia", "region": "western-africa", "count": 0}, "ML": {"name": "Mali", "region": "western-africa", "count": 0}, "NE": {"name": "Niger", "region": "western-africa", "count": 1}, "NG": {"name": "Nigeria", "region": "western-africa", "count": 4}, "CG": {"name": "Republic of the Congo", "region": "western-africa", "count": 0}, "SN": {"name": "Senegal", "region": "western-africa", "count": 0}, "SL": {"name": "Sierra Leone", "region": "western-africa", "count": 0}, "ST": {"name": "São Tomé and Príncipe", "region": "western-africa", "count": 0}, "TG": {"name": "Togo", "region": "western-africa", "count": 0}, "BI": {"name": "Burundi", "region": "eastern-africa", "count": 0}, "KM": {"name": "Comoros", "region": "eastern-africa", "count": 0}, "DJ": {"name": "Djibouti", "region": "eastern-africa", "count": 0}, "ER": {"name": "Eritrea", "region": "eastern-africa", "count": 0}, "ET": {"name": "Ethiopia", "region": "eastern-africa", "count": 1}, "KE": {"name": "Kenya", "region": "eastern-africa", "count": 3}, "MG": {"name": "Madagascar", "region": "eastern-africa", "count": 0}, "MW": {"name": "Malawi", "region": "eastern-africa", "count": 0}, "MU": {"name": "Mauritius", "region": "eastern-africa", "count": 0}, "MZ": {"name": "Mozambique", "region": "eastern-africa", "count": 1}, "RW": {"name": "Rwanda", "region": "eastern-africa", "count": 0}, "SC": {"name": "Seychelles", "region": "eastern-africa", "count": 0}, "SO": {"name": "Somalia", "region": "eastern-africa", "count": 1}, "SS": {"name": "South Sudan", "region": "eastern-africa", "count": 0}, "SD": {"name": "Sudan", "region": "eastern-africa", "count": 4}, "TZ": {"name": "Tanzania", "region": "eastern-africa", "count": 0}, "UG": {"name": "Uganda", "region": "eastern-africa", "count": 1}, "ZM": {"name": "Zambia", "region": "eastern-africa", "count": 0}, "ZW": {"name": "Zimbabwe", "region": "eastern-africa", "count": 0}, "AO": {"name": "Angola", "region": "southern-africa", "count": 0}, "BW": {"name": "Botswana", "region": "southern-africa", "count": 1}, "SZ": {"name": "Eswatini", "region": "southern-africa", "count": 0}, "LS": {"name": "Lesotho", "region": "southern-africa", "count": 0}, "NA": {"name": "Namibia", "region": "southern-africa", "count": 0}, "ZA": {"name": "South Africa", "region": "southern-africa", "count": 1}, "KZ": {"name": "Kazakhstan", "region": "central-asia", "count": 1}, "KG": {"name": "Kyrgyzstan", "region": "central-asia", "count": 1}, "TJ": {"name": "Tajikistan", "region": "central-asia", "count": 0}, "TM": {"name": "Turkmenistan", "region": "central-asia", "count": 0}, "UZ": {"name": "Uzbekistan", "region": "central-asia", "count": 0}, "AF": {"name": "Afghanistan", "region": "south-asia", "count": 2}, "BD": {"name": "Bangladesh", "region": "south-asia", "count": 5}, "BT": {"name": "Bhutan", "region": "south-asia", "count": 0}, "IN": {"name": "India", "region": "south-asia", "count": 8}, "MV": {"name": "Maldives", "region": "south-asia", "count": 0}, "NP": {"name": "Nepal", "region": "south-asia", "count": 1}, "PK": {"name": "Pakistan", "region": "south-asia", "count": 9}, "LK": {"name": "Sri Lanka", "region": "south-asia", "count": 0}, "CN": {"name": "China", "region": "north-east-asia", "count": 7}, "HK": {"name": "Hong Kong", "region": "north-east-asia", "count": 0}, "JP": {"name": "Japan", "region": "north-east-asia", "count": 2}, "MO": {"name": "Macao", "region": "north-east-asia", "count": 0}, "MN": {"name": "Mongolia", "region": "north-east-asia", "count": 0}, "KP": {"name": "North Korea", "region": "north-east-asia", "count": 0}, "KR": {"name": "South Korea", "region": "north-east-asia", "count": 2}, "TW": {"name": "Taiwan", "region": "north-east-asia", "count": 0}, "BN": {"name": "Brunei", "region": "south-east-asia", "count": 0}, "KH": {"name": "Cambodia", "region": "south-east-asia", "count": 0}, "ID": {"name": "Indonesia", "region": "south-east-asia", "count": 0}, "LA": {"name": "Laos", "region": "south-east-asia", "count": 0}, "MY": {"name": "Malaysia", "region": "south-east-asia", "count": 0}, "MM": {"name": "Myanmar", "region": "south-east-asia", "count": 0}, "PH": {"name": "Philippines", "region": "south-east-asia", "count": 5}, "SG": {"name": "Singapore", "region": "south-east-asia", "count": 1}, "TH": {"name": "Thailand", "region": "south-east-asia", "count": 0}, "TL": {"name": "Timor-Leste", "region": "south-east-asia", "count": 0}, "VN": {"name": "Vietnam", "region": "south-east-asia", "count": 0}, "AU": {"name": "Australia", "region": "asia-pacific", "count": 0}, "FJ": {"name": "Fiji", "region": "asia-pacific", "count": 0}, "KI": {"name": "Kiribati", "region": "asia-pacific", "count": 0}, "MH": {"name": "Marshall Islands", "region": "asia-pacific", "count": 0}, "FM": {"name": "Micronesia", "region": "asia-pacific", "count": 0}, "NR": {"name": "Nauru", "region": "asia-pacific", "count": 0}, "NZ": {"name": "New Zealand", "region": "asia-pacific", "count": 0}, "PW": {"name": "Palau", "region": "asia-pacific", "count": 0}, "PG": {"name": "Papua New Guinea", "region": "asia-pacific", "count": 0}, "WS": {"name": "Samoa", "region": "asia-pacific", "count": 0}, "SB": {"name": "Solomon Islands", "region": "asia-pacific", "count": 0}, "TO": {"name": "Tonga", "region": "asia-pacific", "count": 1}, "TV": {"name": "Tuvalu", "region": "asia-pacific", "count": 0}, "VU": {"name": "Vanuatu", "region": "asia-pacific", "count": 0}}, "regions": {"north-america": "North America", "central-america": "Central America", "south-america": "South America", "western-europe": "Western Europe", "eastern-europe": "Eastern Europe", "middle-east": "Middle East", "north-africa": "North Africa", "western-africa": "Western Africa", "eastern-africa": "Eastern Africa", "southern-africa": "Southern Africa", "central-asia": "Central Asia", "south-asia": "South Asia", "north-east-asia": "North East Asia", "south-east-asia": "South East Asia", "asia-pacific": "Asia-Pacific"}, "co": {"BD": {"PK": 2}, "LB": {"IL": 4}, "BJ": {"CI": 1, "GH": 1}, "CI": {"BJ": 1, "GH": 1}, "GH": {"BJ": 1, "CI": 1}, "YE": {"IR": 1}, "IR": {"US": 12, "SA": 1, "YE": 1, "AE": 2, "UA": 3, "GB": 1, "EG": 1, "IQ": 3, "KW": 3, "CN": 2, "RU": 2, "PK": 2, "JP": 1, "IL": 2}, "US": {"IR": 12, "SA": 1, "UA": 3, "AE": 2, "IL": 2, "PK": 2, "HT": 1, "CA": 2, "RU": 1, "CN": 1}, "SA": {"IR": 1, "US": 1, "AE": 1}, "ES": {"NL": 1}, "AE": {"JP": 1, "SA": 1, "SY": 2, "UA": 1, "IR": 2, "US": 2, "IL": 2, "PH": 1, "KG": 1, "IN": 1}, "JP": {"AE": 1, "IR": 1}, "GB": {"IR": 1}, "PS": {"CA": 1, "IL": 4}, "CA": {"PS": 1, "HT": 1, "US": 2}, "SY": {"IL": 1, "AE": 2}, "IL": {"SY": 1, "NL": 1, "EU": 1, "LB": 4, "PS": 4, "AE": 2, "US": 2, "IQ": 2, "IR": 2}, "NL": {"EU": 1, "IL": 1, "ES": 1}, "EU": {"NL": 1, "IL": 1}, "UA": {"AE": 1, "IR": 3, "US": 3, "RU": 6, "KE": 1}, "EG": {"IR": 1}, "IQ": {"IR": 3, "IL": 2}, "KW": {"IR": 3}, "CN": {"IR": 2, "AR": 2, "CL": 1, "US": 1}, "AF": {"ET": 1, "SO": 1, "PK": 1}, "ET": {"AF": 1, "SO": 1}, "SO": {"AF": 1, "ET": 1}, "KE": {"UA": 1, "RU": 1}, "CV": {"AR": 1}, "AR": {"CV": 1, "CN": 2, "CL": 1}, "RU": {"IR": 2, "UA": 6, "KE": 1, "US": 1}, "PK": {"US": 2, "IR": 2, "AF": 1, "BD": 2}, "CL": {"AR": 1, "CN": 1}, "HT": {"US": 1, "CA": 1}, "PH": {"AE": 1}, "IN": {"AE": 1}, "KG": {"AE": 1}}, "items": {"BD": [{"title": "banks asked introduce qr based verification visa documents 4174026", "url": "https://www.thedailystar.net/business/news/banks-asked-introduce-qr-based-verification-visa-documents-4174026", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "Anticipatory Action Mechanisms in Bangladesh: 2026 (Date: 11 May 2026)", "url": "https://reliefweb.int/report/bangladesh/anticipatory-action-mechanisms-bangladesh-2026-date-11-may-2026", "date": "2026-05-12", "source": "ReliefWeb", "category": "reports_evidence"}, {"title": "Salman Agha challenged Bangladesh to declare; the Tigers did exactly that and won a historic Test", "url": "https://gulfnews.com/sport/cricket/salman-agha-challenged-bangladesh-to-declare-the-tigers-did-exactly-that-and-won-a-historic-test-1.500537939", "date": "2026-05-12", "source": "Gulf News", "category": "other"}, {"title": "Nahid Rana stars as Bangladesh beat Pakistan in 1st Test thriller", "url": "https://gulfnews.com/sport/cricket/nahid-rana-stars-as-bangladesh-beat-pakistan-in-1st-test-thriller-1.500537925", "date": "2026-05-12", "source": "Gulf News", "category": "other"}, {"title": "Disaster displacement risk in Bangladesh: An overview of the risk of future displacement", "url": "https://www.internal-displacement.org/publications/disaster-displacement-risk-in-bangladesh-an-overview-of-the-risk-of-future", "date": "2026-02-13", "source": "IDMC — Internal Displacement Monitoring Centre", "category": "reports_evidence"}], "LB": [{"title": "Lebanon says Israeli strikes have killed 380 since truce", "url": "https://gulfnews.com/world/mena/lebanon-says-israeli-strikes-have-killed-380-since-truce-2-1.500538126", "date": "2026-05-12", "source": "Gulf News", "category": "humanitarian"}, {"title": "Lebanon: Conflict Intensity Snapshot (2 March - 11 May 2026)", "url": "https://reliefweb.int/report/lebanon/lebanon-conflict-intensity-snapshot-2-march-11-may-2026", "date": "2026-05-12", "source": "ReliefWeb", "category": "reports_evidence"}, {"title": "Lebanon: Conflict Intensity Snapshot (2 March - 10 May 2026)", "url": "https://reliefweb.int/report/lebanon/lebanon-conflict-intensity-snapshot-2-march-10-may-2026", "date": "2026-05-12", "source": "ReliefWeb", "category": "reports_evidence"}, {"title": "Over four children killed or injured on average a day during the ‘so- called’ ceasefire in Lebanon", "url": "https://reliefweb.int/report/lebanon/over-four-children-killed-or-injured-average-day-during-so-called-ceasefire-lebanon-0", "date": "2026-05-12", "source": "ReliefWeb", "category": "humanitarian"}, {"title": "Razing southern Lebanon: Inside Israel’s campaign of wanton destruction", "url": "https://www.thenationalnews.com/news/mena/2026/05/12/razing-southern-lebanon-inside-israels-campaign-of-wanton-destruction/", "date": "2026-05-12", "source": "The National", "category": "humanitarian"}, {"title": "Lebanese Mourn Eight Members of One Family Killed in Israeli Strike", "url": "https://www.nytimes.com/2026/05/10/world/middleeast/lebanon-family-funeral-israel-strikes.html", "date": "2026-05-10", "source": "New York Times — World", "category": "humanitarian"}, {"title": "Deadly Israeli Strikes Erode Cease-Fire in Lebanon", "url": "https://www.nytimes.com/2026/05/09/world/middleeast/israel-strikes-lebanon-ceasefire.html", "date": "2026-05-09", "source": "New York Times — Middle East", "category": "humanitarian"}, {"title": "Israel Says It Killed a Hezbollah Chief Near Beirut, Testing the Truce", "url": "https://www.nytimes.com/2026/05/07/world/middleeast/israel-hezbollah-commander-beirut-strike.html", "date": "2026-05-07", "source": "New York Times — Middle East", "category": "humanitarian"}], "BJ": [{"title": "Benin – Rapport sur l'indice de solution et de mobilité 3 (Novembre 2025)", "url": "https://reliefweb.int/report/benin/benin-rapport-sur-lindice-de-solution-et-de-mobilite-3-novembre-2025", "date": "2026-05-12", "source": "ReliefWeb", "category": "reports_evidence"}, {"title": "Benin: Afrique de l'Ouest et du Centre — Groupe régional d'analyse intersectorielle (GRANIT) — Rapport de l'outil de veille dans les pays côtiers d’Afrique de l’Ouest Bénin - Côte d’Ivoire - Ghana - Togo (Février 2026)", "url": "https://reliefweb.int/report/benin/afrique-de-louest-et-du-centre-groupe-regional-danalyse-intersectorielle-granit-rapport-de-loutil-de-veille-dans-les-pays-cotiers-dafrique-de-louest-benin-cote-divoire-ghana-togo-fevrier-2026", "date": "2026-05-12", "source": "ReliefWeb", "category": "reports_evidence"}], "CI": [{"title": "Benin: Afrique de l'Ouest et du Centre — Groupe régional d'analyse intersectorielle (GRANIT) — Rapport de l'outil de veille dans les pays côtiers d’Afrique de l’Ouest Bénin - Côte d’Ivoire - Ghana - Togo (Février 2026)", "url": "https://reliefweb.int/report/benin/afrique-de-louest-et-du-centre-groupe-regional-danalyse-intersectorielle-granit-rapport-de-loutil-de-veille-dans-les-pays-cotiers-dafrique-de-louest-benin-cote-divoire-ghana-togo-fevrier-2026", "date": "2026-05-12", "source": "ReliefWeb", "category": "reports_evidence"}], "GH": [{"title": "Benin: Afrique de l'Ouest et du Centre — Groupe régional d'analyse intersectorielle (GRANIT) — Rapport de l'outil de veille dans les pays côtiers d’Afrique de l’Ouest Bénin - Côte d’Ivoire - Ghana - Togo (Février 2026)", "url": "https://reliefweb.int/report/benin/afrique-de-louest-et-du-centre-groupe-regional-danalyse-intersectorielle-granit-rapport-de-loutil-de-veille-dans-les-pays-cotiers-dafrique-de-louest-benin-cote-divoire-ghana-togo-fevrier-2026", "date": "2026-05-12", "source": "ReliefWeb", "category": "reports_evidence"}], "MZ": [{"title": "Mozambique — ETT Movement Alert Report —156", "url": "https://reliefweb.int/report/mozambique/mozambique-ett-movement-alert-report-156", "date": "2026-05-12", "source": "ReliefWeb", "category": "reports_evidence"}], "NE": [{"title": "Niger — Enquête sur les intentions futures des personnes déplacées internes (Février 2026)", "url": "https://reliefweb.int/report/niger/niger-enquete-sur-les-intentions-futures-des-personnes-deplacees-internes-fevrier-2026", "date": "2026-05-12", "source": "ReliefWeb", "category": "reports_evidence"}], "KZ": [{"title": "Kazakhstan — Migration Situation Report 13 (October - December 2025)", "url": "https://reliefweb.int/report/kazakhstan/kazakhstan-migration-situation-report-13-october-december-2025", "date": "2026-05-12", "source": "ReliefWeb", "category": "reports_evidence"}], "CD": [{"title": "DR Congo: République démocratique du Congo : Cash Working Group Réunion de avril 2026 [Meeting minutes]", "url": "https://reliefweb.int/report/democratic-republic-congo/republique-democratique-du-congo-cash-working-group-reunion-de-avril-2026-meeting-minutes", "date": "2026-05-12", "source": "ReliefWeb", "category": "reports_evidence"}, {"title": "DR Congo: République démocratique du Congo : Cash Working Group Réunion de mars 2026 [Meeting minutes]", "url": "https://reliefweb.int/report/democratic-republic-congo/republique-democratique-du-congo-cash-working-group-reunion-de-mars-2026-meeting-minutes", "date": "2026-05-12", "source": "ReliefWeb", "category": "reports_evidence"}, {"title": "DR Congo: RDC — Rapport d'enregistrement et enquêtes d'intentions : 39 sites à Rutshuru et Masisi, Nord-Kivu (avril 2026)", "url": "https://reliefweb.int/report/democratic-republic-congo/rdc-rapport-denregistrement-et-enquetes-dintentions-39-sites-rutshuru-et-masisi-nord-kivu-avril-2026", "date": "2026-05-12", "source": "ReliefWeb", "category": "reports_evidence"}, {"title": "Democratic Republic of the Congo - Conflict and violence trigger a record high of nearly 10 million movements", "url": "https://www.internal-displacement.org/spotlight/democratic-republic-of-the-congo-conflict-and-violence-trigger-a-record-high-of-nearly-10-million-movements", "date": "2026-05-12", "source": "IDMC — Internal Displacement Monitoring Centre", "category": "humanitarian"}], "CM": [{"title": "Cameroon: Cameroun — Suivi des urgences 142 (05-11 mai 2026)", "url": "https://reliefweb.int/report/cameroon/cameroun-suivi-des-urgences-142-05-11-mai-2026", "date": "2026-05-12", "source": "ReliefWeb", "category": "reports_evidence"}], "YE": [{"title": "Yemen Protection Cluster Newsletter (2025)", "url": "https://reliefweb.int/report/yemen/yemen-protection-cluster-newsletter-2025", "date": "2026-05-12", "source": "ReliefWeb", "category": "reports_evidence"}, {"title": "Yemen — Rapid Displacement Tracking Update (03 - 09 May 2026)", "url": "https://reliefweb.int/report/yemen/yemen-rapid-displacement-tracking-update-03-09-may-2026", "date": "2026-05-12", "source": "ReliefWeb", "category": "reports_evidence"}, {"title": "Houthis expand arsenal with drones and missiles from Iran", "url": "https://www.thenationalnews.com/news/mena/2026/05/11/houthis-expanding-weapons-cache-with-drones-and-missiles-from-iran/", "date": "2026-05-11", "source": "The National", "category": "uae_foreign_policy_signals"}, {"title": "Sheikh Mohammed bin Rashid announces scheme to eradicate river blindness", "url": "https://www.thenationalnews.com/news/uae/2026/05/10/sheikh-mohammed-bin-rashid-announces-scheme-to-eradicate-river-blindness/", "date": "2026-05-10", "source": "The National", "category": "uae_leadership_doctrine"}], "SD": [{"title": "202605120452", "url": "https://allafrica.com/stories/202605120452.html", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "Sudan: DTM Focused Flash Alert: Blue Nile State (Update 002)", "url": "https://reliefweb.int/report/sudan/dtm-focused-flash-alert-blue-nile-state-update-002", "date": "2026-05-12", "source": "ReliefWeb", "category": "humanitarian"}, {"title": "The crisis is Sudan is much worse than what is acknowledged", "url": "https://www.aljazeera.com/opinions/2026/5/12/the-crisis-is-sudan-is-much-worse-than-what-is-acknowledged?traffic_source=rss", "date": "2026-05-12", "source": "Al Jazeera English", "category": "humanitarian"}, {"title": "Senior RSF commander switches sides in Sudan's civil war", "url": "https://www.thenationalnews.com/news/mena/2026/05/11/senior-rsf-commander-switches-sides-in-sudans-civil-war/", "date": "2026-05-11", "source": "The National", "category": "humanitarian"}], "TO": [{"title": "Tonga: Dengue Fever Outbreak Situation Report #19, 12th May 2026 [EN/TO]", "url": "https://reliefweb.int/report/tonga/tonga-dengue-fever-outbreak-situation-report-19-12th-may-2026-ento", "date": "2026-05-12", "source": "ReliefWeb", "category": "humanitarian"}], "DO": [{"title": "Thousands Displaced, Seeking Medical Aid Following Torrential Rain, Flooding in Dominican Republic", "url": "https://reliefweb.int/report/dominican-republic/thousands-displaced-seeking-medical-aid-following-torrential-rain-flooding-dominican-republic", "date": "2026-05-12", "source": "ReliefWeb", "category": "humanitarian"}], "NG": [{"title": "Nigerian Red Cross society calls for unity, humanity, and support for vulnerable communities in Nigeria", "url": "https://reliefweb.int/report/nigeria/nigerian-red-cross-society-calls-unity-humanity-and-support-vulnerable-communities-nigeria", "date": "2026-05-12", "source": "ReliefWeb", "category": "reports_evidence"}, {"title": "Amnesty Accuses Nigerian Military of Bombing Another Market", "url": "https://www.nytimes.com/2026/05/12/world/africa/nigeria-tumfa-market-strikes.html", "date": "2026-05-12", "source": "New York Times — World", "category": "humanitarian"}, {"title": "Nigerian Military Runs a Fulani ‘Concentration Camp,’ Group Says", "url": "https://www.nytimes.com/2026/04/30/world/africa/nigeria-fulani-camp-amnesty.html", "date": "2026-05-01", "source": "New York Times — Africa", "category": "humanitarian"}, {"title": "Disaster displacement risk in Nigeria: An overview of the risk of future displacement", "url": "https://www.internal-displacement.org/publications/disaster-displacement-risk-in-nigeria-an-overview-of-the-risk-of-future-displacement", "date": "2026-02-25", "source": "IDMC — Internal Displacement Monitoring Centre", "category": "reports_evidence"}], "IR": [{"title": "Iran War Live Updates: Truce Hangs in the Balance as U.S. and Iran Trade Warnings", "url": "https://www.nytimes.com/live/2026/05/12/world/iran-war-trump-ceasefire-hormuz", "date": "2026-05-12", "source": "New York Times — World", "category": "other"}, {"title": "Trump unlikely to persuade Xi to stop buying Iranian oil, analysts say", "url": "https://www.thenationalnews.com/business/energy/2026/05/12/trump-unlikely-to-persuade-xi-to-stop-buying-iranian-oil-analysts-say/", "date": "2026-05-12", "source": "The National", "category": "uae_foreign_policy_signals"}, {"title": "Putin’s Credibility Has Suffered in the Iran War. Or Has It?", "url": "https://www.nytimes.com/2026/05/12/world/europe/russia-europe-ukraine-syria-iran.html", "date": "2026-05-12", "source": "New York Times — World", "category": "other"}, {"title": "Inflation Jumps, Oil Prices Rise on U.S.-Iran Standoff", "url": "https://www.nytimes.com/2026/05/12/business/oil-prices-rise-us-iran.html", "date": "2026-05-12", "source": "New York Times — Middle East", "category": "other"}, {"title": "Inside Iran Guards plot targeting Kuwait’s Bubiyan Island hosting China-backed port", "url": "https://gulfnews.com/world/mena/kuwait-foils-iran-guards-plot-targeting-china-backed-port-1.500537970", "date": "2026-05-12", "source": "Gulf News", "category": "uae_foreign_policy_signals"}, {"title": "A secret Israeli base in Iraq? What we know", "url": "https://www.aljazeera.com/news/2026/5/12/a-secret-israeli-base-in-iraq-what-we-know?traffic_source=rss", "date": "2026-05-12", "source": "Al Jazeera English", "category": "other"}, {"title": "Report alleges Israel operated covert outpost in Iraq during war on Iran", "url": "https://www.aljazeera.com/video/newsfeed/2026/5/12/report-alleges-israel-operated-covert-outpost-in-iraq-during-war-on-iran?traffic_source=rss", "date": "2026-05-12", "source": "Al Jazeera English", "category": "other"}, {"title": "Kuwait arrests four sea infiltrators linked to Iran’s Revolutionary Guards", "url": "https://gulfnews.com/world/gulf/kuwait/kuwait-arrests-four-sea-infiltrators-linked-to-irans-revolutionary-guards-1.500537853", "date": "2026-05-12", "source": "Gulf News", "category": "uae_foreign_policy_signals"}, {"title": "Iran could enrich uranium to weapons-grade if attacked by US amid collapsing ceasefire", "url": "https://www.thenationalnews.com/news/2026/05/12/iran-could-enrich-uranium-to-weapons-grade-if-attacked-by-us-amid-collapsing-ceasefire/", "date": "2026-05-12", "source": "The National", "category": "uae_foreign_policy_signals"}, {"title": "Pakistan scrambles to salvage US-Iran diplomacy as ceasefire faces collapse", "url": "https://www.aljazeera.com/news/2026/5/12/pakistan-scrambles-to-salvage-us-iran-diplomacy-as-ceasefire-faces-collapse?traffic_source=rss", "date": "2026-05-12", "source": "Al Jazeera English", "category": "other"}, {"title": "Kuwaiti forces foil Iran-linked infiltration attempt on Bubiyan Island", "url": "https://www.thenationalnews.com/news/gulf/2026/05/12/kuwaiti-says-its-security-forces-clashed-assailants-from-iran/", "date": "2026-05-12", "source": "The National", "category": "other"}, {"title": "Iran expands Hormuz military zone in defiance of maritime law", "url": "https://gulfnews.com/world/mena/defying-maritime-law-iran-redraws-hormuz-control-zone-1.500537841", "date": "2026-05-12", "source": "Gulf News", "category": "uae_foreign_policy_signals"}, {"title": "Iranian commander Qaani makes unannounced visit to Baghdad as Iraqi government takes shape", "url": "https://www.thenationalnews.com/news/mena/2026/05/12/iranian-commander-qaani-makes-unannounced-visit-to-baghdad-as-iraqi-government-takes-shape/", "date": "2026-05-12", "source": "The National", "category": "other"}, {"title": "The Iran War Is Taking the Color Out of Japan’s Best-Known Snack Bags", "url": "https://www.nytimes.com/2026/05/12/world/asia/calbee-japan-bags-iran-war.html", "date": "2026-05-12", "source": "New York Times — World", "category": "other"}, {"title": "As Iran war hits U.S. weapons stocks, allies fear impact on Ukraine", "url": "https://www.washingtonpost.com/national-security/2026/05/11/us-ukraine-trump-weapons-purl/", "date": "2026-05-12", "source": "Washington Post — World", "category": "other"}], "US": [{"title": "cdc leader rejects claims us is less safe amid cruise ship hantavirus cases", "url": "https://www.turnto23.com/health/cdc-leader-rejects-claims-us-is-less-safe-amid-cruise-ship-hantavirus-cases", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "president donald trump to undergo medical checkup ahead of 80th birthday white house walter reed national military medical center diet exercise routine swelling bruising chronic venous insufficiency", "url": "https://abc6onyourside.com/news/nation-world/president-donald-trump-to-undergo-medical-checkup-ahead-of-80th-birthday-white-house-walter-reed-national-military-medical-center-diet-exercise-routine-swelling-bruising-chronic-venous-insufficiency", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "brooklyn NYC anti israel protest hezbollah flag", "url": "https://www.dailymail.com/news/article-15811021/brooklyn-NYC-anti-israel-protest-hezbollah-flag.html", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "71281611", "url": "https://www.wapt.com/article/xi-trump-summit-us-china-stability-trade-taiwan-iran/71281611", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "consumer prices rose 0 6 152835331", "url": "https://finance.yahoo.com/economy/articles/consumer-prices-rose-0-6-152835331.html", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "article b0f751bf 4c94 4cf5 aa6c 2f8111230fa4", "url": "https://www.gillettenewsrecord.com/news/local/article_b0f751bf-4c94-4cf5-aa6c-2f8111230fa4.html", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "article deed3c05 4159 50b4 a9a7 003eca47b0f0", "url": "https://www.news8000.com/lifestyle/money/why-you-could-pay-5-for-gas-even-if-oil-doesn-t-skyrocket/article_deed3c05-4159-50b4-a9a7-003eca47b0f0.html", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "fire help center releases wildfire preparedness guide specifically for seniors and caregivers as early 2026 fire activity signals dangerous season ahead", "url": "http://www.newjerseytelegraph.com/news/279046224/fire-help-center-releases-wildfire-preparedness-guide-specifically-for-seniors-and-caregivers-as-early-2026-fire-activity-signals-dangerous-season-ahead", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "sp tsx composite down more than 200 points u s stock markets also lower 4", "url": "https://www.winnipegfreepress.com/business/2026/05/12/sp-tsx-composite-down-more-than-200-points-u-s-stock-markets-also-lower-4", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "us ambassador to israel says israel sent iron dome batteries personnel to uae to defend country ef796d64", "url": "https://www.semissourian.com/world/us-ambassador-to-israel-says-israel-sent-iron-dome-batteries-personnel-to-uae-to-defend-country-ef796d64", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "uae_foreign_policy_signals"}, {"title": "article 2f21ec62 7a68 59c0 ac5f a2fa06cc236b", "url": "https://www.dailyadvance.com/news/national/in-a-trial-pitting-him-against-elon-musk-nobody-has-more-to-lose-than-openai/article_2f21ec62-7a68-59c0-ac5f-a2fa06cc236b.html", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "article 1759ebaa ed37 49dc 9568 4c7349940eca", "url": "https://www.gillettenewsrecord.com/opinion/columnists/article_1759ebaa-ed37-49dc-9568-4c7349940eca.html", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "article 67d553b1 638f 51fd b314 989b81e43bab", "url": "https://www.nvdaily.com/associated_press_national/crews-battle-south-florida-wildfires-that-have-burned-thousands-of-acres/article_67d553b1-638f-51fd-b314-989b81e43bab.html", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "the rural montana sheriff who went to bat for one undocumented immigran", "url": "https://www.ktvh.com/news/montana-news/the-rural-montana-sheriff-who-went-to-bat-for-one-undocumented-immigrant", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "puco prepares for three day semitrailer truck check for safety international roadcheck", "url": "https://abc6onyourside.com/news/local/puco-prepares-for-three-day-semitrailer-truck-check-for-safety-international-roadcheck", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}], "SA": [{"title": "Thousands of Emiratis prepare to take part in Hajj pilgrimage this month", "url": "https://www.thenationalnews.com/news/uae/2026/05/11/thousands-of-emiratis-prepare-to-take-part-in-hajj-pilgrimage-this-month/", "date": "2026-05-11", "source": "The National", "category": "other"}, {"title": "Iran insists peace proposals are 'generous and responsible' after Trump rejection", "url": "https://www.thenationalnews.com/news/us/2026/05/10/netanyahu-60-minutes-iran-uranium-chris-wright/", "date": "2026-05-10", "source": "The National", "category": "other"}], "ES": [{"title": "Cruise Ship Hit by Hantavirus Leaves Canary Islands and Sails Toward Netherlands", "url": "https://www.nytimes.com/2026/05/11/world/europe/hantavirus-cruise-ship-canary-islands.html", "date": "2026-05-11", "source": "New York Times — World", "category": "humanitarian"}, {"title": "Cruise Ship Linked to Hantavirus Outbreak Arrives in Spain’s Canary Islands for Disembarking", "url": "https://www.nytimes.com/2026/05/10/world/europe/hantavirus-cruise-ship-canary-islands.html", "date": "2026-05-10", "source": "New York Times — World", "category": "humanitarian"}, {"title": "Best photos of May 10: Virus-hit cruise ship to rose festival in Morocco", "url": "https://www.thenationalnews.com/news/2026/05/10/best-photos-of-may-10-virus-hit-cruise-ship-to-rose-festival-in-morocco-2/", "date": "2026-05-10", "source": "The National", "category": "other"}, {"title": "The Man Who Cuts the Perfect Slice of Ham", "url": "https://www.nytimes.com/2026/05/10/world/europe/jamon-iberico-perfect-slice.html", "date": "2026-05-10", "source": "New York Times — World", "category": "other"}], "AE": [{"title": "us ambassador to israel says israel sent iron dome batteries personnel to uae to defend country ef796d64", "url": "https://www.semissourian.com/world/us-ambassador-to-israel-says-israel-sent-iron-dome-batteries-personnel-to-uae-to-defend-country-ef796d64", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "uae_foreign_policy_signals"}, {"title": "local firm wins dubai sewage drainage contrac", "url": "https://www.meed.com:443/local-firm-wins-dubai-sewage-drainage-contract", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "uae_ecosystem_moves"}, {"title": "dubai holding increases its shareholding in emaar", "url": "https://www.meed.com:443/dubai-holding-increases-its-shareholding-in-emaar", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "uae_ecosystem_moves"}, {"title": "Dh500 fine in Ajman for not moving cars after minor crashes", "url": "https://gulfnews.com/uae/transport/dh500-fine-in-ajman-for-not-moving-cars-after-minor-crashes-1.500538137", "date": "2026-05-12", "source": "Gulf News", "category": "other"}, {"title": "UAE shuts training centre, records 21 education violations", "url": "https://gulfnews.com/uae/education/uae-shuts-training-centre-records-21-education-violations-1.500538153", "date": "2026-05-12", "source": "Gulf News", "category": "other"}, {"title": "Indian rupee hits new record below 26 as oil surge boosts UAE remittance value", "url": "https://gulfnews.com/business/markets/indian-rupee-hits-new-record-below-26-as-oil-surge-boosts-uae-remittance-value-1.500538193", "date": "2026-05-12", "source": "Gulf News", "category": "other"}, {"title": "UAE fully prepared for any hantavirus situation, authorities say", "url": "https://www.thenationalnews.com/news/uae/2026/05/12/uae-fully-prepared-for-any-hantavirus-situation-authorities-say/", "date": "2026-05-12", "source": "The National", "category": "reports_evidence"}, {"title": "Dubai updates driving licence tests: RTA introduces collision warning, lane assist", "url": "https://gulfnews.com/uae/transport/dubai-updates-driving-licence-tests-rta-introduces-collision-warning-lane-assist-1.500538160", "date": "2026-05-12", "source": "Gulf News", "category": "other"}, {"title": "Aldar to build community on Al Mihsinah Island as part of five megaprojects", "url": "https://www.thenationalnews.com/business/economy/2026/05/12/aldar-to-build-community-on-al-mihsinah-island-as-part-of-five-megaprojects/", "date": "2026-05-12", "source": "The National", "category": "uae_ecosystem_moves"}, {"title": "'UAE ready to deal with any health threats, including Hantavirus'", "url": "https://gulfnews.com/uae/health/uae-ready-to-deal-with-any-health-threats-including-hantavirus-1.500538147", "date": "2026-05-12", "source": "Gulf News", "category": "other"}, {"title": "Sultan Al Jaber warns world is 1 billion barrels of oil short because of Hormuz closure", "url": "https://gulfnews.com/business/sultan-al-jaber-warns-world-is-1-billion-barrels-of-oil-short-because-of-hormuz-closure-1.500538111", "date": "2026-05-12", "source": "Gulf News", "category": "uae_ecosystem_moves"}, {"title": "Fake Hajj offers trap victims as Dubai Police issue warning", "url": "https://gulfnews.com/uae/crime/fake-hajj-offers-trap-victims-as-dubai-police-issue-warning-1.500538011", "date": "2026-05-12", "source": "Gulf News", "category": "other"}, {"title": "Hormuz is the centrepiece of a region undergoing transformation", "url": "https://www.thenationalnews.com/opinion/comment/2026/05/12/strait-of-hormuz-uae-arabian-gulf-energy-electricity-grids-nuclear-hydrogen/", "date": "2026-05-12", "source": "The National", "category": "uae_leadership_doctrine"}, {"title": "Ministry of Culture concludes participation in Make it in the Emirates 2026", "url": "https://gulfnews.com/uae/ministry-of-culture-concludes-participation-in-make-it-in-the-emirates-2026-1.500538067", "date": "2026-05-12", "source": "Gulf News", "category": "other"}, {"title": "Abu Dhabi museums to offer free entry for International Museum Day", "url": "https://gulfnews.com/uae/abu-dhabi-museums-to-offer-free-entry-for-international-museum-day-1.500538055", "date": "2026-05-12", "source": "Gulf News", "category": "other"}], "JP": [{"title": "The Iran War Is Taking the Color Out of Japan’s Best-Known Snack Bags", "url": "https://www.nytimes.com/2026/05/12/world/asia/calbee-japan-bags-iran-war.html", "date": "2026-05-12", "source": "New York Times — World", "category": "other"}, {"title": "Date palms from UAE's Expo pavilion to help rebuilding efforts in earthquake-hit Japanese city", "url": "https://www.thenationalnews.com/news/uae/2026/05/11/date-palms-from-uaes-expo-pavilion-to-help-rebuilding-efforts-in-earthquake-hit-japanese-city/", "date": "2026-05-11", "source": "The National", "category": "uae_ecosystem_moves"}], "GB": [{"title": "tamworth election probe over reform 33934095", "url": "https://www.birminghammail.co.uk/news/midlands-news/tamworth-election-probe-over-reform-33934095", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "broadcasters must react threat creator journalism says ex head bbc news", "url": "https://www.theguardian.com/media/2026/may/12/broadcasters-must-react-threat-creator-journalism-says-ex-head-bbc-news", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "man who stole co op 33932955", "url": "https://www.liverpoolecho.co.uk/news/liverpool-news/man-who-stole-co-op-33932955", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "1957885", "url": "https://www.hortweek.com/production-horticulture-work-experience-bursaries-announced/ornamentals/article/1957885", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "reports_evidence"}, {"title": "Starmer has struggled with the economy, the Mandelson scandal and other issues.", "url": "https://www.nytimes.com/live/2026/05/12/world/uk-starmer/starmer-has-struggled-with-the-economy-the-mandelson-scandal-and-other-issues", "date": "2026-05-12", "source": "New York Times — World", "category": "other"}, {"title": "Who Might Challenge Starmer in a Leadership Contest?", "url": "https://www.nytimes.com/2026/05/12/world/europe/who-could-replace-starmer-uk-prime-minister.html", "date": "2026-05-12", "source": "New York Times — World", "category": "other"}, {"title": "UK PM Starmer defiant as quit calls grow", "url": "https://gulfnews.com/world/europe/uk-pm-starmer-defiant-as-quit-calls-grow-2-1.500537909", "date": "2026-05-12", "source": "Gulf News", "category": "uae_foreign_policy_signals"}, {"title": "Starmer Faces Mounting Calls From Own Party to Resign as British Prime Minister", "url": "https://www.nytimes.com/2026/05/11/world/europe/starmer-speech-uk-labour.html", "date": "2026-05-12", "source": "New York Times — World", "category": "other"}, {"title": "Iranian drug trafficking network sanctioned for carrying out attacks on UK", "url": "https://www.thenationalnews.com/news/uk/2026/05/11/iranian-drug-trafficking-network-sanctioned-for-carrying-out-attacks-on-uk/", "date": "2026-05-11", "source": "The National", "category": "uae_foreign_policy_signals"}, {"title": "Labour ministerial aides quit as core support from traditional backers collapses", "url": "https://www.thenationalnews.com/news/uk/2026/05/11/labours-core-support-from-traditional-backers-collapses/", "date": "2026-05-11", "source": "The National", "category": "other"}, {"title": "Keir Starmer pushes EU reset as leadership pressure mounts", "url": "https://www.thenationalnews.com/news/uk/2026/05/11/keir-starmer-rallies-support-for-return-to-europe-as-uk-leader-fights-for-political-life/", "date": "2026-05-11", "source": "The National", "category": "other"}, {"title": "British Paratroopers Deliver Aid to Remote Islands With Possible Hantavirus Case", "url": "https://www.nytimes.com/2026/05/10/world/europe/britain-parachute-hantavirus-hondius-tristan.html", "date": "2026-05-10", "source": "New York Times — World", "category": "humanitarian"}], "PS": [{"title": "131043035.cms", "url": "https://economictimes.indiatimes.com/news/international/uae/israeli-report-accuses-hamas-of-systematic-widespread-sexual-violence-on-oct-7/articleshow/131043035.cms", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "humanitarian"}, {"title": "Knesset passes law for tribunal to try alleged perpetrators of October 7", "url": "https://www.thenationalnews.com/news/mena/2026/05/12/knesset-passes-law-for-tribunal-to-try-alleged-perpetrators-of-october-7/", "date": "2026-05-12", "source": "The National", "category": "reports_evidence"}, {"title": "E.U. puts sanctions on Israeli settlers after Hungary drops Orban’s veto", "url": "https://www.washingtonpost.com/world/2026/05/11/eu-israel-settler-sanctions/", "date": "2026-05-11", "source": "Washington Post — World", "category": "other"}, {"title": "Israel Prepares to Prosecute First Suspects in Oct. 7 Attack Led by Hamas", "url": "https://www.nytimes.com/2026/05/11/world/middleeast/israel-oct-7-prosecutions-palestinians-trial.html", "date": "2026-05-11", "source": "New York Times — World", "category": "humanitarian"}, {"title": "Searching in Gaza's rubble for 24 dead relatives", "url": "https://www.thenationalnews.com/news/mena/2026/05/11/searching-in-gazas-rubble-for-24-dead-relatives/", "date": "2026-05-11", "source": "The National", "category": "humanitarian"}, {"title": "Palestinian-Chilean singer Elyanna joins Fifa World Cup 2026 soundtrack with Illuminate", "url": "https://www.thenationalnews.com/arts-culture/music-stage/2026/05/11/elyanna-joins-world-cup-fifa-soundtrack-with-illuminate/", "date": "2026-05-11", "source": "The National", "category": "other"}], "CA": [{"title": "paramount resources otcmktsprmrf releases quarterly earnings results beats estimates by 0 06 eps", "url": "https://www.tickerreport.com/banking-finance/13438289/paramount-resources-otcmktsprmrf-releases-quarterly-earnings-results-beats-estimates-by-0-06-eps.html", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "sp tsx composite down more than 200 points u s stock markets also lower 4", "url": "https://www.winnipegfreepress.com/business/2026/05/12/sp-tsx-composite-down-more-than-200-points-u-s-stock-markets-also-lower-4", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "ice midday canola bounces back ce7f5bdede88f025", "url": "https://www.marketscreener.com/news/ice-midday-canola-bounces-back-ce7f5bdede88f025", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "north bay police arrested woman after allegedly brandishing a knife at a city business", "url": "https://www.cochranetimespost.ca:443/news/north-bay-police-arrested-woman-after-allegedly-brandishing-a-knife-at-a-city-business", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "canadian multiculturalism day celebration at north bay waterfront on june 27", "url": "https://www.cochranetimespost.ca:443/news/canadian-multiculturalism-day-celebration-at-north-bay-waterfront-on-june-27", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "Palestinian-Chilean singer Elyanna joins Fifa World Cup 2026 soundtrack with Illuminate", "url": "https://www.thenationalnews.com/arts-culture/music-stage/2026/05/11/elyanna-joins-world-cup-fifa-soundtrack-with-illuminate/", "date": "2026-05-11", "source": "The National", "category": "other"}, {"title": "Quebec Novelist Shines a Harsh Spotlight on Migration, and on Trump’s America", "url": "https://www.nytimes.com/2026/05/11/world/canada/thelyson-orelien-haiti-us-canada-migration.html", "date": "2026-05-11", "source": "New York Times — World", "category": "other"}], "NP": [{"title": "Best photos of May 11: Rice farmer in Kathmandu to majestic Mount Fuji in Japan", "url": "https://www.thenationalnews.com/news/2026/05/11/best-photos-of-may-11-rice-farmer-in-kathmandu-to-majestic-mount-fuji-in-japan-2/", "date": "2026-05-11", "source": "The National", "category": "reports_evidence"}], "SY": [{"title": "Emaar founder Alabbar plans to invest up to $18 billion in Syria", "url": "https://www.thenationalnews.com/business/2026/05/12/mohamed-alabbar-plans-up-to-19-billion-in-syria-investments/", "date": "2026-05-12", "source": "The National", "category": "uae_ecosystem_moves"}, {"title": "UAE and Syria hold first business forum since Assad's fall", "url": "https://www.thenationalnews.com/business/2026/05/11/uae-and-syria-hold-first-business-forum-since-assads-fall/", "date": "2026-05-11", "source": "The National", "category": "uae_ecosystem_moves"}, {"title": "Syria aiming for stable relations with Israel, says minister Al Shibani", "url": "https://www.thenationalnews.com/news/mena/2026/05/11/syria-aiming-for-stable-relations-with-israel-says-minister-al-shibani/", "date": "2026-05-11", "source": "The National", "category": "uae_foreign_policy_signals"}], "IL": [{"title": "us ambassador to israel says israel sent iron dome batteries personnel to uae to defend country ef796d64", "url": "https://www.semissourian.com/world/us-ambassador-to-israel-says-israel-sent-iron-dome-batteries-personnel-to-uae-to-defend-country-ef796d64", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "uae_foreign_policy_signals"}, {"title": "131043035.cms", "url": "https://economictimes.indiatimes.com/news/international/uae/israeli-report-accuses-hamas-of-systematic-widespread-sexual-violence-on-oct-7/articleshow/131043035.cms", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "humanitarian"}, {"title": "A secret Israeli base in Iraq? What we know", "url": "https://www.aljazeera.com/news/2026/5/12/a-secret-israeli-base-in-iraq-what-we-know?traffic_source=rss", "date": "2026-05-12", "source": "Al Jazeera English", "category": "other"}, {"title": "Report alleges Israel operated covert outpost in Iraq during war on Iran", "url": "https://www.aljazeera.com/video/newsfeed/2026/5/12/report-alleges-israel-operated-covert-outpost-in-iraq-during-war-on-iran?traffic_source=rss", "date": "2026-05-12", "source": "Al Jazeera English", "category": "other"}, {"title": "Knesset passes law for tribunal to try alleged perpetrators of October 7", "url": "https://www.thenationalnews.com/news/mena/2026/05/12/knesset-passes-law-for-tribunal-to-try-alleged-perpetrators-of-october-7/", "date": "2026-05-12", "source": "The National", "category": "reports_evidence"}, {"title": "Razing southern Lebanon: Inside Israel’s campaign of wanton destruction", "url": "https://www.thenationalnews.com/news/mena/2026/05/12/razing-southern-lebanon-inside-israels-campaign-of-wanton-destruction/", "date": "2026-05-12", "source": "The National", "category": "humanitarian"}, {"title": "Former Hostage Calls on All of Israel’s Government to Resign", "url": "https://www.nytimes.com/2026/05/11/world/middleeast/israel-hostage-demands-government-resign.html", "date": "2026-05-12", "source": "New York Times — World", "category": "other"}, {"title": "E.U. puts sanctions on Israeli settlers after Hungary drops Orban’s veto", "url": "https://www.washingtonpost.com/world/2026/05/11/eu-israel-settler-sanctions/", "date": "2026-05-11", "source": "Washington Post — World", "category": "other"}, {"title": "Israel Prepares to Prosecute First Suspects in Oct. 7 Attack Led by Hamas", "url": "https://www.nytimes.com/2026/05/11/world/middleeast/israel-oct-7-prosecutions-palestinians-trial.html", "date": "2026-05-11", "source": "New York Times — World", "category": "humanitarian"}, {"title": "EU 'not fast enough' as Dutch go it alone on Israeli settlements", "url": "https://www.thenationalnews.com/news/europe/2026/05/11/eu-not-fast-enough-as-dutch-go-it-alone-on-israeli-settlements/", "date": "2026-05-11", "source": "The National", "category": "uae_foreign_policy_signals"}, {"title": "Syria aiming for stable relations with Israel, says minister Al Shibani", "url": "https://www.thenationalnews.com/news/mena/2026/05/11/syria-aiming-for-stable-relations-with-israel-says-minister-al-shibani/", "date": "2026-05-11", "source": "The National", "category": "uae_foreign_policy_signals"}, {"title": "Lebanese Mourn Eight Members of One Family Killed in Israeli Strike", "url": "https://www.nytimes.com/2026/05/10/world/middleeast/lebanon-family-funeral-israel-strikes.html", "date": "2026-05-10", "source": "New York Times — World", "category": "humanitarian"}, {"title": "Deadly Israeli Strikes Erode Cease-Fire in Lebanon", "url": "https://www.nytimes.com/2026/05/09/world/middleeast/israel-strikes-lebanon-ceasefire.html", "date": "2026-05-09", "source": "New York Times — Middle East", "category": "humanitarian"}, {"title": "Emirates Doubles Down on U.S. and Israeli Ties Amid Iran War", "url": "https://www.nytimes.com/2026/05/08/world/middleeast/uae-iran-war.html", "date": "2026-05-08", "source": "New York Times — Middle East", "category": "uae_leadership_doctrine"}, {"title": "Israel Says It Killed a Hezbollah Chief Near Beirut, Testing the Truce", "url": "https://www.nytimes.com/2026/05/07/world/middleeast/israel-hezbollah-commander-beirut-strike.html", "date": "2026-05-07", "source": "New York Times — Middle East", "category": "humanitarian"}], "NL": [{"title": "Cruise Ship Hit by Hantavirus Leaves Canary Islands and Sails Toward Netherlands", "url": "https://www.nytimes.com/2026/05/11/world/europe/hantavirus-cruise-ship-canary-islands.html", "date": "2026-05-11", "source": "New York Times — World", "category": "humanitarian"}, {"title": "EU 'not fast enough' as Dutch go it alone on Israeli settlements", "url": "https://www.thenationalnews.com/news/europe/2026/05/11/eu-not-fast-enough-as-dutch-go-it-alone-on-israeli-settlements/", "date": "2026-05-11", "source": "The National", "category": "uae_foreign_policy_signals"}], "EU": [{"title": "EU 'not fast enough' as Dutch go it alone on Israeli settlements", "url": "https://www.thenationalnews.com/news/europe/2026/05/11/eu-not-fast-enough-as-dutch-go-it-alone-on-israeli-settlements/", "date": "2026-05-11", "source": "The National", "category": "uae_foreign_policy_signals"}], "UA": [{"title": "article 1d89315a 5eac 5aa1 b5eb 3c9c93a0139f", "url": "https://lancasteronline.com/news/world/ukraine-officials-say-zelenskyys-ex-chief-of-staff-is-a-suspect-in-a-money-laundering/article_1d89315a-5eac-5aa1-b5eb-3c9c93a0139f.html", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "article ed7f4a7f 282d 5820 a4c2 0e807828122e", "url": "https://www.dailyadvance.com/news/world/ukraine-officials-say-zelenskyys-ex-chief-of-staff-is-a-suspect-in-a-money-laundering/article_ed7f4a7f-282d-5820-a4c2-0e807828122e.html", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "reports_evidence"}, {"title": "Putin’s Credibility Has Suffered in the Iran War. Or Has It?", "url": "https://www.nytimes.com/2026/05/12/world/europe/russia-europe-ukraine-syria-iran.html", "date": "2026-05-12", "source": "New York Times — World", "category": "other"}, {"title": "Russia Keeps Attacking U.S. Firms in Ukraine. The White House Is Silent.", "url": "https://www.nytimes.com/2026/05/12/world/europe/russian-strikes-us-firms-ukraine-trump.html", "date": "2026-05-12", "source": "New York Times — World", "category": "other"}, {"title": "As Iran war hits U.S. weapons stocks, allies fear impact on Ukraine", "url": "https://www.washingtonpost.com/national-security/2026/05/11/us-ukraine-trump-weapons-purl/", "date": "2026-05-12", "source": "Washington Post — World", "category": "other"}, {"title": "Putin Said the War ‘Is Coming to a Close,’ but That’s Not All He Said", "url": "https://www.nytimes.com/2026/05/11/world/europe/putin-russia-ukraine-war.html", "date": "2026-05-11", "source": "New York Times — World", "category": "other"}, {"title": "Former Top Zelensky Aide Is Accused in Corruption Inquiry", "url": "https://www.nytimes.com/2026/05/11/world/europe/ukraine-corruption-yermak-zelensky.html", "date": "2026-05-11", "source": "New York Times — World", "category": "other"}, {"title": "Sheikh Mohamed and Ukraine's Zelenskyy discuss Iranian attacks and trade deal", "url": "https://www.thenationalnews.com/news/uae/2026/05/11/president-sheikh-mohamed-discusses-iranian-attacks-on-uae-with-president-of-ukraine/", "date": "2026-05-11", "source": "The National", "category": "uae_foreign_policy_signals"}, {"title": "Ukraine Looks to Step Away From Trump and U.S.", "url": "https://www.nytimes.com/2026/05/11/world/europe/ukraine-war-zelensky-us-trump-russia.html", "date": "2026-05-11", "source": "New York Times — World", "category": "uae_foreign_policy_signals"}, {"title": "Putin’s Forces Are Barely Inching Along on the Battlefield", "url": "https://www.nytimes.com/2026/05/10/world/europe/russia-ukraine-putin-war.html", "date": "2026-05-10", "source": "New York Times — World", "category": "uae_foreign_policy_signals"}, {"title": "How the Kremlin Lures Africans Into Russia’s War in Ukraine", "url": "https://www.nytimes.com/2026/05/04/world/africa/ukraine-russia-war-african-soldiers.html", "date": "2026-05-06", "source": "New York Times — Africa", "category": "uae_foreign_policy_signals"}, {"title": "Why Are Africans Fighting in Russia’s War in Ukraine?", "url": "https://www.nytimes.com/2026/05/04/world/africa/africans-russia-war-ukraine.html", "date": "2026-05-04", "source": "New York Times — Africa", "category": "uae_foreign_policy_signals"}], "FR": [{"title": "french film risk from far right juliette binoche actors directors", "url": "https://www.theguardian.com/film/2026/may/12/french-film-risk-from-far-right-juliette-binoche-actors-directors", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "Is France’s Centrist Leader Trying to Weatherproof It From the Far Right?", "url": "https://www.nytimes.com/2026/05/12/world/europe/france-macron-weatherproof-bureaucracy.html", "date": "2026-05-12", "source": "New York Times — World", "category": "other"}, {"title": "Tunisian man charged with planning terrorist attack at Paris's Louvre", "url": "https://www.thenationalnews.com/news/europe/2026/05/11/tunisian-man-charged-with-planning-terrorist-attack-at-pariss-louvre/", "date": "2026-05-11", "source": "The National", "category": "other"}], "EG": [{"title": "How Egypt's balancing act aims to preserve relations and prevent war", "url": "https://www.thenationalnews.com/news/mena/2026/05/12/how-egypts-balancing-act-aims-to-preserve-relations-and-prevent-war/", "date": "2026-05-12", "source": "The National", "category": "uae_foreign_policy_signals"}], "IQ": [{"title": "A secret Israeli base in Iraq? What we know", "url": "https://www.aljazeera.com/news/2026/5/12/a-secret-israeli-base-in-iraq-what-we-know?traffic_source=rss", "date": "2026-05-12", "source": "Al Jazeera English", "category": "other"}, {"title": "Report alleges Israel operated covert outpost in Iraq during war on Iran", "url": "https://www.aljazeera.com/video/newsfeed/2026/5/12/report-alleges-israel-operated-covert-outpost-in-iraq-during-war-on-iran?traffic_source=rss", "date": "2026-05-12", "source": "Al Jazeera English", "category": "other"}, {"title": "Iranian commander Qaani makes unannounced visit to Baghdad as Iraqi government takes shape", "url": "https://www.thenationalnews.com/news/mena/2026/05/12/iranian-commander-qaani-makes-unannounced-visit-to-baghdad-as-iraqi-government-takes-shape/", "date": "2026-05-12", "source": "The National", "category": "other"}], "KW": [{"title": "Why did Kuwait's Bubiyan Island interest IRGC infiltrators?", "url": "https://www.thenationalnews.com/news/gulf/2026/05/12/why-did-kuwaits-bubiyan-island-interest-irgc-infiltrators/", "date": "2026-05-12", "source": "The National", "category": "uae_foreign_policy_signals"}, {"title": "Inside Iran Guards plot targeting Kuwait’s Bubiyan Island hosting China-backed port", "url": "https://gulfnews.com/world/mena/kuwait-foils-iran-guards-plot-targeting-china-backed-port-1.500537970", "date": "2026-05-12", "source": "Gulf News", "category": "uae_foreign_policy_signals"}, {"title": "Kuwait arrests four sea infiltrators linked to Iran’s Revolutionary Guards", "url": "https://gulfnews.com/world/gulf/kuwait/kuwait-arrests-four-sea-infiltrators-linked-to-irans-revolutionary-guards-1.500537853", "date": "2026-05-12", "source": "Gulf News", "category": "uae_foreign_policy_signals"}, {"title": "Kuwaiti forces foil Iran-linked infiltration attempt on Bubiyan Island", "url": "https://www.thenationalnews.com/news/gulf/2026/05/12/kuwaiti-says-its-security-forces-clashed-assailants-from-iran/", "date": "2026-05-12", "source": "The National", "category": "other"}], "BH": [{"title": "Bahrain sentences three to life in prison over links to Iran’s IRGC", "url": "https://www.thenationalnews.com/news/gulf/2026/05/12/bahrain-sentences-three-to-life-in-prison-over-links-to-irans-irgc/", "date": "2026-05-12", "source": "The National", "category": "uae_foreign_policy_signals"}], "SE": [{"title": "Iran embassy posts AI Lego video with 'veiled threat' to Sweden", "url": "https://www.thenationalnews.com/news/europe/2026/05/12/iran-embassy-posts-ai-lego-video-with-veiled-threat-to-sweden/", "date": "2026-05-12", "source": "The National", "category": "uae_foreign_policy_signals"}], "CN": [{"title": "71281611", "url": "https://www.wapt.com/article/xi-trump-summit-us-china-stability-trade-taiwan-iran/71281611", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "china passenger car exports surge 85 as domestic demand falls", "url": "http://www.milwaukeesun.com/news/279044693/china-passenger-car-exports-surge-85-as-domestic-demand-falls", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "content 54115147", "url": "https://ysln.ycwb.com/content/2026-05/12/content_54115147.html", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "Trump unlikely to persuade Xi to stop buying Iranian oil, analysts say", "url": "https://www.thenationalnews.com/business/energy/2026/05/12/trump-unlikely-to-persuade-xi-to-stop-buying-iranian-oil-analysts-say/", "date": "2026-05-12", "source": "The National", "category": "uae_foreign_policy_signals"}, {"title": "Is This Telescope a Threat to U.S. Security?", "url": "https://www.nytimes.com/video/world/americas/100000010873671/is-this-telescope-a-threat-to-us-security.html", "date": "2026-05-10", "source": "New York Times — World", "category": "uae_foreign_policy_signals"}, {"title": "U.S.-China Rivalry Reaches South American Skies", "url": "https://www.nytimes.com/2026/05/10/world/americas/us-china-telescope-argentina-chile.html", "date": "2026-05-10", "source": "New York Times — World", "category": "uae_foreign_policy_signals"}, {"title": "Iran Says It Seized Oil Tanker Listed by U.S. as Sanctions Violator", "url": "https://www.nytimes.com/2026/05/08/business/iran-war-tanker-ocean-koi.html", "date": "2026-05-08", "source": "New York Times — Middle East", "category": "other"}], "AF": [{"title": "Over 370 Afghans killed in Pakistan conflict in first 3 months of 2026: UN", "url": "https://www.aljazeera.com/news/2026/5/12/over-370-afghans-killed-in-pakistan-conflict-in-first-3-months-of-2026-un?traffic_source=rss", "date": "2026-05-12", "source": "Al Jazeera English", "category": "humanitarian"}, {"title": "Internal Displacement in Africa (2024)", "url": "https://www.internal-displacement.org/regional-reports/internal-displacement-in-africa", "date": "2024-11-27", "source": "IDMC — Internal Displacement Monitoring Centre", "category": "reports_evidence"}], "ET": [{"title": "Internal Displacement in Africa (2024)", "url": "https://www.internal-displacement.org/regional-reports/internal-displacement-in-africa", "date": "2024-11-27", "source": "IDMC — Internal Displacement Monitoring Centre", "category": "reports_evidence"}], "SO": [{"title": "Internal Displacement in Africa (2024)", "url": "https://www.internal-displacement.org/regional-reports/internal-displacement-in-africa", "date": "2024-11-27", "source": "IDMC — Internal Displacement Monitoring Centre", "category": "reports_evidence"}], "HN": [{"title": "Law for the Prevention, Assistance and Protection of Internally Displaced Persons in Honduras", "url": "https://www.internal-displacement.org/good-practice?id=91", "date": "2025-04-29", "source": "IDMC — Internal Displacement Monitoring Centre", "category": "reports_evidence"}], "GT": [{"title": "Disaster displacement risk in Guatemala: An overview of the risk of future displacement", "url": "https://www.internal-displacement.org/publications/disaster-displacement-risk-in-guatemala-an-overview-of-the-risk-of-future-displacement", "date": "2026-03-19", "source": "IDMC — Internal Displacement Monitoring Centre", "category": "reports_evidence"}], "KE": [{"title": "Africa’s richest man plans new Mombasa oil refinery: Why this matters", "url": "https://www.aljazeera.com/economy/2026/5/12/africas-richest-man-plans-new-mombasa-oil-refinery-why-this-matters?traffic_source=rss", "date": "2026-05-12", "source": "Al Jazeera English", "category": "other"}, {"title": "Why Are Africans Fighting in Russia’s War in Ukraine?", "url": "https://www.nytimes.com/2026/05/04/world/africa/africans-russia-war-ukraine.html", "date": "2026-05-04", "source": "New York Times — Africa", "category": "uae_foreign_policy_signals"}, {"title": "Disaster displacement risk in Kenya: An overview of the risk of future displacement", "url": "https://www.internal-displacement.org/publications/disaster-displacement-risk-in-kenya-an-overview-of-the-risk-of-future-displacement", "date": "2026-04-01", "source": "IDMC — Internal Displacement Monitoring Centre", "category": "reports_evidence"}], "CV": [{"title": "What to know about the hantavirus after deaths amid cruise ship outbreak", "url": "https://www.washingtonpost.com/wellness/2026/05/04/hantavirus-cruise-ship-symptoms-cape-verde/", "date": "2026-05-11", "source": "Washington Post — World", "category": "humanitarian"}], "AR": [{"title": "What to know about the hantavirus after deaths amid cruise ship outbreak", "url": "https://www.washingtonpost.com/wellness/2026/05/04/hantavirus-cruise-ship-symptoms-cape-verde/", "date": "2026-05-11", "source": "Washington Post — World", "category": "humanitarian"}, {"title": "Is This Telescope a Threat to U.S. Security?", "url": "https://www.nytimes.com/video/world/americas/100000010873671/is-this-telescope-a-threat-to-us-security.html", "date": "2026-05-10", "source": "New York Times — World", "category": "uae_foreign_policy_signals"}, {"title": "U.S.-China Rivalry Reaches South American Skies", "url": "https://www.nytimes.com/2026/05/10/world/americas/us-china-telescope-argentina-chile.html", "date": "2026-05-10", "source": "New York Times — World", "category": "uae_foreign_policy_signals"}], "IT": [{"title": "Artists’ Strike Closes Pavilions at Venice Biennale, Adding to Upheaval", "url": "https://www.nytimes.com/2026/05/08/arts/venice-biennale-protests.html", "date": "2026-05-09", "source": "New York Times — Middle East", "category": "other"}], "RU": [{"title": "Putin’s Credibility Has Suffered in the Iran War. Or Has It?", "url": "https://www.nytimes.com/2026/05/12/world/europe/russia-europe-ukraine-syria-iran.html", "date": "2026-05-12", "source": "New York Times — World", "category": "other"}, {"title": "Russia Keeps Attacking U.S. Firms in Ukraine. The White House Is Silent.", "url": "https://www.nytimes.com/2026/05/12/world/europe/russian-strikes-us-firms-ukraine-trump.html", "date": "2026-05-12", "source": "New York Times — World", "category": "other"}, {"title": "Putin Said the War ‘Is Coming to a Close,’ but That’s Not All He Said", "url": "https://www.nytimes.com/2026/05/11/world/europe/putin-russia-ukraine-war.html", "date": "2026-05-11", "source": "New York Times — World", "category": "other"}, {"title": "Putin’s Forces Are Barely Inching Along on the Battlefield", "url": "https://www.nytimes.com/2026/05/10/world/europe/russia-ukraine-putin-war.html", "date": "2026-05-10", "source": "New York Times — World", "category": "uae_foreign_policy_signals"}, {"title": "Long Overlooked, Caspian Sea Provides Strategic Trade Route for Iran", "url": "https://www.nytimes.com/2026/05/09/world/middleeast/caspian-sea-iran-russia.html", "date": "2026-05-09", "source": "New York Times — Middle East", "category": "other"}, {"title": "How the Kremlin Lures Africans Into Russia’s War in Ukraine", "url": "https://www.nytimes.com/2026/05/04/world/africa/ukraine-russia-war-african-soldiers.html", "date": "2026-05-06", "source": "New York Times — Africa", "category": "uae_foreign_policy_signals"}, {"title": "Why Are Africans Fighting in Russia’s War in Ukraine?", "url": "https://www.nytimes.com/2026/05/04/world/africa/africans-russia-war-ukraine.html", "date": "2026-05-04", "source": "New York Times — Africa", "category": "uae_foreign_policy_signals"}], "PK": [{"title": "2026 05 12", "url": "https://pid.gov.pk/site/photo_filter/2026-05-12", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "Pakistan suicide bombing kills nine: police", "url": "https://gulfnews.com/world/asia/pakistan/pakistan-suicide-bombing-kills-nine-police-1.500537573", "date": "2026-05-12", "source": "Gulf News", "category": "humanitarian"}, {"title": "At least nine killed in explosion at Pakistan market", "url": "https://www.aljazeera.com/video/newsfeed/2026/5/12/at-least-nine-killed-in-explosion-at-pakistan-market?traffic_source=rss", "date": "2026-05-12", "source": "Al Jazeera English", "category": "humanitarian"}, {"title": "Salman Agha challenged Bangladesh to declare; the Tigers did exactly that and won a historic Test", "url": "https://gulfnews.com/sport/cricket/salman-agha-challenged-bangladesh-to-declare-the-tigers-did-exactly-that-and-won-a-historic-test-1.500537939", "date": "2026-05-12", "source": "Gulf News", "category": "other"}, {"title": "Nahid Rana stars as Bangladesh beat Pakistan in 1st Test thriller", "url": "https://gulfnews.com/sport/cricket/nahid-rana-stars-as-bangladesh-beat-pakistan-in-1st-test-thriller-1.500537925", "date": "2026-05-12", "source": "Gulf News", "category": "other"}, {"title": "Pakistan scrambles to salvage US-Iran diplomacy as ceasefire faces collapse", "url": "https://www.aljazeera.com/news/2026/5/12/pakistan-scrambles-to-salvage-us-iran-diplomacy-as-ceasefire-faces-collapse?traffic_source=rss", "date": "2026-05-12", "source": "Al Jazeera English", "category": "other"}, {"title": "Over 370 Afghans killed in Pakistan conflict in first 3 months of 2026: UN", "url": "https://www.aljazeera.com/news/2026/5/12/over-370-afghans-killed-in-pakistan-conflict-in-first-3-months-of-2026-un?traffic_source=rss", "date": "2026-05-12", "source": "Al Jazeera English", "category": "humanitarian"}, {"title": "At least nine people killed in explosion at Pakistan market", "url": "https://www.aljazeera.com/news/2026/5/12/at-least-nine-people-killed-in-explosion-at-pakistan-market?traffic_source=rss", "date": "2026-05-12", "source": "Al Jazeera English", "category": "humanitarian"}, {"title": "Trump Says Iran’s Response to Latest U.S. Proposal ‘Totally Unacceptable’", "url": "https://www.nytimes.com/2026/05/10/us/politics/iran-war-us-peace-proposal-response.html", "date": "2026-05-11", "source": "New York Times — Middle East", "category": "other"}], "ZA": [{"title": "What a Bike Ride in Cape Town Taught Me About Apartheid", "url": "https://www.nytimes.com/2026/05/05/world/africa/cape-town-apartheid-bike-ride.html", "date": "2026-05-07", "source": "New York Times — Africa", "category": "other"}], "BW": [{"title": "Festus Mogae, Former Botswana President Who Tackled H.I.V., Dies at 86", "url": "https://www.nytimes.com/2026/05/08/world/africa/festus-mogae-dead.html", "date": "2026-05-08", "source": "New York Times — Africa", "category": "humanitarian"}], "CL": [{"title": "U.S.-China Rivalry Reaches South American Skies", "url": "https://www.nytimes.com/2026/05/10/world/americas/us-china-telescope-argentina-chile.html", "date": "2026-05-10", "source": "New York Times — World", "category": "uae_foreign_policy_signals"}], "HT": [{"title": "Quebec Novelist Shines a Harsh Spotlight on Migration, and on Trump’s America", "url": "https://www.nytimes.com/2026/05/11/world/canada/thelyson-orelien-haiti-us-canada-migration.html", "date": "2026-05-11", "source": "New York Times — World", "category": "other"}], "PH": [{"title": "2 hurt 26 houses destroyed in bacolod fire", "url": "https://mb.com.ph/2026/05/12/2-hurt-26-houses-destroyed-in-bacolod-fire", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "humanitarian"}, {"title": "Video Shows Philippine Senator Outrunning Agents and Avoiding I.C.C. Warrant", "url": "https://www.nytimes.com/2026/05/12/world/asia/philippines-senator-dela-rosa-arrest-warrant.html", "date": "2026-05-12", "source": "New York Times — World", "category": "other"}, {"title": "What is the UAE-funded ‘Fallen Heroes Scholarship’ and how students can apply", "url": "https://gulfnews.com/uae/education/what-is-the-uae-funded-fallen-heroes-scholarship-and-how-students-can-apply-1.500537875", "date": "2026-05-12", "source": "Gulf News", "category": "uae_ecosystem_moves"}, {"title": "Altar Boy Who Called Out Sexual Abuse in the Philippines Is Now a Lawyer for Victims", "url": "https://www.nytimes.com/2026/05/12/world/asia/philippines-catholic-church-sex-abuse.html", "date": "2026-05-12", "source": "New York Times — World", "category": "other"}, {"title": "Sara Duterte, Philippine Vice President, Is Impeached, Again", "url": "https://www.nytimes.com/2026/05/11/world/asia/sara-duterte-philippine-impeached.html", "date": "2026-05-12", "source": "New York Times — World", "category": "other"}], "KR": [{"title": "in the young will remember a korean war reporter gets stranded behind enemy lines", "url": "https://www.wlrn.org/npr-breaking-news/2026-05-12/in-the-young-will-remember-a-korean-war-reporter-gets-stranded-behind-enemy-lines", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "Beshara: The most captivating pictures of the week", "url": "https://www.thenationalnews.com/news/2026/05/10/beshara-the-most-captivating-pictures-of-the-week/", "date": "2026-05-10", "source": "The National", "category": "other"}], "UG": [{"title": "Uganda’s Yoweri Museveni sworn in for seventh term as president", "url": "https://www.aljazeera.com/news/2026/5/12/ugandas-yoweri-museveni-sworn-in-for-seventh-term-as-president?traffic_source=rss", "date": "2026-05-12", "source": "Al Jazeera English", "category": "other"}], "IN": [{"title": "131043596.cms", "url": "https://economictimes.indiatimes.com/industry/banking/finance/insure/will-provide-insurance-to-all-vessels-coming-to-or-going-from-india-dfs-secretary-nagaraju/articleshow/131043596.cms", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "article70970408.ece", "url": "https://www.thehindu.com/news/national/karnataka/elderly-auto-driver-killed-after-e-scooter-explosion-sparks-fire-in-house/article70970408.ece", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "article70970852.ece", "url": "https://www.thehindubusinessline.com/news/neet-2026-test-cancelled-new-re-test-date-in-next-7-10-days/article70970852.ece", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "article70970891.ece", "url": "https://www.thehindubusinessline.com/news/cbi-registers-fir-to-probe-neet-ug-2026-paper-leak/article70970891.ece", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}, {"title": "wifes pursuit of career cant be branded cruelty just because it hurt husbands sentiments supreme court 533958", "url": "https://www.livelaw.in/top-stories/wifes-pursuit-of-career-cant-be-branded-cruelty-just-because-it-hurt-husbands-sentiments-supreme-court-533958", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "reports_evidence"}, {"title": "article70970576.ece", "url": "https://www.thehindubusinessline.com/data-stories/data-focus/indias-forex-reserves-contract-5-since-march-one-of-the-highest-among-oil-importing-ems/article70970576.ece", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "reports_evidence"}, {"title": "Indian rupee hits new record below 26 as oil surge boosts UAE remittance value", "url": "https://gulfnews.com/business/markets/indian-rupee-hits-new-record-below-26-as-oil-surge-boosts-uae-remittance-value-1.500538193", "date": "2026-05-12", "source": "Gulf News", "category": "other"}, {"title": "Vijay appoints astrologer and close aide to key position in chief minister's office", "url": "https://gulfnews.com/world/asia/india/vijay-appoints-astrologer-and-close-aide-to-key-position-in-chief-ministers-office-1.500538064", "date": "2026-05-12", "source": "Gulf News", "category": "other"}], "SG": [{"title": "188558712", "url": "https://blog.udn.com:443/42e72109/188558712", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}], "PT": [{"title": "1020266", "url": "https://www.theportugalnews.com/news/2026-05-12/mercadona-announces-opening-of-new-store-in-portugal-in-the-algarve/1020266", "date": "2026-05-12", "source": "GDELT 2.0 Events", "category": "other"}], "KG": [{"title": "From diplomacy to investment, Kyrgyzstan broadens its UAE ties", "url": "https://gulfnews.com/gn-focus/from-diplomacy-to-investment-kyrgyzstan-broadens-its-uae-ties-1.500537940", "date": "2026-05-12", "source": "Gulf News", "category": "uae_foreign_policy_signals"}]}}</script>
+
+<script>
+(function() {
+  const root = document.querySelector('.carto');
+  const overlay = document.querySelector('.carto-overlay');
+  const detail = document.getElementById('detail');
+  const empty = document.getElementById('empty-state');
+  const dataEl = document.getElementById('country-data');
+  const DATA = JSON.parse(dataEl.textContent);
+  let selectedIso = null;
+  let activeRegion = 'all';
+
+  function tileFor(iso) { return root.querySelector('.tile[data-iso="' + iso + '"]'); }
+
+  function clearOverlay() {
+    overlay.innerHTML = '';
+  }
+
+  function drawArcs(iso) {
+    clearOverlay();
+    const co = DATA.co[iso] || {};
+    const entries = Object.entries(co).sort((a, b) => b[1] - a[1]).slice(0, 20);
+    if (!entries.length) return;
+    const wrap = root.parentElement.getBoundingClientRect();
+    overlay.setAttribute('viewBox', '0 0 ' + wrap.width + ' ' + wrap.height);
+    const srcEl = tileFor(iso);
+    if (!srcEl) return;
+    const srcR = srcEl.getBoundingClientRect();
+    const sx = srcR.left - wrap.left + srcR.width / 2;
+    const sy = srcR.top  - wrap.top  + srcR.height / 2;
+    const maxCount = Math.max(...entries.map(e => e[1]));
+    for (const [other, cnt] of entries) {
+      const tgt = tileFor(other);
+      if (!tgt) continue;
+      const tr = tgt.getBoundingClientRect();
+      const tx = tr.left - wrap.left + tr.width / 2;
+      const ty = tr.top  - wrap.top  + tr.height / 2;
+      // Quadratic bezier control point: midpoint shifted perpendicular for
+      // a parabolic feel. Curvature scales with distance so distant arcs
+      // bow more dramatically.
+      const dx = tx - sx, dy = ty - sy;
+      const dist = Math.hypot(dx, dy);
+      const cx = (sx + tx) / 2 + (-dy / dist) * (dist * 0.18);
+      const cy = (sy + ty) / 2 + ( dx / dist) * (dist * 0.18);
+      const w = 1 + 3 * (cnt / maxCount);
+      const op = 0.30 + 0.55 * (cnt / maxCount);
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', 'M ' + sx + ' ' + sy + ' Q ' + cx + ' ' + cy + ' ' + tx + ' ' + ty);
+      path.setAttribute('stroke-width', w.toFixed(2));
+      path.setAttribute('opacity', op.toFixed(2));
+      overlay.appendChild(path);
+    }
+  }
+
+  function showDetail(iso) {
+    selectedIso = iso;
+    const c = DATA.countries[iso] || {};
+    const items = DATA.items[iso] || [];
+    const co = DATA.co[iso] || {};
+
+    document.querySelectorAll('.tile').forEach(t => t.classList.remove('selected'));
+    const tile = tileFor(iso);
+    if (tile) tile.classList.add('selected');
+
+    document.getElementById('detail-title').textContent =
+      (c.name || iso) + '  ·  ' + (c.count || 0) + ' MENTION' + (c.count === 1 ? '' : 'S');
+
+    const coDiv = document.getElementById('detail-co');
+    coDiv.innerHTML = '';
+    const coSorted = Object.entries(co).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    if (coSorted.length) {
+      coDiv.innerHTML = coSorted.map(
+        ([other, n]) =>
+          '<span class="co-chip"><b>' + n + '</b>' +
+          ((DATA.countries[other] || {}).name || other) + '</span>'
+      ).join('');
+    }
+
+    const ul = document.getElementById('detail-items');
+    ul.innerHTML = '';
+    if (!items.length) {
+      ul.innerHTML = '<li style="grid-template-columns:1fr;color:var(--muted)">' +
+        'No recent items mention this country in the window.</li>';
+    } else {
+      for (const it of items) {
+        const when = (it.date || '').slice(0, 10) || '—';
+        const title = it.title || '';
+        const url = it.url || '';
+        const src = it.source || '';
+        const titleHtml = url && url.startsWith('http')
+          ? '<a href="' + url + '" target="_blank" rel="noopener">' + escapeHtml(title) + '</a>'
+          : escapeHtml(title);
+        const li = document.createElement('li');
+        li.innerHTML =
+          '<span class="when">' + escapeHtml(when) + '</span>' +
+          '<div><div class="title-link">' + titleHtml + '</div>' +
+          '<div class="src">' + escapeHtml(src) + '</div></div>';
+        ul.appendChild(li);
+      }
+    }
+
+    detail.hidden = false;
+    empty.classList.add('hidden');
+    drawArcs(iso);
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({
+      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+    }[c]));
+  }
+
+  function clearSelection() {
+    selectedIso = null;
+    document.querySelectorAll('.tile').forEach(t => t.classList.remove('selected'));
+    detail.hidden = true;
+    empty.classList.remove('hidden');
+    clearOverlay();
+  }
+
+  function applyRegionFilter(region) {
+    activeRegion = region;
+    document.querySelectorAll('.region-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.region === region);
+    });
+    if (region === 'all') {
+      document.querySelectorAll('.region-row').forEach(r => r.classList.remove('dim'));
+      document.querySelectorAll('.tile').forEach(t => t.classList.remove('dim'));
+      return;
+    }
+    document.querySelectorAll('.region-row').forEach(r => {
+      r.classList.toggle('dim', r.dataset.region !== region);
+    });
+    document.querySelectorAll('.tile').forEach(t => {
+      const iso = t.dataset.iso;
+      const r = (DATA.countries[iso] || {}).region || '';
+      t.classList.toggle('dim', r !== region);
+    });
+    if (selectedIso) {
+      const r = (DATA.countries[selectedIso] || {}).region || '';
+      if (r !== region) clearSelection();
+      else drawArcs(selectedIso);  // re-render arcs in case layout shifted
+    }
+  }
+
+  // Wire events
+  root.addEventListener('click', e => {
+    const tile = e.target.closest('.tile');
+    if (tile && !tile.classList.contains('dim')) {
+      showDetail(tile.dataset.iso);
+    }
+  });
+  document.getElementById('detail-clear').addEventListener('click', clearSelection);
+  document.querySelectorAll('.region-btn').forEach(b => {
+    b.addEventListener('click', () => applyRegionFilter(b.dataset.region));
+  });
+  window.addEventListener('resize', () => { if (selectedIso) drawArcs(selectedIso); });
+})();
+</script>
+
+
+<style>
+  /* region filter */
+  .region-filter {
+    display:flex; flex-wrap:wrap; gap:6px; margin:0 0 18px;
+    padding:0 0 14px; border-bottom:1px solid var(--rule-strong);
+  }
+  .region-btn {
+    background:transparent; color:var(--muted); border:1px solid var(--rule-strong);
+    font:600 10px/1 "JetBrains Mono","IBM Plex Mono",Consolas,monospace;
+    letter-spacing:0.10em; padding:7px 10px; cursor:pointer;
+    transition:color .12s, border-color .12s;
+  }
+  .region-btn:hover { color:var(--amber); border-color:var(--amber); }
+  .region-btn.active { color:var(--bg); background:var(--amber); border-color:var(--amber); }
+  .region-btn .rb-count { color:inherit; opacity:.7; margin-left:6px; }
+
+  /* cartogram */
+  .carto-wrap { position:relative; margin:0 0 24px; }
+  .carto-overlay {
+    position:absolute; inset:0; width:100%; height:100%;
+    pointer-events:none; overflow:visible;
+  }
+  .carto-overlay path {
+    fill:none; stroke:var(--amber); opacity:.55;
+    stroke-linecap:round;
+  }
+  .region-row {
+    display:grid; grid-template-columns:120px 1fr; gap:12px;
+    padding:8px 0; border-bottom:1px solid var(--rule);
+  }
+  .region-row.dim { opacity:.18; }
+  .region-label {
+    font:700 10px/1.2 "JetBrains Mono",Consolas,monospace;
+    letter-spacing:0.14em; text-transform:uppercase; color:var(--type-dim);
+    padding-top:4px;
+  }
+  .tiles { display:flex; flex-wrap:wrap; gap:3px; }
+  .tile {
+    width:34px; height:34px; padding:0; cursor:pointer;
+    border:1px solid var(--rule-strong);
+    background:
+      linear-gradient(0deg,
+        rgba(255,180,84, calc(var(--intensity) * 0.85)),
+        rgba(255,180,84, calc(var(--intensity) * 0.85))
+      ),
+      var(--bg-deep);
+    color:var(--type);
+    font:700 9px/1 "JetBrains Mono",Consolas,monospace;
+    letter-spacing:0.04em; text-transform:uppercase;
+    display:flex; align-items:center; justify-content:center;
+    transition:transform .08s, border-color .12s;
+  }
+  .tile.zero { color:var(--muted); border-color:#1a1612; }
+  .tile:hover { border-color:var(--amber); transform:scale(1.12); z-index:5; }
+  .tile.selected {
+    outline:2px solid var(--amber); outline-offset:1px;
+    border-color:var(--amber); z-index:6;
+  }
+  .tile.dim { opacity:.18; pointer-events:none; }
+
+  /* detail panel */
+  .detail { margin:24px 0 12px; }
+  .detail-head {
+    display:flex; align-items:baseline; justify-content:space-between;
+    border-bottom:1px solid var(--amber); padding-bottom:6px;
+  }
+  .detail-head h2 {
+    font:700 13px/1.2 "JetBrains Mono",Consolas,monospace;
+    letter-spacing:0.16em; text-transform:uppercase; color:var(--amber);
+    margin:0;
+  }
+  .detail-clear {
+    background:transparent; border:0; color:var(--muted);
+    font:700 10px/1 "JetBrains Mono",Consolas,monospace;
+    letter-spacing:0.12em; cursor:pointer;
+  }
+  .detail-clear:hover { color:var(--amber); }
+  .detail-co {
+    margin:10px 0 14px; display:flex; flex-wrap:wrap; gap:6px;
+  }
+  .co-chip {
+    font:600 10px/1 "JetBrains Mono",Consolas,monospace;
+    letter-spacing:0.06em; color:var(--type-dim);
+    border:1px solid var(--rule-strong); padding:5px 8px;
+    background:var(--bg-deep);
+  }
+  .co-chip b { color:var(--amber); margin-right:5px; }
+
+  .detail-items { list-style:none; padding:0; margin:8px 0 0; }
+  .detail-items li {
+    padding:10px 0; border-bottom:1px solid var(--rule);
+    display:grid; grid-template-columns:90px 1fr; gap:14px; align-items:baseline;
+  }
+  .detail-items .when {
+    font:11px/1.4 "JetBrains Mono",Consolas,monospace;
+    color:var(--muted); letter-spacing:0.04em;
+  }
+  .detail-items .title-link {
+    font-family:"Iowan Old Style","Source Serif Pro",Georgia,serif;
+    font-size:15px; color:var(--type); line-height:1.45;
+  }
+  .detail-items .title-link a { color:var(--type); border-bottom:1px solid transparent; }
+  .detail-items .title-link a:hover { color:var(--amber); border-bottom-color:var(--amber); }
+  .detail-items .src {
+    font:10px/1.4 "JetBrains Mono",Consolas,monospace;
+    letter-spacing:0.08em; color:var(--muted); margin-top:4px;
+  }
+
+  .empty-state {
+    text-align:center; color:var(--muted); font-size:11px;
+    letter-spacing:0.16em; text-transform:uppercase; padding:32px 0;
+  }
+  .empty-state.hidden { display:none; }
+
+  @media (max-width:640px) {
+    .region-row { grid-template-columns:1fr; gap:4px; }
+    .region-label { padding-top:0; }
+    .tile { width:30px; height:30px; }
+    .detail-items li { grid-template-columns:1fr; gap:2px; }
+  }
+</style>
+
+<footer class="foot"><span>© 2026 Dalila — daily intelligence brief</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Submit a suggestion</a></span></footer>
+</div>
+</body>
+</html>

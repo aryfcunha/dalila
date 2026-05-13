@@ -346,6 +346,145 @@ a:hover {
 }
 .source-block li .note { color: var(--muted); margin-left: 4px; }
 
+/* ---------- countries view ---------- */
+.country-controls {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin: 6px 0 22px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.country-controls label { color: var(--muted); margin-right: 4px; }
+.region-pill {
+  display: inline-block;
+  padding: 3px 8px;
+  border: 1px solid var(--rule-strong);
+  color: var(--type-dim);
+  cursor: pointer;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.region-pill:hover { color: var(--amber); border-color: var(--amber-deep); }
+.region-pill.active { color: var(--bg); background: var(--amber); border-color: var(--amber); }
+
+.region-block { margin: 0 0 22px; }
+.region-head {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  justify-content: space-between;
+}
+.region-head .count { color: var(--muted); }
+.tile-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.tile {
+  width: 44px; height: 44px;
+  background: var(--bg-deep);
+  border: 1px solid var(--rule-strong);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--type-dim);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.12s ease, color 0.12s ease;
+  position: relative;
+}
+.tile:hover { border-color: var(--amber); color: var(--type); z-index: 2; }
+.tile .num {
+  font-size: 9px;
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+  margin-top: 1px;
+}
+.tile.selected {
+  border-color: var(--amber);
+  color: var(--bg);
+  background: var(--amber);
+}
+.tile.selected .num { color: rgba(10,10,10,0.6); }
+.tile.dim { opacity: 0.28; }
+.tile.empty { color: var(--muted); }
+/* Heatmap shades (data-h attribute set by JS) */
+.tile[data-h="1"] { background: #1a1409; border-color: #2a1f12; color: var(--type-dim); }
+.tile[data-h="2"] { background: #2c1f0a; border-color: #3d2912; color: var(--type-dim); }
+.tile[data-h="3"] { background: #4a3110; border-color: #5d3e14; color: var(--type); }
+.tile[data-h="4"] { background: #75501a; border-color: #8a611f; color: var(--type); }
+.tile[data-h="5"] { background: #a47424; border-color: #b88229; color: var(--bg); }
+.tile[data-h="6"] { background: var(--amber-deep); border-color: var(--amber); color: var(--bg); }
+
+#country-detail {
+  margin: 28px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule-strong);
+}
+.country-detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.country-detail-head h2 {
+  margin: 0;
+  font-family: "Iowan Old Style", Georgia, serif;
+  font-size: 22px;
+  color: var(--amber);
+  font-weight: 700;
+}
+.country-detail-head .meta {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.country-cofreq {
+  font-size: 11px;
+  color: var(--type-dim);
+  margin: 0 0 14px;
+  letter-spacing: 0.04em;
+}
+.country-cofreq .pair {
+  display: inline-block;
+  margin-right: 12px;
+  margin-bottom: 4px;
+  padding: 2px 6px;
+  border: 1px solid var(--rule-strong);
+  color: var(--type-dim);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+.country-cofreq .pair b { color: var(--amber); font-weight: 700; margin-left: 4px; }
+.country-news-empty {
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+  padding: 28px 0;
+  text-align: center;
+}
+
 /* ---------- print + mobile ---------- */
 @media print {
   html,body { background: white; color: black; }
@@ -374,13 +513,13 @@ a:hover {
   <nav class="masthead-nav">
     <a href="./">Home</a>
     <a href="archive.html" aria-current="page">Archive</a>
+    <a href="countries.html">Countries</a>
     <a href="about.html">About</a>
   </nav>
 </header>
 
 <section class="archive">
-<div class="archive-row"><div class="archive-date">Wednesday 13 May 2026</div><div><div class="archive-title"><a href="digests/2026-05-13.html">Morning brief — Wednesday 13 May 2026</a></div><div class="archive-preview">Iran could enrich uranium to weapons-grade if attacked by US amid collapsing cea · Palestine - Escalating violence and protracted displacement</div></div></div>
-<div class="archive-row"><div class="archive-date">Tuesday 12 May 2026</div><div><div class="archive-title"><a href="digests/2026-05-12.html">Morning brief — Tuesday 12 May 2026</a></div><div class="archive-preview">Iran war latest: UAE condemns IRGC&#x27;s attempted infiltration of Kuwait · Iran could enrich uranium to weapons-grade if attacked by US amid collapsing cea</div></div></div>
+<div class="archive-row"><div class="archive-date">Wednesday 13 May 2026</div><div><div class="archive-title"><a href="digests/2026-05-13.html">Morning brief — Wednesday 13 May 2026</a></div><div class="archive-preview">Palestine - Escalating violence and protracted displacement · Emirates Doubles Down on U.S. and Israeli Ties Amid Iran War</div></div></div>
 </section>
 <footer class="foot"><span>© 2026 Dalila — daily intelligence brief</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Submit a suggestion</a></span></footer>
 </div>
