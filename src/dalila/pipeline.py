@@ -146,21 +146,37 @@ def _resolve_classifier(backend: str):
     raise ValueError(f"unknown classifier backend: {backend!r} (expected 'claude' or 'deepseek')")
 
 
-def run_classify(limit: int = 100, batch_size: int = 25, *, backend: str = "claude") -> dict:
+def run_classify(
+    limit: int = 100,
+    batch_size: int = 25,
+    *,
+    backend: str = "claude",
+    workers: int = 1,
+) -> dict:
     """Classify up to `limit` prefilter-passed items in batches of `batch_size`.
 
     `backend` selects the LLM ("claude" = Haiku via CLI, default; "deepseek" =
     DeepSeek API for backfill jobs). See `_resolve_classifier`.
 
+    `workers` runs that many batches concurrently. Useful for DeepSeek (paid
+    per-call API, generous rate limits, output-token-bound latency of ~60s
+    per batch); 4-6 workers cuts wall-clock 4-6x. Keep at 1 for Claude — the
+    CLI shares a single rate-limit pool across calls so parallelism doesn't
+    help and risks tripping the shared bucket.
+
     Each batch goes to the chosen model in a single call — far cheaper than
     one-call-per-item (amortises spawn + system-prompt re-send).
 
-    Error handling:
+    Error handling (serial path):
       - Transient error (rate limit / network / timeout) → abort run, leave
         items unclassified, retry on next tick.
       - Terminal error (malformed JSON, count mismatch after retry) → fall back
         to one-at-a-time for that batch so we mark only the bad item, not
         the whole batch.
+
+    Parallel path: errors are collected with their batch; rate-limit errors
+    stop further submission but in-flight batches still drain. Per-item
+    fallback retries happen serially after the pool drains.
     """
     classify_batch = _resolve_classifier(backend)
     cfg = get_config()
@@ -170,7 +186,7 @@ def run_classify(limit: int = 100, batch_size: int = 25, *, backend: str = "clau
     rate_limit_reset_at: datetime | None = None
     rate_limit_message: str | None = None
     batches_done = 0
-    log.info("classify: using backend=%s", backend)
+    log.info("classify: using backend=%s workers=%d", backend, workers)
 
     with db.connect() as conn:
         if db.todays_classifier_call_count(conn) >= cfg.daily_classifier_call_cap:
@@ -179,11 +195,87 @@ def run_classify(limit: int = 100, batch_size: int = 25, *, backend: str = "clau
             return {"classified": 0, "errors": 0, "capped": True}
 
         rows = db.unclassified_items(conn, limit=limit)
-        log.info("classifying %d items in batches of %d (%d batches)",
-                 len(rows), batch_size, (len(rows) + batch_size - 1) // batch_size)
+        total_batches = (len(rows) + batch_size - 1) // batch_size
+        log.info("classifying %d items in batches of %d (%d batches, %d worker%s)",
+                 len(rows), batch_size, total_batches, workers, "s" if workers != 1 else "")
 
-        for batch_start in range(0, len(rows), batch_size):
-            batch_rows = rows[batch_start : batch_start + batch_size]
+        batches = [rows[i : i + batch_size] for i in range(0, len(rows), batch_size)]
+
+        # -------- Parallel path (DeepSeek) --------
+        if workers > 1:
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+
+            def _do(batch_rows):
+                payload = [
+                    {"title": r["title"], "body": r["body"], "url": r["url"]}
+                    for r in batch_rows
+                ]
+                return classify_batch(payload)
+
+            failed_batches: list[list] = []   # batches that hit terminal errors
+            with ThreadPoolExecutor(max_workers=workers) as pool:
+                fut_to_batch = {pool.submit(_do, b): b for b in batches}
+                for fut in as_completed(fut_to_batch):
+                    batch_rows = fut_to_batch[fut]
+                    try:
+                        classifications = fut.result()
+                    except Exception as exc:
+                        err_msg = f"{type(exc).__name__}: {exc}"
+                        if _is_transient_error(err_msg):
+                            log.warning("transient error on batch (parallel): %s", err_msg[:200])
+                            rate_limited = True
+                            rate_limit_message = err_msg
+                            rate_limit_reset_at = parse_rate_limit_reset(err_msg)
+                            # Don't break — let in-flight batches drain; new ones
+                            # won't be submitted since we already submitted all upfront.
+                            continue
+                        # Terminal — retry individually after the pool drains.
+                        log.warning("batch failed (%s); queueing %d items for serial retry",
+                                    err_msg[:200], len(batch_rows))
+                        failed_batches.append(batch_rows)
+                        continue
+                    # Happy path
+                    for r, c in zip(batch_rows, classifications):
+                        db.save_classification(conn, r["id"], c)
+                        classified += 1
+                    batches_done += 1
+                    if batches_done % 5 == 0 or batches_done == total_batches:
+                        log.info("batch %d/%d done (%d items classified)",
+                                 batches_done, total_batches, classified)
+
+            # Serial retry for terminal-error batches (one item at a time).
+            for batch_rows in failed_batches:
+                for r in batch_rows:
+                    try:
+                        [single] = classify_batch(
+                            [{"title": r["title"], "body": r["body"], "url": r["url"]}]
+                        )
+                        db.save_classification(conn, r["id"], single)
+                        classified += 1
+                    except Exception as inner:
+                        inner_msg = f"{type(inner).__name__}: {inner}"
+                        if _is_transient_error(inner_msg):
+                            rate_limited = True
+                            rate_limit_message = inner_msg
+                            rate_limit_reset_at = parse_rate_limit_reset(inner_msg)
+                            break
+                        errors += 1
+                        db.save_classifier_error(conn, r["id"], inner_msg)
+                if rate_limited:
+                    break
+
+            return {
+                "classified": classified,
+                "errors": errors,
+                "rate_limited": rate_limited,
+                "rate_limit_reset_at": rate_limit_reset_at,
+                "rate_limit_message": rate_limit_message,
+                "batches_done": batches_done,
+                "capped": False,
+            }
+
+        # -------- Serial path (Claude — original behaviour) --------
+        for batch_rows in batches:
             payload = [
                 {"title": r["title"], "body": r["body"], "url": r["url"]}
                 for r in batch_rows
@@ -200,8 +292,6 @@ def run_classify(limit: int = 100, batch_size: int = 25, *, backend: str = "clau
                     rate_limit_message = err_msg
                     rate_limit_reset_at = parse_rate_limit_reset(err_msg)
                     break
-                # Terminal — could be a bad item poisoning the batch.
-                # Fall back to one-at-a-time so we only blame the actual culprit.
                 log.warning("batch failed (%s); retrying %d items individually", err_msg[:200], len(batch_rows))
                 for r in batch_rows:
                     try:
@@ -223,7 +313,6 @@ def run_classify(limit: int = 100, batch_size: int = 25, *, backend: str = "clau
                     break
                 continue
 
-            # Happy path: write all classifications back
             for r, c in zip(batch_rows, classifications):
                 db.save_classification(conn, r["id"], c)
                 classified += 1

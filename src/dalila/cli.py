@@ -40,6 +40,8 @@ def main(argv: list[str] | None = None) -> int:
     p_classify.add_argument("--batch-size", type=int, default=25, help="Items per call (default 25, empirically tuned for Claude CLI; safe for DeepSeek too)")
     p_classify.add_argument("--backend", choices=("claude", "deepseek"), default="claude",
                             help="LLM backend (default 'claude'). Use 'deepseek' for cost-bounded backfill — requires DEEPSEEK_API_KEY env var.")
+    p_classify.add_argument("--workers", type=int, default=1,
+                            help="Parallel batches in flight (DeepSeek only; default 1). 4-6 is a good sweet spot — each call takes ~60s, so 5 workers ≈ 5x throughput.")
     p_digest = sub.add_parser("digest", help="Compose today's digest and print to stdout")
     p_digest.add_argument("--since-hours", type=int, default=24)
     p_digest.add_argument("--min-relevance", type=float, default=0.4)
@@ -60,6 +62,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="LLM backend for the classify pass when --classify-first is set (default 'claude'). Digests themselves always use Claude.")
     p_back.add_argument("--classify-limit", type=int, default=2000,
                         help="Max items to classify in the pre-pass when --classify-first is set (default 2000).")
+    p_back.add_argument("--classify-workers", type=int, default=1,
+                        help="Parallel batches in the classify pre-pass (DeepSeek only; default 1).")
     p_bf = sub.add_parser("backfill", help="Historical archive backfill via XML sitemaps + GDELT/ACLED date ranges (does NOT classify — run `dalila classify` after)")
     p_bf.add_argument("--since", required=True, help="ISO date YYYY-MM-DD (inclusive)")
     p_bf.add_argument("--until", default=None, help="ISO date YYYY-MM-DD (inclusive; default today)")
@@ -130,7 +134,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "classify":
         from dalila.pipeline import run_classify
         db.init_db()
-        result = run_classify(limit=args.limit, batch_size=args.batch_size, backend=args.backend)
+        result = run_classify(limit=args.limit, batch_size=args.batch_size,
+                              backend=args.backend, workers=args.workers)
         print(f"classify done: {result}")
         return 0
 
@@ -175,7 +180,8 @@ def main(argv: list[str] | None = None) -> int:
         db.init_db()
         if args.classify_first:
             print(f"pre-pass: classifying up to {args.classify_limit} pending items (backend={args.backend})…")
-            cres = run_classify(limit=args.classify_limit, backend=args.backend)
+            cres = run_classify(limit=args.classify_limit, backend=args.backend,
+                                workers=args.classify_workers)
             print(f"  → classified={cres.get('classified')} errors={cres.get('errors')} "
                   f"rate_limited={cres.get('rate_limited')}")
         results = run_backfill_digests(days=args.days, min_relevance=args.min_relevance)
