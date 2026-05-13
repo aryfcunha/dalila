@@ -28,6 +28,8 @@ UAE_Foreign_Aid_Policy*
 # Local-only artifacts produced by `dalila html-digest`, benchmarks, etc.
 digest.html
 digest-preview.png
+preview-*.png
+public/
 benchmark_results.txt
 *.log
 drain.log

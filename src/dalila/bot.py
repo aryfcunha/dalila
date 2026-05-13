@@ -22,21 +22,36 @@ from dalila.pipeline import run_compose_digest, run_deep_dive
 log = logging.getLogger(__name__)
 
 
-HELP_TEXT = (
-    "🌅 *Dalila* — your morning development brief\n\n"
-    "Commands:\n"
-    "• `/start` — subscribe to the daily digest\n"
-    "• `/stop` — unsubscribe\n"
-    "• `/digest` — show the latest daily digest (read-only). `/digest fresh` to recompose now.\n"
-    "• `/more <topic>` — deep-dive synthesis on a topic from the last 30 days\n"
-    "• `/doctrine` — list tracked UAE doctrine positions, or `/doctrine <topic>` for evolution log\n"
-    "• `/commitments` — recent UAE financial commitments (pledges, MoUs, disbursements)\n"
-    "• `/meetings` — recent UAE bilateral meetings, calls, and visits\n"
-    "• `/region [name]` — items aggregated by region (per policy Ch 5)\n"
-    "• `link N` — get the source URL for item #N from the latest digest\n"
-    "• `/help` — show this help\n\n"
-    "Daily digest arrives ~06:30 GST. Multi-user: every chat that runs `/start` gets its own copy."
-)
+def _website_line() -> str:
+    """Render the 'Web archive' line for /start and /help — only if a URL is set."""
+    import os
+    url = (os.getenv("DALILA_WEBSITE_URL") or "").strip()
+    if url:
+        return f"\n🌐 Web archive (digests, sources, about): {url}\n"
+    return ""
+
+
+def _help_text() -> str:
+    return (
+        "🌅 *Dalila* — your morning development brief\n"
+        + _website_line()
+        + "\nCommands:\n"
+        "• `/start` — subscribe to the daily digest\n"
+        "• `/stop` — unsubscribe\n"
+        "• `/digest` — show the latest daily digest (read-only). `/digest fresh` to recompose now.\n"
+        "• `/more <topic>` — deep-dive synthesis on a topic from the last 30 days\n"
+        "• `/doctrine` — list tracked UAE doctrine positions, or `/doctrine <topic>` for evolution log\n"
+        "• `/commitments` — recent UAE financial commitments (pledges, MoUs, disbursements)\n"
+        "• `/meetings` — recent UAE bilateral meetings, calls, and visits\n"
+        "• `/region [name]` — items aggregated by region (per policy Ch 5)\n"
+        "• `link N` — get the source URL for item #N from the latest digest\n"
+        "• `/help` — show this help\n\n"
+        "Daily digest arrives ~06:30 GST. Multi-user: every chat that runs `/start` gets its own copy."
+    )
+
+
+# Computed at handler-call time so DALILA_WEBSITE_URL changes don't require a restart.
+HELP_TEXT = _help_text()
 
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -50,7 +65,7 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             first_name=update.effective_user.first_name,
         )
     await update.message.reply_text(
-        "Subscribed. You'll get the morning digest at 06:30 GST.\n\n" + HELP_TEXT,
+        "Subscribed. You'll get the morning digest at 06:30 GST.\n\n" + _help_text(),
         parse_mode=ParseMode.MARKDOWN,
     )
 
@@ -64,7 +79,7 @@ async def cmd_stop(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text(HELP_TEXT, parse_mode=ParseMode.MARKDOWN)
+    await update.message.reply_text(_help_text(), parse_mode=ParseMode.MARKDOWN)
 
 
 async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -157,46 +172,6 @@ async def cmd_digest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         await update.message.reply_text(f"Sorry, digest composition failed: {exc}")
         return
     await _send_long(update, content)
-
-
-async def cmd_html(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Send the current digest as a self-contained HTML attachment.
-
-    Pure presentation over already-classified items — no LLM call. The
-    attachment opens in any browser, prints cleanly, and works through
-    corporate firewalls that block Telegram's markdown formatting or
-    truncate long messages.
-    """
-    if not update.message or not update.effective_chat:
-        return
-    await update.message.reply_text("Rendering HTML digest…")
-    try:
-        from dalila.pipeline import run_render_html_digest
-        html_str, items = run_render_html_digest()
-    except Exception as exc:
-        log.exception("HTML digest render failed")
-        await update.message.reply_text(f"Sorry, HTML render failed: {exc}")
-        return
-
-    if not items:
-        await update.message.reply_text(
-            "No items above threshold yet — try again after the next classify tick."
-        )
-        return
-
-    import io
-    from datetime import datetime
-    import pytz
-    cfg = get_config()
-    tz = pytz.timezone(cfg.timezone)
-    fname = f"dalila-{datetime.now(tz).strftime('%Y-%m-%d')}.html"
-    buf = io.BytesIO(html_str.encode("utf-8"))
-    buf.name = fname
-    await update.message.reply_document(
-        document=buf,
-        filename=fname,
-        caption=f"📰 Dalila — {len(items)} items. Open in any browser.",
-    )
 
 
 async def cmd_commitments(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -613,7 +588,6 @@ def build_application() -> Application:
     app.add_handler(CommandHandler("stop", cmd_stop))
     app.add_handler(CommandHandler("help", cmd_help))
     app.add_handler(CommandHandler("digest", cmd_digest))
-    app.add_handler(CommandHandler("html", cmd_html))
     app.add_handler(CommandHandler("more", cmd_more))
     app.add_handler(CommandHandler("doctrine", cmd_doctrine))
     app.add_handler(CommandHandler("commitments", cmd_commitments))

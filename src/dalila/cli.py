@@ -41,11 +41,13 @@ def main(argv: list[str] | None = None) -> int:
     p_digest.add_argument("--since-hours", type=int, default=24)
     p_digest.add_argument("--min-relevance", type=float, default=0.4)
     p_digest.add_argument("--max-items", type=int, default=25)
-    p_html = sub.add_parser("html-digest", help="Render the digest as a self-contained HTML file (no LLM call)")
+    p_html = sub.add_parser("html-digest", help="Render today's digest as a single HTML file (no LLM call)")
     p_html.add_argument("--since-hours", type=int, default=24)
     p_html.add_argument("--min-relevance", type=float, default=0.4)
     p_html.add_argument("--max-items", type=int, default=25)
     p_html.add_argument("--out", type=str, default="digest.html", help="Output path (default ./digest.html)")
+    p_site = sub.add_parser("publish-site", help="Generate the full static site (index, about, digests/) — ready to upload")
+    p_site.add_argument("--out", type=str, default="public", help="Output directory (default ./public)")
     p_doctrine = sub.add_parser("doctrine", help="Run the doctrine extraction pass over pending classified items")
     p_doctrine.add_argument("--limit", type=int, default=20, help="Max items to process this run")
     sub.add_parser("verify-sources", help="Probe every enabled source and report fetched count + sample title")
@@ -106,6 +108,16 @@ def main(argv: list[str] | None = None) -> int:
         out = Path(args.out).resolve()
         out.write_text(html_str, encoding="utf-8")
         print(f"Wrote {out}  ({len(items)} items, {len(html_str):,} bytes)")
+        return 0
+
+    if args.cmd == "publish-site":
+        from pathlib import Path
+        from dalila.pipeline import run_publish_site
+        db.init_db()
+        result = run_publish_site(Path(args.out).resolve())
+        print(f"Published {result['digests']} digest page(s) to {result['out_dir']}")
+        for p in result["wrote"]:
+            print(f"  · {p}")
         return 0
 
     if args.cmd == "doctrine":

@@ -276,21 +276,151 @@ def run_compose_digest(since_hours: int = 24, min_relevance: float = 0.4, max_it
 
 def run_render_html_digest(
     since_hours: int = 24, min_relevance: float = 0.4, max_items: int = 25,
+    when: datetime | None = None,
 ) -> tuple[str, list[dict]]:
-    """Render an HTML digest from the same item set as the Markdown editor.
+    """Render an HTML digest for a single day.
 
-    No LLM call — purely a presentation layer over already-classified items.
-    Returns (html_string, items_used). Useful when:
-      * Telegram is firewall-blocked and you want a printable office artifact
-      * You want an archive-quality version of the brief
-      * You want to share a single link rather than a long Markdown message
+    No LLM call — pure presentation over already-classified items.
+    Returns (html_string, items_used).
     """
-    from dalila.html_digest import render as render_html
+    from dalila.html_digest import render_digest
     with db.connect() as conn:
         items = db.items_for_digest(conn, since_hours=since_hours, min_relevance=min_relevance)
-        # Capture total before dedup/cap so the masthead can show 'N reviewed'
         total = len(items)
         items = _dedupe_by_simhash(items)
         items = items[:max_items]
-    html_str = render_html(items, total_ingested=total)
+    html_str = render_digest(items, when=when, total_ingested=total)
     return html_str, items
+
+
+def run_publish_site(out_dir: "Path") -> dict:
+    """Generate the full static site at `out_dir`:
+        index.html                           — archive landing page
+        about.html                           — project info, sources, subscribe
+        digests/<YYYY-MM-DD>.html            — one per persisted digest
+
+    Uses already-persisted digests (db.digests) where available — re-rendering
+    each as an HTML page from the items they referenced. The most recent day
+    also picks up items classified TODAY that haven't been formally digested
+    yet (so the index always reflects the latest classified data).
+    """
+    from pathlib import Path
+    import json as _json
+    from dalila.config import load_sources
+    from dalila.html_digest import render_about, render_digest, render_index
+
+    out_dir = Path(out_dir)
+    digests_dir = out_dir / "digests"
+    digests_dir.mkdir(parents=True, exist_ok=True)
+
+    written: list[dict] = []
+
+    with db.connect() as conn:
+        # Pull persisted digests, newest first.
+        rows = conn.execute(
+            "SELECT id, composed_at, date_label, item_ids_json FROM digests ORDER BY composed_at DESC LIMIT 60"
+        ).fetchall()
+
+        for row in rows:
+            try:
+                item_ids = _json.loads(row["item_ids_json"]) or []
+            except Exception:
+                item_ids = []
+            if not item_ids:
+                continue
+            items = _items_by_ids(conn, item_ids)
+            if not items:
+                continue
+            # composed_at is ISO; pick the calendar date from it
+            try:
+                composed = datetime.fromisoformat(row["composed_at"].replace("Z", "+00:00"))
+            except Exception:
+                composed = datetime.now(timezone.utc)
+            slug = composed.strftime("%Y-%m-%d")
+            html_str = render_digest(items, when=composed, total_ingested=len(items))
+            (digests_dir / f"{slug}.html").write_text(html_str, encoding="utf-8")
+            written.append({
+                "slug": slug,
+                "date_label": row["date_label"],
+                "preview": _preview_text(items, n=2),
+            })
+
+    # If no persisted digests, render today from live items so the site isn't empty.
+    if not written:
+        html_str, items = run_render_html_digest()
+        if items:
+            slug = datetime.now().strftime("%Y-%m-%d")
+            (digests_dir / f"{slug}.html").write_text(html_str, encoding="utf-8")
+            written.append({
+                "slug": slug,
+                "date_label": slug,
+                "preview": _preview_text(items, n=2),
+            })
+
+    # Index (archive)
+    index_html = render_index(written)
+    (out_dir / "index.html").write_text(index_html, encoding="utf-8")
+
+    # About
+    sources = load_sources()
+    about_html = render_about(sources)
+    (out_dir / "about.html").write_text(about_html, encoding="utf-8")
+
+    return {
+        "out_dir": str(out_dir),
+        "digests": len(written),
+        "wrote": [str(out_dir / "index.html"), str(out_dir / "about.html")] +
+                 [str(digests_dir / f"{d['slug']}.html") for d in written],
+    }
+
+
+def _items_by_ids(conn, ids: list[int]) -> list[dict]:
+    """Fetch persisted item rows for a digest, preserving order."""
+    if not ids:
+        return []
+    placeholders = ",".join("?" * len(ids))
+    rows = conn.execute(
+        f"""SELECT i.id, i.title, i.url, i.body, i.one_line_summary, i.category,
+                   i.uae_relevance, i.severity, i.entities_json, i.doctrine_relation,
+                   i.policy_sector, i.country_focus_json,
+                   s.name AS source_name
+            FROM items i LEFT JOIN sources s ON s.id = i.source_id
+            WHERE i.id IN ({placeholders})""",
+        ids,
+    ).fetchall()
+    by_id = {r["id"]: r for r in rows}
+    out: list[dict] = []
+    import json as _json
+    for iid in ids:
+        r = by_id.get(iid)
+        if r is None:
+            continue
+        try:
+            entities = _json.loads(r["entities_json"]) if r["entities_json"] else []
+        except Exception:
+            entities = []
+        try:
+            countries = _json.loads(r["country_focus_json"]) if "country_focus_json" in r.keys() and r["country_focus_json"] else []
+        except Exception:
+            countries = []
+        out.append({
+            "id": r["id"],
+            "title": r["title"],
+            "url": r["url"],
+            "summary": r["one_line_summary"] or (r["body"] or "")[:200],
+            "category": r["category"],
+            "source": r["source_name"],
+            "uae_relevance": r["uae_relevance"],
+            "severity": r["severity"],
+            "entities": entities,
+            "doctrine_relation": r["doctrine_relation"],
+            "policy_sector": r["policy_sector"],
+            "country_focus": countries,
+        })
+    return out
+
+
+def _preview_text(items: list[dict], *, n: int = 2) -> str:
+    """Short prose preview for the archive index — first N item titles, joined."""
+    titles = [i.get("title") or "" for i in items[:n]]
+    return " · ".join(t[:80] for t in titles if t)
