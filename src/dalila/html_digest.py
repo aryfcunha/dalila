@@ -1596,12 +1596,70 @@ def _country_view_script() -> str:
   // Build the SVG world map once, then drive the rest with state updates.
   const WIDTH = 980, HEIGHT = 500;
   let pathGen = null;  // d3.geoPath() — for arc centroids later
+  let projection = null;  // exposed so capital lookups can project directly
   let mapReady = false;
   let countriesGeo = null;
 
+  // Capital cities — ISO-2 → [longitude, latitude]. Used as arc anchors
+  // instead of polygon centroids, which land in geographically unhelpful
+  // places (USA centroid → Kansas, Russia → Siberia, Indonesia → ocean).
+  // Capitals are the recognizable "this is where this country is" pin.
+  // Fallback to polygon centroid for any ISO not in this table.
+  const CAPITALS = {
+    "AE":[54.37,24.45],"AF":[69.18,34.53],"AL":[19.82,41.33],"AM":[44.50,40.18],
+    "AO":[13.23,-8.84],"AR":[-58.38,-34.61],"AT":[16.37,48.21],"AU":[149.13,-35.31],
+    "AZ":[49.87,40.41],"BA":[18.41,43.86],"BB":[-59.62,13.10],"BD":[90.41,23.81],
+    "BE":[4.35,50.85],"BF":[-1.52,12.37],"BG":[23.32,42.70],"BH":[50.59,26.23],
+    "BI":[29.36,-3.38],"BJ":[2.63,6.50],"BN":[114.94,4.90],"BO":[-68.15,-16.50],
+    "BR":[-47.93,-15.79],"BS":[-77.34,25.05],"BT":[89.64,27.47],"BW":[25.92,-24.65],
+    "BY":[27.57,53.90],"BZ":[-88.77,17.25],"CA":[-75.70,45.42],"CD":[15.27,-4.32],
+    "CF":[18.56,4.36],"CG":[15.27,-4.27],"CH":[7.45,46.95],"CI":[-5.27,6.83],
+    "CL":[-70.66,-33.45],"CM":[11.50,3.85],"CN":[116.41,39.90],"CO":[-74.08,4.71],
+    "CR":[-84.09,9.93],"CU":[-82.36,23.13],"CV":[-23.51,14.93],"CY":[33.38,35.18],
+    "CZ":[14.44,50.08],"DE":[13.41,52.52],"DJ":[43.15,11.59],"DK":[12.57,55.68],
+    "DM":[-61.39,15.31],"DO":[-69.93,18.49],"DZ":[3.06,36.75],"EC":[-78.46,-0.18],
+    "EE":[24.75,59.43],"EG":[31.24,30.05],"ER":[38.93,15.34],"ES":[-3.70,40.42],
+    "ET":[38.74,9.03],"FI":[24.94,60.17],"FJ":[178.45,-18.12],"FM":[158.16,6.92],
+    "FR":[2.35,48.86],"GA":[9.45,0.42],"GB":[-0.13,51.51],"GD":[-61.74,12.05],
+    "GE":[44.79,41.72],"GH":[-0.19,5.55],"GM":[-16.58,13.45],"GN":[-13.71,9.51],
+    "GQ":[8.78,3.75],"GR":[23.73,37.98],"GT":[-90.51,14.63],"GW":[-15.59,11.86],
+    "GY":[-58.16,6.80],"HN":[-87.21,14.07],"HR":[15.99,45.81],"HT":[-72.34,18.59],
+    "HU":[19.04,47.50],"ID":[106.83,-6.21],"IE":[-6.27,53.35],"IL":[35.21,31.78],
+    "IN":[77.21,28.61],"IQ":[44.36,33.32],"IR":[51.39,35.69],"IS":[-21.95,64.13],
+    "IT":[12.50,41.90],"JM":[-76.79,17.97],"JO":[35.93,31.95],"JP":[139.69,35.69],
+    "KE":[36.82,-1.29],"KG":[74.59,42.87],"KH":[104.92,11.55],"KI":[172.97,1.45],
+    "KM":[43.27,-11.70],"KN":[-62.73,17.30],"KP":[125.75,39.04],"KR":[126.98,37.57],
+    "KW":[47.98,29.38],"KZ":[71.43,51.13],"LA":[102.62,17.97],"LB":[35.50,33.89],
+    "LC":[-61.00,14.01],"LI":[9.52,47.14],"LK":[79.86,6.93],"LR":[-10.80,6.30],
+    "LS":[27.48,-29.31],"LT":[25.28,54.69],"LU":[6.13,49.61],"LV":[24.11,56.95],
+    "LY":[13.19,32.89],"MA":[-6.84,34.02],"MC":[7.42,43.74],"MD":[28.86,47.01],
+    "ME":[19.26,42.44],"MG":[47.52,-18.88],"MH":[171.18,7.12],"MK":[21.43,41.99],
+    "ML":[-8.00,12.65],"MM":[96.13,19.76],"MN":[106.92,47.92],"MR":[-15.98,18.08],
+    "MT":[14.51,35.90],"MU":[57.50,-20.16],"MV":[73.51,4.18],"MW":[33.78,-13.96],
+    "MX":[-99.13,19.43],"MY":[101.69,3.14],"MZ":[32.57,-25.97],"NA":[17.08,-22.56],
+    "NE":[2.11,13.51],"NG":[7.49,9.06],"NI":[-86.25,12.11],"NL":[4.90,52.37],
+    "NO":[10.75,59.91],"NP":[85.32,27.71],"NR":[166.92,-0.55],"NZ":[174.78,-41.29],
+    "OM":[58.38,23.59],"PA":[-79.52,8.98],"PE":[-77.04,-12.04],"PG":[147.18,-9.44],
+    "PH":[120.98,14.60],"PK":[73.05,33.69],"PL":[21.01,52.23],"PS":[35.20,31.90],
+    "PT":[-9.14,38.71],"PY":[-57.58,-25.26],"QA":[51.53,25.29],"RO":[26.10,44.43],
+    "RS":[20.46,44.81],"RU":[37.62,55.75],"RW":[30.06,-1.94],"SA":[46.68,24.71],
+    "SB":[159.96,-9.43],"SC":[55.46,-4.62],"SD":[32.56,15.50],"SE":[18.07,59.33],
+    "SG":[103.85,1.35],"SI":[14.51,46.05],"SK":[17.11,48.15],"SL":[-13.23,8.48],
+    "SM":[12.45,43.94],"SN":[-17.45,14.69],"SO":[45.34,2.05],"SR":[-55.20,5.85],
+    "SS":[31.59,4.86],"ST":[6.73,0.34],"SV":[-89.21,13.69],"SY":[36.30,33.51],
+    "SZ":[31.13,-26.32],"TD":[15.05,12.13],"TG":[1.21,6.13],"TH":[100.50,13.76],
+    "TJ":[68.79,38.54],"TL":[125.58,-8.56],"TM":[58.38,37.96],"TN":[10.18,36.81],
+    "TO":[-175.20,-21.13],"TR":[32.87,39.93],"TT":[-61.51,10.65],"TV":[179.21,-8.52],
+    "TW":[121.57,25.03],"TZ":[35.74,-6.16],"UA":[30.52,50.45],"UG":[32.58,0.35],
+    "US":[-77.04,38.91],"UY":[-56.16,-34.90],"UZ":[69.24,41.30],"VA":[12.45,41.90],
+    "VC":[-61.22,13.16],"VE":[-66.92,10.49],"VN":[105.85,21.03],"VU":[168.32,-17.73],
+    "WS":[-171.77,-13.83],"YE":[44.21,15.35],"ZA":[28.19,-25.75],"ZM":[28.28,-15.40],
+    "ZW":[31.05,-17.83]
+  };
+
   function buildMap(world) {
     countriesGeo = topojson.feature(world, world.objects.countries);
-    const projection = d3.geoNaturalEarth1()
+    projection = d3.geoNaturalEarth1()
       .fitExtent([[6, 6], [WIDTH - 6, HEIGHT - 6]], countriesGeo);
     pathGen = d3.geoPath(projection);
 
@@ -1761,14 +1819,23 @@ def _country_view_script() -> str:
 
   function clearOverlay() { overlay.innerHTML = ''; }
 
-  // Projected centroid of a country path (in SVG viewBox units).
+  // Anchor point for arcs — capital city if known, polygon centroid otherwise.
+  // Capitals are the geographically-meaningful pin for arc endpoints
+  // (USA centroid is in Kansas; capital is Washington DC, much more useful).
   function centroidFor(iso) {
     if (!mapReady) return null;
+    const cap = CAPITALS[iso];
+    if (cap && projection) {
+      const xy = projection(cap);
+      if (xy && isFinite(xy[0]) && isFinite(xy[1])) return xy;
+    }
+    // Fallback: polygon centroid (for any country not in CAPITALS table,
+    // or if projection somehow can't resolve the lon/lat).
     const feature = countriesGeo.features.find(
       f => (N3_TO_A2[String(f.id).padStart(3, "0")] || "") === iso
     );
     if (!feature) return null;
-    return pathGen.centroid(feature);  // [x, y] in viewBox coords
+    return pathGen.centroid(feature);
   }
 
   function drawArcs(iso) {
