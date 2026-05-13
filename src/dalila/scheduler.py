@@ -70,6 +70,93 @@ async def _digest_job(app: Application) -> None:
     log.info("digest #%d composed, %d chars", digest_id, len(content))
     await bot.broadcast_digest(app, content, digest_id)
 
+    # Regenerate the public static site (and git-push if configured) so the
+    # newly-composed digest is web-visible immediately. Runs in a worker thread
+    # so the blocking subprocess calls don't stall the event loop. Failures
+    # here NEVER fail the digest — broadcast already succeeded.
+    import asyncio
+    try:
+        await asyncio.to_thread(_publish_site_hook)
+    except Exception:
+        log.exception("publish-site hook failed")
+
+
+def _publish_site_hook() -> None:
+    """Regenerate static site + optionally git-push to GitHub.
+
+    Output path is `~/dalila/docs` by default (matches GitHub Pages source
+    config on `aryfcunha/dalila`: branch `main`, folder `/docs`).
+    Override with `DALILA_SITE_OUT_DIR`.
+
+    Set `DALILA_SITE_GIT_PUSH=1` to also stage/commit/push the rendered
+    files. Off by default so dev boxes don't accidentally push.
+
+    Defensive: every error is logged, none propagate. Publishing is a
+    side-effect of digest delivery, not a precondition for it.
+    """
+    import os
+    import subprocess
+    from pathlib import Path
+
+    from dalila.pipeline import run_publish_site
+
+    out_dir = Path(
+        os.getenv("DALILA_SITE_OUT_DIR")
+        or (Path.home() / "dalila" / "docs")
+    )
+
+    # 1. Render the site
+    try:
+        result = run_publish_site(out_dir)
+        log.info("site rendered to %s (%d digest pages)", out_dir, result.get("digests", 0))
+    except Exception:
+        log.exception("publish-site: render failed")
+        return
+
+    # 2. Stop here unless explicitly opted in to git push
+    if os.getenv("DALILA_SITE_GIT_PUSH") != "1":
+        return
+
+    # 3. Find the git repo that contains the output directory
+    repo = out_dir.resolve()
+    for _ in range(8):
+        if (repo / ".git").exists():
+            break
+        if repo.parent == repo:
+            log.warning("publish-site: no .git found above %s; skipping push", out_dir)
+            return
+        repo = repo.parent
+
+    try:
+        rel_out = out_dir.resolve().relative_to(repo)
+    except ValueError:
+        log.warning("publish-site: out_dir %s not inside repo %s; skipping push", out_dir, repo)
+        return
+
+    # 4. Stage, commit (only if changed), push
+    try:
+        subprocess.run(["git", "add", "--", str(rel_out)],
+                       cwd=repo, check=True, capture_output=True, text=True, timeout=30)
+        # Check if anything is staged (exit 0 == no changes)
+        diff = subprocess.run(["git", "diff", "--cached", "--quiet"],
+                              cwd=repo, text=True, timeout=15)
+        if diff.returncode == 0:
+            log.info("publish-site: no site changes to commit")
+            return
+        stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+        subprocess.run(["git", "commit", "-m", f"Publish site — {stamp}"],
+                       cwd=repo, check=True, capture_output=True, text=True, timeout=30)
+        subprocess.run(["git", "push", "origin", "main"],
+                       cwd=repo, check=True, capture_output=True, text=True, timeout=120)
+        log.info("publish-site: pushed to origin/main")
+    except subprocess.CalledProcessError as exc:
+        tail = ((exc.stderr or "") + (exc.stdout or "")).strip()[-500:]
+        log.warning("publish-site: git failed (exit %d): %s", exc.returncode, tail)
+    except subprocess.TimeoutExpired as exc:
+        log.warning("publish-site: git timed out after %ss", exc.timeout)
+    except Exception:
+        log.exception("publish-site: unexpected error during git push")
+
 
 def attach_jobs(scheduler: AsyncIOScheduler, app: Application) -> None:
     cfg = get_config()
