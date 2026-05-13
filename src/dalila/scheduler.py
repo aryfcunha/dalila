@@ -67,6 +67,9 @@ async def _digest_job(app: Application) -> None:
     except Exception:
         log.exception("digest composition failed")
         return
+    if digest_id == 0:
+        log.info("digest skipped — not enough items above threshold for broadcast")
+        return
     log.info("digest #%d composed, %d chars", digest_id, len(content))
     await bot.broadcast_digest(app, content, digest_id)
 

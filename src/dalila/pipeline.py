@@ -302,6 +302,14 @@ def run_compose_digest(
         items = _dedupe_by_simhash(items)
         items = items[:max_items]
         content, _ = compose_digest(items, when=end_local)
+        # If the editor returned an empty fallback (< 3 items), don't persist
+        # a placeholder digest — clutters the DB and the archive iteration
+        # logic already skips zero-item digests in publish-site. Returning
+        # digest_id=0 signals "nothing useful here" to callers.
+        if len(items) < 3:
+            log.info("digest skipped (only %d items above threshold for %s)",
+                     len(items), date_label)
+            return 0, content
         digest_id = db.save_digest(
             conn,
             date_label=date_label,
@@ -357,16 +365,19 @@ def run_backfill_digests(days: int = 5, min_relevance: float = 0.4) -> list[dict
             )
             continue
 
-        # Track this brief's item IDs so the next (newer) day's compose skips them
-        with db.connect() as conn:
-            import json as _json
-            row = conn.execute(
-                "SELECT item_ids_json FROM digests WHERE id = ?", (digest_id,),
-            ).fetchone()
-            try:
-                ids_just_used = _json.loads(row["item_ids_json"]) or []
-            except Exception:
-                ids_just_used = []
+        # Track this brief's item IDs so the next (newer) day's compose skips them.
+        # digest_id == 0 means "no real brief composed" (empty fallback) — skip.
+        ids_just_used: list[int] = []
+        if digest_id:
+            with db.connect() as conn:
+                import json as _json
+                row = conn.execute(
+                    "SELECT item_ids_json FROM digests WHERE id = ?", (digest_id,),
+                ).fetchone()
+                try:
+                    ids_just_used = _json.loads(row["item_ids_json"]) or []
+                except Exception:
+                    ids_just_used = []
         used_ids.update(int(x) for x in ids_just_used if isinstance(x, int))
 
         results.append({
@@ -375,6 +386,7 @@ def run_backfill_digests(days: int = 5, min_relevance: float = 0.4) -> list[dict
             "char_count": len(content),
             "date_label": as_of_local.strftime("%A %d %B %Y"),
             "items_used": len(ids_just_used),
+            "skipped": digest_id == 0,
         })
     return results
 
