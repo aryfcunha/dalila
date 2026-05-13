@@ -1186,34 +1186,18 @@ def render_countries(
         )
     body.append('<div class="region-filter">' + "".join(btns) + '</div>')
 
-    # The cartogram: each region as a row of tiles
+    # World map (D3 + world-atlas topojson, rendered client-side).
+    # The container is empty server-side; JS injects a Natural-Earth-projected
+    # SVG and colours each country path by mention count. Arcs for co-mentions
+    # are drawn into the `.carto-overlay` layer the same way the old cartogram
+    # did, just between SVG path centroids instead of tile centres.
     body.append(
         '<div class="carto-wrap">'
+        '<div id="world-map" class="world-map" aria-label="World mention heatmap"></div>'
         '<svg class="carto-overlay" aria-hidden="true"></svg>'
-        '<div class="carto">'
+        '<div id="map-tooltip" class="map-tooltip" hidden></div>'
+        '</div>'
     )
-    for slug in region_order:
-        rows = region_countries[slug]
-        if not rows:
-            continue
-        body.append(f'<section class="region-row" data-region="{slug}">')
-        body.append(
-            f'<div class="region-label">{html.escape(region_labels[slug])}</div>'
-        )
-        body.append('<div class="tiles">')
-        for iso, name in rows:
-            cnt = country_counts.get(iso, 0)
-            intensity = (cnt / max_count) if max_count else 0
-            tile_class = "tile" + (" zero" if cnt == 0 else "")
-            tip = html.escape(f"{name} — {cnt} mention{'s' if cnt != 1 else ''}")
-            body.append(
-                f'<button class="{tile_class}" data-iso="{iso}" data-count="{cnt}" '
-                f'style="--intensity:{intensity:.3f};" title="{tip}">'
-                f'<span class="iso">{iso}</span></button>'
-            )
-        body.append('</div>')
-        body.append('</section>')
-    body.append('</div></div>')
 
     # Detail panel — populated by JS on click
     body.append(
@@ -1322,49 +1306,47 @@ def _country_view_styles() -> str:
   .region-btn.active { color:var(--bg); background:var(--amber); border-color:var(--amber); }
   .region-btn .rb-count { color:inherit; opacity:.7; margin-left:6px; }
 
-  /* cartogram */
-  .carto-wrap { position:relative; margin:0 0 24px; }
+  /* world map (D3 + world-atlas) */
+  .carto-wrap { position:relative; margin:0 0 24px; background:var(--bg-deep);
+    border:1px solid var(--rule-strong); padding:8px;
+  }
   .carto-overlay {
     position:absolute; inset:0; width:100%; height:100%;
     pointer-events:none; overflow:visible;
   }
   .carto-overlay path {
-    fill:none; stroke:var(--amber); opacity:.55;
+    fill:none; stroke:var(--amber); opacity:.65;
     stroke-linecap:round;
   }
-  .region-row {
-    display:grid; grid-template-columns:120px 1fr; gap:12px;
-    padding:8px 0; border-bottom:1px solid var(--rule);
+  .world-map { width:100%; min-height:420px; }
+  .world-map svg { display:block; width:100%; height:auto; }
+  .world-map path.country {
+    fill:#1a1612; stroke:#2a2218; stroke-width:0.4;
+    cursor:pointer; transition:fill .12s, stroke .12s;
   }
-  .region-row.dim { opacity:.18; }
-  .region-label {
-    font:700 10px/1.2 "JetBrains Mono",Consolas,monospace;
-    letter-spacing:0.14em; text-transform:uppercase; color:var(--type-dim);
-    padding-top:4px;
+  .world-map path.country.has-data { cursor:pointer; }
+  .world-map path.country:hover {
+    stroke:var(--amber); stroke-width:1.0;
   }
-  .tiles { display:flex; flex-wrap:wrap; gap:3px; }
-  .tile {
-    width:34px; height:34px; padding:0; cursor:pointer;
-    border:1px solid var(--rule-strong);
-    background:
-      linear-gradient(0deg,
-        rgba(255,180,84, calc(var(--intensity) * 0.85)),
-        rgba(255,180,84, calc(var(--intensity) * 0.85))
-      ),
-      var(--bg-deep);
-    color:var(--type);
-    font:700 9px/1 "JetBrains Mono",Consolas,monospace;
-    letter-spacing:0.04em; text-transform:uppercase;
-    display:flex; align-items:center; justify-content:center;
-    transition:transform .08s, border-color .12s;
+  .world-map path.country.selected {
+    stroke:var(--amber); stroke-width:1.5;
   }
-  .tile.zero { color:var(--muted); border-color:#1a1612; }
-  .tile:hover { border-color:var(--amber); transform:scale(1.12); z-index:5; }
-  .tile.selected {
-    outline:2px solid var(--amber); outline-offset:1px;
-    border-color:var(--amber); z-index:6;
+  .world-map path.country.dim { opacity:.22; }
+  .world-map .graticule {
+    fill:none; stroke:#1f1a12; stroke-width:0.3; opacity:.55;
   }
-  .tile.dim { opacity:.18; pointer-events:none; }
+  .world-map .sphere {
+    fill:#0e0c08; stroke:#2a2218; stroke-width:0.5;
+  }
+  .map-tooltip {
+    position:absolute; pointer-events:none; z-index:20;
+    background:rgba(10,10,10,0.95); color:var(--type);
+    border:1px solid var(--amber); padding:6px 9px;
+    font:600 11px/1.3 "JetBrains Mono",Consolas,monospace;
+    letter-spacing:0.04em; max-width:220px;
+    transform:translate(-50%, calc(-100% - 10px));
+  }
+  .map-tooltip b { color:var(--amber); }
 
   /* detail panel */
   .detail { margin:24px 0 12px; }
@@ -1431,13 +1413,27 @@ def _country_view_styles() -> str:
 
 
 def _country_view_script() -> str:
-    """Inline JS — hover handled by browser title; click drives the detail
-    panel and the SVG co-mention overlay. Vanilla JS, no dependencies."""
+    """Inline JS for the world-map country view.
+
+    Loads d3-geo + topojson + the world-atlas 110m TopoJSON from jsdelivr,
+    projects via d3.geoNaturalEarth1, then colours each country path by
+    mention count. ISO 3166-1 numeric → alpha-2 lookup is embedded inline
+    (~250 entries) so we never round-trip to a remote API for IDs.
+
+    All the existing affordances are preserved: hover (now via tooltip
+    instead of native title), click for detail panel + co-mention arcs,
+    region filter dims out-of-region paths, timeline chips re-bucket the
+    heatmap from the embedded timeline payload.
+    """
     return """
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
 <script>
 (function() {
-  const root = document.querySelector('.carto');
+  const wrap = document.querySelector('.carto-wrap');
+  const mapEl = document.getElementById('world-map');
   const overlay = document.querySelector('.carto-overlay');
+  const tooltip = document.getElementById('map-tooltip');
   const detail = document.getElementById('detail');
   const empty = document.getElementById('empty-state');
   const dataEl = document.getElementById('country-data');
@@ -1446,6 +1442,109 @@ def _country_view_script() -> str:
   let activeRegion = 'all';
   // Timeline state: window in days. 0 = ALL (no upper bound on age).
   let windowDays = 90;
+
+  // ISO 3166-1 numeric → alpha-2. world-atlas v2 keys features by numeric.
+  const N3_TO_A2 = {
+    "004":"AF","008":"AL","010":"AQ","012":"DZ","016":"AS","020":"AD","024":"AO",
+    "028":"AG","031":"AZ","032":"AR","036":"AU","040":"AT","044":"BS","048":"BH",
+    "050":"BD","051":"AM","052":"BB","056":"BE","060":"BM","064":"BT","068":"BO",
+    "070":"BA","072":"BW","076":"BR","084":"BZ","090":"SB","092":"VG","096":"BN",
+    "100":"BG","104":"MM","108":"BI","112":"BY","116":"KH","120":"CM","124":"CA",
+    "132":"CV","140":"CF","144":"LK","148":"TD","152":"CL","156":"CN","158":"TW",
+    "170":"CO","174":"KM","178":"CG","180":"CD","188":"CR","191":"HR","192":"CU",
+    "196":"CY","203":"CZ","204":"BJ","208":"DK","212":"DM","214":"DO","218":"EC",
+    "222":"SV","226":"GQ","231":"ET","232":"ER","233":"EE","242":"FJ","246":"FI",
+    "250":"FR","254":"GF","258":"PF","260":"TF","262":"DJ","266":"GA","268":"GE",
+    "270":"GM","275":"PS","276":"DE","288":"GH","292":"GI","296":"KI","300":"GR",
+    "304":"GL","308":"GD","312":"GP","316":"GU","320":"GT","324":"GN","328":"GY",
+    "332":"HT","340":"HN","344":"HK","348":"HU","352":"IS","356":"IN","360":"ID",
+    "364":"IR","368":"IQ","372":"IE","376":"IL","380":"IT","384":"CI","388":"JM",
+    "392":"JP","398":"KZ","400":"JO","404":"KE","408":"KP","410":"KR","414":"KW",
+    "417":"KG","418":"LA","422":"LB","426":"LS","428":"LV","430":"LR","434":"LY",
+    "438":"LI","440":"LT","442":"LU","446":"MO","450":"MG","454":"MW","458":"MY",
+    "462":"MV","466":"ML","470":"MT","474":"MQ","478":"MR","480":"MU","484":"MX",
+    "492":"MC","496":"MN","498":"MD","499":"ME","500":"MS","504":"MA","508":"MZ",
+    "512":"OM","516":"NA","520":"NR","524":"NP","528":"NL","531":"CW","533":"AW",
+    "534":"SX","540":"NC","548":"VU","554":"NZ","558":"NI","562":"NE","566":"NG",
+    "570":"NU","578":"NO","580":"MP","583":"FM","584":"MH","585":"PW","586":"PK",
+    "591":"PA","598":"PG","600":"PY","604":"PE","608":"PH","612":"PN","616":"PL",
+    "620":"PT","624":"GW","626":"TL","630":"PR","634":"QA","638":"RE","642":"RO",
+    "643":"RU","646":"RW","652":"BL","654":"SH","659":"KN","660":"AI","662":"LC",
+    "663":"MF","666":"PM","670":"VC","674":"SM","678":"ST","682":"SA","686":"SN",
+    "688":"RS","690":"SC","694":"SL","702":"SG","703":"SK","704":"VN","705":"SI",
+    "706":"SO","710":"ZA","716":"ZW","724":"ES","728":"SS","729":"SD","732":"EH",
+    "740":"SR","744":"SJ","748":"SZ","752":"SE","756":"CH","760":"SY","762":"TJ",
+    "764":"TH","768":"TG","772":"TK","776":"TO","780":"TT","784":"AE","788":"TN",
+    "792":"TR","795":"TM","796":"TC","798":"TV","800":"UG","804":"UA","807":"MK",
+    "818":"EG","826":"GB","834":"TZ","840":"US","850":"VI","854":"BF","858":"UY",
+    "860":"UZ","862":"VE","876":"WF","882":"WS","887":"YE","894":"ZM"
+  };
+
+  // Build the SVG world map once, then drive the rest with state updates.
+  const WIDTH = 980, HEIGHT = 500;
+  let pathGen = null;  // d3.geoPath() — for arc centroids later
+  let mapReady = false;
+  let countriesGeo = null;
+
+  function buildMap(world) {
+    countriesGeo = topojson.feature(world, world.objects.countries);
+    const projection = d3.geoNaturalEarth1()
+      .fitExtent([[6, 6], [WIDTH - 6, HEIGHT - 6]], countriesGeo);
+    pathGen = d3.geoPath(projection);
+
+    const svg = d3.select(mapEl).append("svg")
+      .attr("viewBox", "0 0 " + WIDTH + " " + HEIGHT)
+      .attr("preserveAspectRatio", "xMidYMid meet");
+    svg.append("path").datum({type: "Sphere"})
+      .attr("class", "sphere").attr("d", pathGen);
+    svg.append("path").datum(d3.geoGraticule10())
+      .attr("class", "graticule").attr("d", pathGen);
+    svg.append("g").attr("class", "countries")
+      .selectAll("path")
+      .data(countriesGeo.features)
+      .join("path")
+      .attr("class", "country")
+      .attr("d", pathGen)
+      .attr("data-iso", d => N3_TO_A2[String(d.id).padStart(3, "0")] || "")
+      .attr("data-name", d => (d.properties && d.properties.name) || "");
+    mapReady = true;
+    repaintHeat();
+
+    // Hover handlers
+    svg.selectAll("path.country")
+      .on("mousemove", function(ev) {
+        const iso = this.dataset.iso;
+        if (!iso) { tooltip.hidden = true; return; }
+        const c = DATA.countries[iso] || {};
+        const cnt = parseInt(this.dataset.count || "0", 10);
+        const name = c.name || this.dataset.name || iso;
+        tooltip.innerHTML = name + ' &middot; <b>' + cnt + '</b> mention' + (cnt === 1 ? '' : 's');
+        const r = wrap.getBoundingClientRect();
+        tooltip.style.left = (ev.clientX - r.left) + "px";
+        tooltip.style.top  = (ev.clientY - r.top)  + "px";
+        tooltip.hidden = false;
+      })
+      .on("mouseleave", () => { tooltip.hidden = true; })
+      .on("click", function() {
+        const iso = this.dataset.iso;
+        if (!iso) return;
+        if (this.classList.contains('dim')) return;
+        showDetail(iso);
+      });
+  }
+
+  // Kick off the topojson load. World-atlas v2 110m is ~110KB.
+  fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
+    .then(r => r.json())
+    .then(buildMap)
+    .catch(err => {
+      mapEl.innerHTML = '<div style="padding:24px;color:var(--muted);font:13px Consolas,monospace">' +
+        'World map failed to load (' + err + '). Country counts shown above.</div>';
+    });
+
+  function pathFor(iso) {
+    return mapEl.querySelector('path.country[data-iso="' + iso + '"]');
+  }
 
   // Compute {ISO: count} restricted to the last `days` (0 = entire timeline).
   // Falls back to server-supplied DATA.countries[iso].count if the timeline
@@ -1475,26 +1574,44 @@ def _country_view_script() -> str:
     return totals;
   }
 
+  // Amber heat ramp: 8 stops from background → bright amber.
+  // Country fill is keyed by log-ish intensity so a small handful of
+  // hot-tier countries don't crush everyone else into one colour.
+  const HEAT_STOPS = [
+    "#1a1612", "#2c1f0a", "#4a3110", "#75501a",
+    "#a47424", "#cf8b1e", "#e9a230", "#ffb454"
+  ];
+  function fillForCount(cnt, max) {
+    if (cnt <= 0) return HEAT_STOPS[0];
+    // Log-ish bucketing so the heat curve isn't dominated by the top country.
+    const t = Math.log(1 + cnt) / Math.log(1 + max);
+    const idx = Math.min(HEAT_STOPS.length - 1, Math.max(1, Math.round(t * (HEAT_STOPS.length - 1))));
+    return HEAT_STOPS[idx];
+  }
+
   function repaintHeat() {
     const counts = countsForWindow(windowDays);
     const max = Math.max(1, ...Object.values(counts));
     let totalTags = 0, countriesSeen = 0;
-    document.querySelectorAll('.tile').forEach(t => {
-      const iso = t.dataset.iso;
+    if (mapReady) {
+      mapEl.querySelectorAll('path.country').forEach(p => {
+        const iso = p.dataset.iso;
+        const cnt = counts[iso] || 0;
+        p.dataset.count = cnt;
+        p.setAttribute('fill', fillForCount(cnt, max));
+        p.classList.toggle('has-data', cnt > 0);
+      });
+    }
+    for (const [iso, c] of Object.entries(DATA.countries)) {
       const cnt = counts[iso] || 0;
-      t.dataset.count = cnt;
-      t.style.setProperty('--intensity', (cnt / max).toFixed(3));
-      t.classList.toggle('zero', cnt === 0);
-      const name = (DATA.countries[iso] || {}).name || iso;
-      t.title = name + ' — ' + cnt + ' mention' + (cnt === 1 ? '' : 's');
       if (cnt > 0) { totalTags += cnt; countriesSeen += 1; }
-    });
+    }
     const stats = document.getElementById('tl-stats');
     if (stats) {
       const label = windowDays === 0 ? 'ALL TIME' : ('LAST ' + windowDays + 'D');
       stats.textContent = label + ' · ' + totalTags + ' TAGS · ' + countriesSeen + ' COUNTRIES';
     }
-    // Also refresh the per-region totals on the region buttons.
+    // Per-region totals on the region buttons.
     document.querySelectorAll('.region-btn').forEach(b => {
       const slug = b.dataset.region;
       if (slug === 'all') return;
@@ -1505,43 +1622,44 @@ def _country_view_script() -> str:
       const span = b.querySelector('.rb-count');
       if (span) span.textContent = n;
     });
-    if (selectedIso) drawArcs(selectedIso);  // re-render arcs against new layout
+    if (selectedIso) drawArcs(selectedIso);  // re-render arcs in new SVG space
   }
 
-  function tileFor(iso) { return root.querySelector('.tile[data-iso="' + iso + '"]'); }
+  function clearOverlay() { overlay.innerHTML = ''; }
 
-  function clearOverlay() {
-    overlay.innerHTML = '';
+  // Projected centroid of a country path (in SVG viewBox units).
+  function centroidFor(iso) {
+    if (!mapReady) return null;
+    const feature = countriesGeo.features.find(
+      f => (N3_TO_A2[String(f.id).padStart(3, "0")] || "") === iso
+    );
+    if (!feature) return null;
+    return pathGen.centroid(feature);  // [x, y] in viewBox coords
   }
 
   function drawArcs(iso) {
     clearOverlay();
+    if (!mapReady) return;
     const co = DATA.co[iso] || {};
     const entries = Object.entries(co).sort((a, b) => b[1] - a[1]).slice(0, 20);
     if (!entries.length) return;
-    const wrap = root.parentElement.getBoundingClientRect();
-    overlay.setAttribute('viewBox', '0 0 ' + wrap.width + ' ' + wrap.height);
-    const srcEl = tileFor(iso);
-    if (!srcEl) return;
-    const srcR = srcEl.getBoundingClientRect();
-    const sx = srcR.left - wrap.left + srcR.width / 2;
-    const sy = srcR.top  - wrap.top  + srcR.height / 2;
+    // Arcs draw into the overlay SVG, sized to the same viewBox as the map.
+    overlay.setAttribute('viewBox', '0 0 ' + WIDTH + ' ' + HEIGHT);
+    overlay.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    const src = centroidFor(iso);
+    if (!src) return;
+    const [sx, sy] = src;
     const maxCount = Math.max(...entries.map(e => e[1]));
     for (const [other, cnt] of entries) {
-      const tgt = tileFor(other);
+      const tgt = centroidFor(other);
       if (!tgt) continue;
-      const tr = tgt.getBoundingClientRect();
-      const tx = tr.left - wrap.left + tr.width / 2;
-      const ty = tr.top  - wrap.top  + tr.height / 2;
-      // Quadratic bezier control point: midpoint shifted perpendicular for
-      // a parabolic feel. Curvature scales with distance so distant arcs
-      // bow more dramatically.
+      const [tx, ty] = tgt;
       const dx = tx - sx, dy = ty - sy;
-      const dist = Math.hypot(dx, dy);
-      const cx = (sx + tx) / 2 + (-dy / dist) * (dist * 0.18);
-      const cy = (sy + ty) / 2 + ( dx / dist) * (dist * 0.18);
-      const w = 1 + 3 * (cnt / maxCount);
-      const op = 0.30 + 0.55 * (cnt / maxCount);
+      const dist = Math.hypot(dx, dy) || 1;
+      const cx = (sx + tx) / 2 + (-dy / dist) * (dist * 0.22);
+      const cy = (sy + ty) / 2 + ( dx / dist) * (dist * 0.22);
+      const w = 0.6 + 2.2 * (cnt / maxCount);
+      const op = 0.40 + 0.55 * (cnt / maxCount);
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.setAttribute('d', 'M ' + sx + ' ' + sy + ' Q ' + cx + ' ' + cy + ' ' + tx + ' ' + ty);
       path.setAttribute('stroke-width', w.toFixed(2));
@@ -1556,9 +1674,9 @@ def _country_view_script() -> str:
     const items = DATA.items[iso] || [];
     const co = DATA.co[iso] || {};
 
-    document.querySelectorAll('.tile').forEach(t => t.classList.remove('selected'));
-    const tile = tileFor(iso);
-    if (tile) tile.classList.add('selected');
+    mapEl.querySelectorAll('path.country').forEach(p => p.classList.remove('selected'));
+    const pth = pathFor(iso);
+    if (pth) pth.classList.add('selected');
 
     document.getElementById('detail-title').textContent =
       (c.name || iso) + '  ·  ' + (c.count || 0) + ' MENTION' + (c.count === 1 ? '' : 'S');
@@ -1610,7 +1728,7 @@ def _country_view_script() -> str:
 
   function clearSelection() {
     selectedIso = null;
-    document.querySelectorAll('.tile').forEach(t => t.classList.remove('selected'));
+    mapEl.querySelectorAll('path.country').forEach(p => p.classList.remove('selected'));
     detail.hidden = true;
     empty.classList.remove('hidden');
     clearOverlay();
@@ -1622,32 +1740,24 @@ def _country_view_script() -> str:
       b.classList.toggle('active', b.dataset.region === region);
     });
     if (region === 'all') {
-      document.querySelectorAll('.region-row').forEach(r => r.classList.remove('dim'));
-      document.querySelectorAll('.tile').forEach(t => t.classList.remove('dim'));
+      mapEl.querySelectorAll('path.country').forEach(p => p.classList.remove('dim'));
       return;
     }
-    document.querySelectorAll('.region-row').forEach(r => {
-      r.classList.toggle('dim', r.dataset.region !== region);
-    });
-    document.querySelectorAll('.tile').forEach(t => {
-      const iso = t.dataset.iso;
+    mapEl.querySelectorAll('path.country').forEach(p => {
+      const iso = p.dataset.iso;
       const r = (DATA.countries[iso] || {}).region || '';
-      t.classList.toggle('dim', r !== region);
+      // Countries we don't track (no entry in DATA.countries) also get dimmed
+      // when a specific region is active, so the filter visually isolates.
+      p.classList.toggle('dim', !DATA.countries[iso] || r !== region);
     });
     if (selectedIso) {
       const r = (DATA.countries[selectedIso] || {}).region || '';
       if (r !== region) clearSelection();
-      else drawArcs(selectedIso);  // re-render arcs in case layout shifted
+      else drawArcs(selectedIso);
     }
   }
 
-  // Wire events
-  root.addEventListener('click', e => {
-    const tile = e.target.closest('.tile');
-    if (tile && !tile.classList.contains('dim')) {
-      showDetail(tile.dataset.iso);
-    }
-  });
+  // Wire events (click handler lives inside buildMap for SVG paths)
   document.getElementById('detail-clear').addEventListener('click', clearSelection);
   document.querySelectorAll('.region-btn').forEach(b => {
     b.addEventListener('click', () => applyRegionFilter(b.dataset.region));
@@ -1656,11 +1766,9 @@ def _country_view_script() -> str:
     b.addEventListener('click', () => {
       windowDays = parseInt(b.dataset.days, 10);
       document.querySelectorAll('.tl-btn').forEach(x => x.classList.toggle('active', x === b));
-      repaintHeat();
+      if (mapReady) repaintHeat();
     });
   });
-  // Initial paint reflects the default window (90D) if timeline data present.
-  if (DATA.timeline && Object.keys(DATA.timeline).length) repaintHeat();
   window.addEventListener('resize', () => { if (selectedIso) drawArcs(selectedIso); });
 })();
 </script>
