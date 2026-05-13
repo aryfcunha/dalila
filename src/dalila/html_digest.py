@@ -1659,8 +1659,11 @@ def _country_view_script() -> str:
 
   function buildMap(world) {
     countriesGeo = topojson.feature(world, world.objects.countries);
+    // fitSize with land-only feature collection rather than the full sphere —
+    // Natural Earth's actual landmass extents fill the viewport better than
+    // fitExtent against the polar regions, which were leaving empty bands.
     projection = d3.geoNaturalEarth1()
-      .fitExtent([[6, 6], [WIDTH - 6, HEIGHT - 6]], countriesGeo);
+      .fitSize([WIDTH, HEIGHT], countriesGeo);
     pathGen = d3.geoPath(projection);
 
     // Remove the "Loading world map…" placeholder.
@@ -1708,8 +1711,12 @@ def _country_view_script() -> str:
       });
   }
 
-  // Kick off the topojson load. World-atlas v2 110m is ~110KB.
-  fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
+  // Kick off the topojson load. world-atlas v2 50m is ~520KB but gives
+  // dramatically more accurate borders — capital coordinates reliably
+  // land inside their country polygons (the 110m simplification was off
+  // by enough on small/coastal countries that arc anchors looked wrong).
+  // ~5× larger payload, cached by the CDN, one-time download per user.
+  fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json")
     .then(r => r.json())
     .then(buildMap)
     .catch(err => {
@@ -1787,7 +1794,11 @@ def _country_view_script() -> str:
         const iso = p.dataset.iso;
         const cnt = counts[iso] || 0;
         p.dataset.count = cnt;
-        p.setAttribute('fill', fillForCount(cnt, max));
+        // Use inline `style.fill` (not setAttribute) — the CSS rule
+        // `path.country { fill: #1a1612 }` has higher specificity than the
+        // `fill` presentation attribute and would silently override us.
+        // Inline style wins the cascade.
+        p.style.fill = fillForCount(cnt, max);
         p.classList.toggle('has-data', cnt > 0);
       });
     }
