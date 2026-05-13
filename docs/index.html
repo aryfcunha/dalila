@@ -3,239 +3,365 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dalila — Daily Development Brief</title>
+<title>Dalila — Tuesday 12 May 2026</title>
 <style>
 :root {
-  --bg:#FAF9F5;
-  --ink:#1F2430;
-  --muted:#5A6068;
-  --rule:#E6E2D6;
-  --accent:#3F6E54;
-  --accent-deep:#2A4D3A;
+  --bg:#0A0A0A;
+  --bg-deep:#000000;
+  --type:#E8E1D3;
+  --type-dim:#9A958A;
+  --muted:#6E6A60;
+  --amber:#FFB454;
+  --amber-deep:#D88E30;
+  --cyan:#7AB9C9;
+  --green:#7CB36E;
+  --red:#D67866;
+  --rule:#1F1B16;
+  --rule-strong:#3A332A;
 }
 html,body {
   background: var(--bg);
-  color: var(--ink);
+  color: var(--type);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 body {
   margin: 0;
-  font-family: "Source Serif Pro", "Lora", "PT Serif", Georgia, "Times New Roman", serif;
-  font-size: 17px;
+  font-family: "JetBrains Mono", "IBM Plex Mono", "SF Mono", "Source Code Pro", Consolas, monospace;
+  font-size: 14px;
   line-height: 1.55;
+  letter-spacing: 0.01em;
 }
-.mono {
-  font-family: "JetBrains Mono", "IBM Plex Mono", "SF Mono", Consolas, monospace;
-  font-size: 0.78em;
-  letter-spacing: 0.04em;
+.serif {
+  font-family: "Iowan Old Style", "Source Serif Pro", "PT Serif", Georgia, "Times New Roman", serif;
+  font-feature-settings: "kern", "liga", "calt";
 }
-a { color: var(--ink); text-decoration: underline; text-decoration-color: rgba(31,36,48,0.25); text-underline-offset: 3px; }
-a:hover { text-decoration-color: var(--accent); color: var(--accent-deep); }
-.wrap { max-width: 700px; margin: 0 auto; padding: 56px 32px 96px; }
-hr.rule { border: 0; border-top: 1px solid var(--rule); margin: 28px 0; }
+a {
+  color: var(--cyan);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.12s ease, color 0.12s ease;
+}
+a:hover {
+  color: var(--amber);
+  border-bottom-color: var(--amber);
+}
+.wrap { max-width: 880px; margin: 0 auto; padding: 28px 32px 80px; }
 
-/* ---------- masthead (shared across pages) ---------- */
+/* ---------- masthead ---------- */
 .masthead {
-  display: flex;
-  align-items: baseline;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   gap: 18px;
+  align-items: baseline;
   padding-bottom: 14px;
-  border-bottom: 2px solid var(--ink);
-  margin-bottom: 28px;
+  border-bottom: 1px solid var(--amber);
+  margin-bottom: 18px;
 }
-.masthead a { text-decoration: none; color: var(--ink); }
 .masthead-title {
-  margin: 0;
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
   font-size: 26px;
   font-weight: 700;
-  letter-spacing: -0.005em;
+  letter-spacing: -0.01em;
   line-height: 1;
+  margin: 0;
+  color: var(--type);
 }
+.masthead-title a { color: var(--type); border: 0; }
 .masthead-title .ar {
+  color: var(--amber);
   font-style: italic;
   font-weight: 400;
-  color: var(--accent);
+  font-size: 0.65em;
   margin-left: 8px;
-  font-size: 0.7em;
-  vertical-align: 2px;
+  vertical-align: 3px;
+}
+.masthead-tag {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-left: 1px solid var(--rule-strong);
+  padding-left: 14px;
+  margin-left: 6px;
 }
 .masthead-nav {
-  margin-left: auto;
-  font-family: "JetBrains Mono", Consolas, monospace;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.masthead-nav a { color: var(--muted); text-decoration: none; margin-left: 14px; }
-.masthead-nav a:hover { color: var(--accent-deep); }
-
-/* ---------- footer ---------- */
-.footer {
-  margin-top: 64px;
-  padding-top: 18px;
-  border-top: 1px solid var(--rule);
-  color: var(--muted);
-  font-family: "JetBrains Mono", Consolas, monospace;
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-.footer a { color: var(--muted); }
-
-/* ---------- digest-specific ---------- */
-.date-line {
-  color: var(--muted);
-  font-family: "JetBrains Mono", Consolas, monospace;
-  font-size: 11px;
-  letter-spacing: 0.10em;
-  text-transform: uppercase;
-  margin: 0 0 6px;
-}
-.kicker {
-  font-size: 18px;
-  line-height: 1.5;
-  color: var(--ink);
-  margin: 0 0 36px;
-  max-width: 56ch;
-}
-.kicker .top-stat { color: var(--accent-deep); font-weight: 600; }
-
-.section { margin: 0 0 36px; }
-.section-title {
-  font-family: "JetBrains Mono", Consolas, monospace;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--ink);
-  border-bottom: 1px solid var(--rule);
-  padding-bottom: 6px;
-  margin: 0 0 18px;
-  display: flex;
-  align-items: baseline;
-}
-.section-title .count {
-  margin-left: auto;
   color: var(--muted);
-  font-weight: 400;
+  text-align: right;
 }
+.masthead-nav a {
+  color: var(--muted);
+  margin-left: 14px;
+  border: 0;
+}
+.masthead-nav a[aria-current=page] { color: var(--amber); }
+.masthead-nav a:hover { color: var(--type); }
 
-.item { padding: 0 0 22px; margin-bottom: 22px; border-bottom: 1px dashed var(--rule); }
-.item:last-child { border-bottom: none; }
-.item-title { margin: 0 0 8px; font-size: 18px; line-height: 1.35; font-weight: 600; }
-.item-title a { color: var(--ink); }
-.item-summary { margin: 0 0 8px; color: var(--ink); line-height: 1.55; }
-.item-meta {
-  font-family: "JetBrains Mono", Consolas, monospace;
-  font-size: 11px;
-  letter-spacing: 0.05em;
-  color: var(--muted);
+/* ---------- ticker strip ---------- */
+.ticker {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 0;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0 0 18px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 24px;
+}
+.ticker span {
+  padding: 0 14px;
+  border-right: 1px solid var(--rule-strong);
+}
+.ticker span:first-child { padding-left: 0; }
+.ticker span:last-child { border-right: 0; }
+.ticker b { color: var(--amber); font-weight: 700; }
+
+/* ---------- top stories ---------- */
+.top { margin: 0 0 28px; }
+.top-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--amber);
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+}
+.top-head .label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+.top-head .count { color: var(--muted); font-size: 10px; letter-spacing: 0.14em; }
+.top ol { list-style: none; padding: 0; margin: 0; counter-reset: t; }
+.top li {
+  counter-increment: t;
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 14px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--rule);
   align-items: baseline;
 }
-.item-meta .src { color: var(--ink); }
-.item-meta .rel { color: var(--accent-deep); }
-.item-meta a { color: var(--muted); text-decoration-color: var(--rule); }
-.item-meta a:hover { color: var(--accent-deep); }
-.doctrine-tag {
-  display: inline-block;
-  padding: 0 6px;
-  border: 1px solid var(--accent);
-  color: var(--accent-deep);
-  font-family: "JetBrains Mono", Consolas, monospace;
+.top li:last-child { border-bottom: 0; }
+.top li::before {
+  content: counter(t, decimal-leading-zero);
+  color: var(--amber);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+.top a {
+  color: var(--type);
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 16px;
+  line-height: 1.4;
+  border-bottom: 1px solid transparent;
+}
+.top a:hover {
+  color: var(--amber);
+  border-bottom-color: var(--amber);
+}
+.top .ref { color: var(--muted); font-size: 10px; margin-left: 6px; letter-spacing: 0.08em; }
+
+/* ---------- sections ---------- */
+.section { margin: 0 0 30px; }
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+}
+.section-head .label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--type);
+}
+.section-head .count {
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+
+/* ---------- items ---------- */
+.item {
+  padding: 14px 0 16px;
+  border-bottom: 1px solid var(--rule);
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 14px;
+}
+.item:last-child { border-bottom: 0; }
+.item-n {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding-top: 2px;
+}
+.item-body .title {
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 16px;
+  line-height: 1.4;
+  font-weight: 600;
+  color: var(--type);
+  margin: 0 0 6px;
+}
+.item-body .title a {
+  color: var(--type);
+  border-bottom: 1px solid transparent;
+}
+.item-body .title a:hover {
+  color: var(--amber);
+  border-bottom-color: var(--amber);
+}
+.item-body .summary {
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 14px;
+  color: var(--type-dim);
+  margin: 0 0 8px;
+  line-height: 1.55;
+}
+.item-body .meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: var(--muted);
   font-size: 10px;
   letter-spacing: 0.10em;
   text-transform: uppercase;
 }
-
-/* ---------- top stories (no heavy panel, just a small block) ---------- */
-.top-stories { margin: 0 0 42px; }
-.top-stories ol { margin: 0; padding: 0; list-style: none; counter-reset: top; }
-.top-stories li {
-  counter-increment: top;
-  padding: 10px 0;
-  display: grid;
-  grid-template-columns: 28px 1fr;
-  gap: 14px;
-  align-items: baseline;
-  border-top: 1px solid var(--rule);
-}
-.top-stories li:first-child { border-top: none; }
-.top-stories li::before {
-  content: counter(top);
-  color: var(--accent);
+.item-body .meta .src { color: var(--type-dim); }
+.item-body .meta .rel { color: var(--amber); }
+.item-body .meta .sev { color: var(--muted); }
+.item-body .meta a { color: var(--cyan); border: 0; }
+.item-body .meta a:hover { color: var(--amber); }
+.doctrine-tag {
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  padding: 1px 6px;
+  font-size: 9px;
+  letter-spacing: 0.14em;
   font-weight: 700;
-  font-family: "JetBrains Mono", Consolas, monospace;
-  font-size: 14px;
 }
-.top-stories a { color: var(--ink); font-size: 17px; line-height: 1.4; }
 
-/* ---------- index / archive ---------- */
-.archive-item {
+/* ---------- footer ---------- */
+.foot {
+  margin-top: 56px;
+  padding-top: 14px;
+  border-top: 1px solid var(--amber);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.foot a { color: var(--muted); border: 0; }
+.foot a:hover { color: var(--amber); }
+
+/* ---------- archive ---------- */
+.archive-row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 18px;
   padding: 14px 0;
   border-bottom: 1px solid var(--rule);
-  display: grid;
-  grid-template-columns: 140px 1fr;
-  gap: 16px;
   align-items: baseline;
 }
 .archive-date {
-  color: var(--muted);
-  font-family: "JetBrains Mono", Consolas, monospace;
-  font-size: 12px;
-  letter-spacing: 0.08em;
+  color: var(--amber);
+  font-size: 11px;
+  letter-spacing: 0.10em;
   text-transform: uppercase;
 }
-.archive-title { font-size: 17px; line-height: 1.4; }
-.archive-preview { color: var(--muted); font-size: 14px; line-height: 1.5; margin-top: 6px; }
+.archive-title a {
+  color: var(--type);
+  font-family: "Iowan Old Style", Georgia, serif;
+  font-size: 16px;
+  line-height: 1.4;
+  border-bottom: 1px solid transparent;
+}
+.archive-title a:hover { color: var(--amber); border-bottom-color: var(--amber); }
+.archive-preview { color: var(--muted); font-size: 12px; margin-top: 6px; line-height: 1.5; }
 
-/* ---------- about-page ---------- */
+/* ---------- about ---------- */
+.about p, .about ul, .about li {
+  font-family: "Iowan Old Style", Georgia, serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--type-dim);
+  max-width: 64ch;
+}
 .about h2 {
-  font-family: "JetBrains Mono", Consolas, monospace;
-  font-size: 12px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
   font-weight: 700;
+  color: var(--amber);
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 6px;
+  margin: 34px 0 14px;
+}
+.about strong { color: var(--type); }
+.about code {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 0.9em;
+  color: var(--amber);
+  background: var(--bg-deep);
+  padding: 1px 5px;
+  border: 1px solid var(--rule-strong);
+}
+.source-block {
+  margin: 0 0 22px;
+  padding: 8px 0 0 16px;
+  border-left: 1px solid var(--rule-strong);
+}
+.source-block strong {
+  display: block;
+  color: var(--amber);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  border-bottom: 1px solid var(--rule);
-  padding-bottom: 6px;
-  margin: 36px 0 16px;
+  margin-bottom: 4px;
 }
-.about p { margin: 0 0 16px; max-width: 60ch; }
-.about ul { margin: 0 0 16px 24px; padding: 0; }
-.about li { margin-bottom: 6px; }
-.about .source-block {
-  border-left: 2px solid var(--rule);
-  padding: 4px 0 4px 14px;
-  margin: 0 0 18px;
+.source-block ul { list-style: none; padding: 0; margin: 0; }
+.source-block li {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  color: var(--type-dim);
+  padding: 3px 0;
 }
-.about .source-block strong { color: var(--ink); }
-.about .source-block .note { color: var(--muted); font-size: 14px; }
-.about .contact a {
-  color: var(--accent-deep);
-  text-decoration-color: var(--accent);
-}
+.source-block li .note { color: var(--muted); margin-left: 4px; }
 
-/* ---------- print ---------- */
+/* ---------- print + mobile ---------- */
 @media print {
-  body { background: white; }
-  .wrap { max-width: none; padding: 24px 32px; }
-  .item, .section { page-break-inside: avoid; }
-  .masthead-nav, .footer { display: none; }
+  html,body { background: white; color: black; }
+  a { color: black; text-decoration: underline; }
+  .masthead-nav, .foot { display: none; }
 }
-/* ---------- small screens ---------- */
-@media (max-width: 600px) {
-  .wrap { padding: 36px 22px 64px; }
-  .masthead { flex-wrap: wrap; }
-  .masthead-nav { margin-left: 0; }
-  .archive-item { grid-template-columns: 1fr; }
-  .archive-date { font-size: 11px; }
+@media (max-width: 640px) {
+  .wrap { padding: 22px 18px 60px; }
+  .masthead { grid-template-columns: 1fr; gap: 8px; }
+  .masthead-tag { border-left: 0; padding-left: 0; margin-left: 0; }
+  .masthead-nav { text-align: left; }
+  .ticker { font-size: 9px; }
+  .ticker span { padding: 0 8px; }
+  .archive-row { grid-template-columns: 1fr; gap: 4px; }
+  .item { grid-template-columns: 1fr; gap: 6px; }
+  .item-n { font-size: 10px; padding: 0; }
 }
 </style>
 </head>
@@ -244,16 +370,29 @@ hr.rule { border: 0; border-top: 1px solid var(--rule); margin: 28px 0; }
 
 <header class="masthead">
   <h1 class="masthead-title"><a href="/">Dalila<span class="ar">دليلة</span></a></h1>
+  <div class="masthead-tag">DAILY BRIEF</div>
   <nav class="masthead-nav">
-    <a href="/" aria-current="page">Archive</a>
+    <a href="/" aria-current="page">Home</a>
+    <a href="/archive.html">Archive</a>
     <a href="/about.html">About</a>
   </nav>
 </header>
 
-<p class="date-line">Daily archive</p>
-<p class="kicker">Daily intelligence brief on humanitarian, development, and philanthropy — with a focus on the UAE. Composed at 06:30 GST.</p>
-<div class="archive-item"><div class="archive-date">Tuesday 12 May 2026</div><div><div class="archive-title"><a href="digests/2026-05-12.html">Morning digest — Tuesday 12 May 2026</a></div><div class="archive-preview">Iran war latest: UAE condemns IRGC&#x27;s attempted infiltration of Kuwait · Iran could enrich uranium to weapons-grade if attacked by US amid collapsing cea</div></div></div>
-<footer class="footer"><span>© 2026 Dalila</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Suggestions</a></span></footer>
+
+<div class="ticker">
+  <span>TUESDAY 12 MAY 2026</span>
+  <span><b>25</b> ITEMS</span>
+  <span><b>25</b> REVIEWED 24H</span>
+  <span>COMPOSED 20:11 +04</span>
+</div>
+
+<section class="top"><div class="top-head"><span class="label">▌ Top stories</span><span class="count">03 of 03</span></div><ol><li><a href="https://www.thenationalnews.com/news/2026/05/12/iran-could-enrich-uranium-to-weapons-grade-if-attacked-by-us-amid-collapsing-ceasefire/">Iran could enrich uranium to weapons-grade if attacked by US amid collapsing ceasefire</a><span class="ref">#2</span></li>
+<li><a href="https://www.internal-displacement.org/spotlight/palestine-escalating-violence-and-protracted-displacement">Palestine - Escalating violence and protracted displacement</a><span class="ref">#3</span></li>
+<li><a href="https://www.nytimes.com/2026/05/05/world/middleeast/iran-us-ceasefire-attacks.html">Trump Says U.S. Pausing Efforts to Guide Ships Through Strait Blocked by Iran</a><span class="ref">#4</span></li></ol></section>
+<section class="section"><div class="section-head"><span class="label">▌ HUMANITARIAN</span><span class="count">15 ITEMS</span></div><article class="item" id="item-3"><span class="item-n">#03</span><div class="item-body"><h3 class="title"><a href="https://www.internal-displacement.org/spotlight/palestine-escalating-violence-and-protracted-displacement" target="_blank" rel="noopener">Palestine - Escalating violence and protracted displacement</a></h3><p class="summary">Escalating violence and protracted displacement affecting Palestine and Gaza.</p><div class="meta"><span class="src">IDMC — Internal Displacement Monitoring Centre</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.85</span></div></div></article><article class="item" id="item-4"><span class="item-n">#04</span><div class="item-body"><h3 class="title"><a href="https://www.nytimes.com/2026/05/05/world/middleeast/iran-us-ceasefire-attacks.html" target="_blank" rel="noopener">Trump Says U.S. Pausing Efforts to Guide Ships Through Strait Blocked by Iran</a></h3><p class="summary">US pauses efforts to guide ships through Strait of Hormuz amid Iran conflict.</p><div class="meta"><span class="src">New York Times — Middle East</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.80</span></div></div></article><article class="item" id="item-5"><span class="item-n">#05</span><div class="item-body"><h3 class="title"><a href="https://www.nytimes.com/2026/05/09/world/middleeast/strait-hormuz-ships-blockade-us-iran.html" target="_blank" rel="noopener">Strait of Hormuz Remains Effectively Blocked After Naval Skirmishes</a></h3><p class="summary">US Navy blockade of Strait of Hormuz remains effective; ships avoid passage.</p><div class="meta"><span class="src">New York Times — Middle East</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.80</span></div></div></article><article class="item" id="item-6"><span class="item-n">#06</span><div class="item-body"><h3 class="title"><a href="https://www.nytimes.com/2026/05/10/world/middleeast/lebanon-family-funeral-israel-strikes.html" target="_blank" rel="noopener">Lebanese Mourn Eight Members of One Family Killed in Israeli Strike</a></h3><p class="summary">Israeli strike kills eight Lebanese including six-month-old as Israel-Hezbollah truce unravels.</p><div class="meta"><span class="src">New York Times — World</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.90</span></div></div></article><article class="item" id="item-9"><span class="item-n">#09</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/05/11/searching-in-gazas-rubble-for-24-dead-relatives/" target="_blank" rel="noopener">Searching in Gaza&#x27;s rubble for 24 dead relatives</a></h3><p class="summary">Man searches Gaza rubble for remains of 24 relatives as territory struggles to rebuild.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.75</span> · <span class="sev">SEV 0.80</span></div></div></article><article class="item" id="item-11"><span class="item-n">#11</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/05/12/razing-southern-lebanon-inside-israels-campaign-of-wanton-destruction/" target="_blank" rel="noopener">Razing southern Lebanon: Inside Israel’s campaign of wanton destruction</a></h3><p class="summary">Legal experts cite &#x27;wanton destruction&#x27; in southern Lebanon; 100k+ civilian structures destroyed by Israel.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.65</span> · <span class="sev">SEV 0.80</span></div></div></article><article class="item" id="item-15"><span class="item-n">#15</span><div class="item-body"><h3 class="title"><a href="https://reliefweb.int/report/sudan/dtm-focused-flash-alert-blue-nile-state-update-002" target="_blank" rel="noopener">Sudan: DTM Focused Flash Alert: Blue Nile State (Update 002)</a></h3><p class="summary">IOM displacement tracking matrix update on Blue Nile State, Sudan.</p><div class="meta"><span class="src">ReliefWeb</span> · <span class="rel">REL 0.85</span> · <span class="sev">SEV 0.60</span></div></div></article><article class="item" id="item-16"><span class="item-n">#16</span><div class="item-body"><h3 class="title"><a href="https://www.internal-displacement.org/spotlight/democratic-republic-of-the-congo-conflict-and-violence-trigger-a-record-high-of-nearly-10-million-movements" target="_blank" rel="noopener">Democratic Republic of the Congo - Conflict and violence trigger a record high of nearly 10 million movements</a></h3><p class="summary">Record 10 million displacement movements in DRC driven by ongoing conflict and violence.</p><div class="meta"><span class="src">IDMC — Internal Displacement Monitoring Centre</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.70</span></div></div></article><article class="item" id="item-18"><span class="item-n">#18</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/05/11/senior-rsf-commander-switches-sides-in-sudans-civil-war/" target="_blank" rel="noopener">Senior RSF commander switches sides in Sudan&#x27;s civil war</a></h3><p class="summary">Senior RSF commander defects to Sudan army, third such desertion since 2024.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.40</span></div></div></article><article class="item" id="item-19"><span class="item-n">#19</span><div class="item-body"><h3 class="title"><a href="https://story.internal-displacement.org/burkina-faso-People-caught-in-a-perfect-storm-of-conflict-displacement-and-food-insecurity/" target="_blank" rel="noopener">Burkina Faso: People caught in a perfect storm of conflict, displacement and food insecurity</a></h3><p class="summary">Conflict, food insecurity and displacement converge in Burkina Faso crisis.</p><div class="meta"><span class="src">IDMC — Internal Displacement Monitoring Centre</span> · <span class="rel">REL 0.65</span> · <span class="sev">SEV 0.70</span></div></div></article><article class="item" id="item-20"><span class="item-n">#20</span><div class="item-body"><h3 class="title"><a href="https://www.internal-displacement.org/features/nigeria-internal-displacement-crisis-conflict-floods" target="_blank" rel="noopener">North-east Nigeria: A massive internal displacement crisis</a></h3><p class="summary">Massive internal displacement crisis ongoing in north-east Nigeria from conflict.</p><div class="meta"><span class="src">IDMC — Internal Displacement Monitoring Centre</span> · <span class="rel">REL 0.60</span> · <span class="sev">SEV 0.75</span></div></div></article><article class="item" id="item-21"><span class="item-n">#21</span><div class="item-body"><h3 class="title"><a href="https://www.nytimes.com/2026/05/07/world/middleeast/trump-ceasefire-lincoln-memorial.html" target="_blank" rel="noopener">Trump Says Cease-Fire Is Intact After Trade of Attacks in Strait of Hormuz</a></h3><p class="summary">Trump claims ceasefire holds despite naval exchanges in Strait of Hormuz.</p><div class="meta"><span class="src">New York Times — Middle East</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.60</span></div></div></article><article class="item" id="item-22"><span class="item-n">#22</span><div class="item-body"><h3 class="title"><a href="https://www.nytimes.com/2026/05/10/us/politics/iran-war-us-peace-proposal-response.html" target="_blank" rel="noopener">Trump Says Iran’s Response to Latest U.S. Proposal ‘Totally Unacceptable’</a></h3><p class="summary">Trump rejects Iranian response to US peace proposal; conflict de-escalation efforts stall.</p><div class="meta"><span class="src">New York Times — Middle East</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.60</span></div></div></article><article class="item" id="item-24"><span class="item-n">#24</span><div class="item-body"><h3 class="title"><a href="https://reliefweb.int/report/lebanon/over-four-children-killed-or-injured-average-day-during-so-called-ceasefire-lebanon-0" target="_blank" rel="noopener">Over four children killed or injured on average a day during the ‘so- called’ ceasefire in Lebanon</a></h3><p class="summary">Save the Children reports 22 children killed in Lebanon ceasefire&#x27;s first 25 days; 1 million displaced, inadequate shelter conditions.</p><div class="meta"><span class="src">ReliefWeb</span> · <span class="rel">REL 0.50</span> · <span class="sev">SEV 0.75</span></div></div></article><article class="item" id="item-25"><span class="item-n">#25</span><div class="item-body"><h3 class="title"><a href="https://www.nytimes.com/2026/04/30/world/africa/nigeria-fulani-camp-amnesty.html" target="_blank" rel="noopener">Nigerian Military Runs a Fulani ‘Concentration Camp,’ Group Says</a></h3><p class="summary">Nigerian military detains 1,500 Fulani for months with deaths from disease and starvation.</p><div class="meta"><span class="src">New York Times — Africa</span> · <span class="rel">REL 0.40</span> · <span class="sev">SEV 0.80</span></div></div></article></section>
+<section class="section"><div class="section-head"><span class="label">▌ UAE FOREIGN-POLICY SIGNALS</span><span class="count">06 ITEMS</span></div><article class="item" id="item-1"><span class="item-n">#01</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/05/12/live-us-iran-war-kuwait-inflitration/" target="_blank" rel="noopener">Iran war latest: UAE condemns IRGC&#x27;s attempted infiltration of Kuwait</a></h3><p class="summary">UAE condemns IRGC&#x27;s attempted infiltration of Kuwaiti territory amid regional conflict.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.70</span></div></div></article><article class="item" id="item-2"><span class="item-n">#02</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/2026/05/12/iran-could-enrich-uranium-to-weapons-grade-if-attacked-by-us-amid-collapsing-ceasefire/" target="_blank" rel="noopener">Iran could enrich uranium to weapons-grade if attacked by US amid collapsing ceasefire</a></h3><p class="summary">Iranian MP warns Iran could enrich uranium to 90% if US attacks amid ceasefire collapse.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 1.00</span></div></div></article><article class="item" id="item-10"><span class="item-n">#10</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/gulf/2026/05/12/why-did-kuwaits-bubiyan-island-interest-irgc-infiltrators/" target="_blank" rel="noopener">Why did Kuwait&#x27;s Bubiyan Island interest IRGC infiltrators?</a></h3><p class="summary">Four IRGC-linked suspects arrested attempting to infiltrate Kuwait&#x27;s strategic Bubiyan Island.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.80</span></div></div></article><article class="item" id="item-14"><span class="item-n">#14</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/05/11/president-sheikh-mohamed-discusses-iranian-attacks-on-uae-with-president-of-ukraine/" target="_blank" rel="noopener">Sheikh Mohamed and Ukraine&#x27;s Zelenskyy discuss Iranian attacks and trade deal</a></h3><p class="summary">President Sheikh Mohamed condemns Iranian strikes; discusses security cooperation and trade with Ukraine&#x27;s Zelenskyy.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.50</span></div></div></article><article class="item" id="item-17"><span class="item-n">#17</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/gulf/2026/05/12/bahrain-sentences-three-to-life-in-prison-over-links-to-irans-irgc/" target="_blank" rel="noopener">Bahrain sentences three to life in prison over links to Iran’s IRGC</a></h3><p class="summary">Bahrain sentences 24 people for IRGC espionage, infiltration, and support for Iranian attacks.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.70</span></div></div></article><article class="item" id="item-23"><span class="item-n">#23</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/energy/2026/05/12/trump-unlikely-to-persuade-xi-to-stop-buying-iranian-oil-analysts-say/" target="_blank" rel="noopener">Trump unlikely to persuade Xi to stop buying Iranian oil, analysts say</a></h3><p class="summary">Analysts say Trump unlikely to pressure China into stopping Iranian oil purchases.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.50</span></div></div></article></section>
+<section class="section"><div class="section-head"><span class="label">▌ UAE DOCTRINE</span><span class="count">03 ITEMS</span></div><article class="item" id="item-8"><span class="item-n">#08</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/future/technology/2026/05/11/uae-doubles-down-on-us-tech-and-ai-ambitions-amid-iran-war/" target="_blank" rel="noopener">UAE doubles down on US tech and AI ambitions amid Iran war</a></h3><p class="summary">UAE ambassador affirms deepened commitment to American AI and computing infrastructure.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article><article class="item" id="item-12"><span class="item-n">#12</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/05/10/sheikh-mohammed-bin-rashid-announces-scheme-to-eradicate-river-blindness/" target="_blank" rel="noopener">Sheikh Mohammed bin Rashid announces scheme to eradicate river blindness</a></h3><p class="summary">Sheikh Mohammed bin Rashid launches river blindness eradication initiative targeting 7M direct and 35.4M indirect beneficiaries by 2030.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.60</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article><article class="item" id="item-13"><span class="item-n">#13</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/future/technology/2026/05/10/uae-iran-hacking-cybersecurity/" target="_blank" rel="noopener">UAE cyber security priorities pay off amid Iran tensions, official says</a></h3><p class="summary">UAE cybersecurity investments successfully protected infrastructure against Iranian attacks.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.50</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article></section>
+<footer class="foot"><span>© 2026 Dalila — daily intelligence brief</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Suggest a source</a></span></footer>
 </div>
 </body>
 </html>
