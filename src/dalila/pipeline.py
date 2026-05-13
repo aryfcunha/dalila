@@ -680,9 +680,20 @@ def run_publish_site(out_dir: "Path") -> dict:
     latest_when: datetime | None = None
 
     with db.connect() as conn:
+        # When a date has multiple digests (e.g. an old pre-prune brief and
+        # a fresh post-prune one), we keep the MOST RECENTLY COMPOSED.
+        # The DISTINCT-via-MAX subquery rolls them up so the archive shows
+        # one entry per calendar date.
         rows = conn.execute(
-            "SELECT id, composed_at, date_label, item_ids_json FROM digests "
-            "ORDER BY composed_at DESC LIMIT 60"
+            """
+            SELECT d.id, d.composed_at, d.date_label, d.item_ids_json
+            FROM digests d
+            WHERE d.id IN (
+                SELECT MAX(id) FROM digests GROUP BY date_label
+            )
+            ORDER BY d.composed_at DESC
+            LIMIT 365
+            """
         ).fetchall()
 
         for row in rows:
