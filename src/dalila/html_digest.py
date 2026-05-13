@@ -1,21 +1,19 @@
 """HTML site renderer for Dalila.
 
-Generates three kinds of page, all as self-contained HTML with inline CSS:
+Generates four kinds of page, all self-contained inline-CSS HTML:
 
   * `render_digest(items)`         → one daily digest page
-  * `render_about(sources, ...)`   → a static "about Dalila" page
-  * `render_index(recent_digests)` → archive landing page
+  * `render_index(latest_items)`   → home page (the latest brief, full content)
+  * `render_archive(briefs)`       → archive list of all past briefs
+  * `render_about(sources, ...)`   → static "about Dalila" page
 
-Aesthetic direction (deliberately not the leadership-pitch palette): a small
-editorial publication. Off-white background, charcoal ink, serif throughout,
-one muted forest-green accent used very sparingly. Type-driven, lots of
-whitespace, restrained metadata. Reads like a research newsletter, not a
-corporate brand artifact.
+Aesthetic: Bloomberg-terminal density with a bespoke editorial finish.
+Black background, warm off-white type, single amber accent (#FFB454).
+Mono-dominant for metadata and section headers; serif for item titles so
+headlines still read as journalism. ALL-CAPS labels with sharp rules
+between sections.
 
-Pages link to each other:
-  index.html   →  digests/<date>.html (most recent first), and to about.html
-  about.html   →  /  (back to index)
-  digests/*    →  /  (back to index), and to about.html in the footer
+Pages link to each other via the masthead nav (Home · Archive · About).
 """
 
 from __future__ import annotations
@@ -30,25 +28,30 @@ from dalila.config import get_config
 
 
 # ---------------------------------------------------------------------------
-# Palette — editorial, not pitch-deck
+# Palette — Bloomberg-terminal-bespoke
 # ---------------------------------------------------------------------------
-BG          = "#FAF9F5"          # warm off-white, paper-like
-INK         = "#1F2430"          # near-black with a touch of blue for warmth
-INK_MUTED   = "#5A6068"          # grey for metadata and dates
-RULE        = "#E6E2D6"          # hairline rule, slightly warmer than the bg
-ACCENT      = "#3F6E54"          # muted forest green — used VERY sparingly
-ACCENT_DEEP = "#2A4D3A"
+BG          = "#0A0A0A"          # warmer than pure black; easier on eyes
+BG_DEEP     = "#000000"
+TYPE        = "#E8E1D3"          # warm off-white, paper-like on black
+TYPE_DIM    = "#9A958A"          # muted body text
+TYPE_MUTED  = "#6E6A60"          # metadata grey
+AMBER       = "#FFB454"          # primary accent — the Bloomberg orange, restrained
+AMBER_DEEP  = "#D88E30"
+CYAN        = "#7AB9C9"          # secondary accent — links, ticker codes
+GREEN       = "#7CB36E"          # for positive markers (rarely used)
+RED         = "#D67866"          # for warnings (rarely used)
+RULE        = "#1F1B16"          # subtle warm-dark rule
+RULE_STRONG = "#3A332A"          # for section dividers
 
 
-# Section labels (order = display order). Glyphs are restrained.
 SECTIONS = [
-    ("humanitarian",                "Humanitarian"),
-    ("aid_commitments",             "Aid commitments"),
-    ("reports_evidence",            "Reports & evidence"),
-    ("conferences_events",          "Conferences & events"),
-    ("uae_foreign_policy_signals",  "UAE foreign-policy signals"),
-    ("uae_leadership_doctrine",     "UAE doctrine"),
-    ("uae_ecosystem_moves",         "UAE ecosystem"),
+    ("humanitarian",                "HUMANITARIAN"),
+    ("aid_commitments",             "AID COMMITMENTS"),
+    ("reports_evidence",            "REPORTS & EVIDENCE"),
+    ("conferences_events",          "CONFERENCES & EVENTS"),
+    ("uae_foreign_policy_signals",  "UAE FOREIGN-POLICY SIGNALS"),
+    ("uae_leadership_doctrine",     "UAE DOCTRINE"),
+    ("uae_ecosystem_moves",         "UAE ECOSYSTEM"),
 ]
 
 
@@ -57,239 +60,364 @@ SECTIONS = [
 # ===========================================================================
 
 def _base_css() -> str:
-    """Inline CSS used on every page."""
     return f"""
 :root {{
   --bg:{BG};
-  --ink:{INK};
-  --muted:{INK_MUTED};
+  --bg-deep:{BG_DEEP};
+  --type:{TYPE};
+  --type-dim:{TYPE_DIM};
+  --muted:{TYPE_MUTED};
+  --amber:{AMBER};
+  --amber-deep:{AMBER_DEEP};
+  --cyan:{CYAN};
+  --green:{GREEN};
+  --red:{RED};
   --rule:{RULE};
-  --accent:{ACCENT};
-  --accent-deep:{ACCENT_DEEP};
+  --rule-strong:{RULE_STRONG};
 }}
 html,body {{
   background: var(--bg);
-  color: var(--ink);
+  color: var(--type);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }}
 body {{
   margin: 0;
-  font-family: "Source Serif Pro", "Lora", "PT Serif", Georgia, "Times New Roman", serif;
-  font-size: 17px;
+  font-family: "JetBrains Mono", "IBM Plex Mono", "SF Mono", "Source Code Pro", Consolas, monospace;
+  font-size: 14px;
   line-height: 1.55;
+  letter-spacing: 0.01em;
 }}
-.mono {{
-  font-family: "JetBrains Mono", "IBM Plex Mono", "SF Mono", Consolas, monospace;
-  font-size: 0.78em;
-  letter-spacing: 0.04em;
+.serif {{
+  font-family: "Iowan Old Style", "Source Serif Pro", "PT Serif", Georgia, "Times New Roman", serif;
+  font-feature-settings: "kern", "liga", "calt";
 }}
-a {{ color: var(--ink); text-decoration: underline; text-decoration-color: rgba(31,36,48,0.25); text-underline-offset: 3px; }}
-a:hover {{ text-decoration-color: var(--accent); color: var(--accent-deep); }}
-.wrap {{ max-width: 700px; margin: 0 auto; padding: 56px 32px 96px; }}
-hr.rule {{ border: 0; border-top: 1px solid var(--rule); margin: 28px 0; }}
+a {{
+  color: var(--cyan);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.12s ease, color 0.12s ease;
+}}
+a:hover {{
+  color: var(--amber);
+  border-bottom-color: var(--amber);
+}}
+.wrap {{ max-width: 880px; margin: 0 auto; padding: 28px 32px 80px; }}
 
-/* ---------- masthead (shared across pages) ---------- */
+/* ---------- masthead ---------- */
 .masthead {{
-  display: flex;
-  align-items: baseline;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   gap: 18px;
+  align-items: baseline;
   padding-bottom: 14px;
-  border-bottom: 2px solid var(--ink);
-  margin-bottom: 28px;
+  border-bottom: 1px solid var(--amber);
+  margin-bottom: 18px;
 }}
-.masthead a {{ text-decoration: none; color: var(--ink); }}
 .masthead-title {{
-  margin: 0;
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
   font-size: 26px;
   font-weight: 700;
-  letter-spacing: -0.005em;
+  letter-spacing: -0.01em;
   line-height: 1;
+  margin: 0;
+  color: var(--type);
 }}
+.masthead-title a {{ color: var(--type); border: 0; }}
 .masthead-title .ar {{
+  color: var(--amber);
   font-style: italic;
   font-weight: 400;
-  color: var(--accent);
+  font-size: 0.65em;
   margin-left: 8px;
-  font-size: 0.7em;
-  vertical-align: 2px;
+  vertical-align: 3px;
+}}
+.masthead-tag {{
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-left: 1px solid var(--rule-strong);
+  padding-left: 14px;
+  margin-left: 6px;
 }}
 .masthead-nav {{
-  margin-left: auto;
-  font-family: "JetBrains Mono", Consolas, monospace;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-}}
-.masthead-nav a {{ color: var(--muted); text-decoration: none; margin-left: 14px; }}
-.masthead-nav a:hover {{ color: var(--accent-deep); }}
-
-/* ---------- footer ---------- */
-.footer {{
-  margin-top: 64px;
-  padding-top: 18px;
-  border-top: 1px solid var(--rule);
-  color: var(--muted);
-  font-family: "JetBrains Mono", Consolas, monospace;
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-}}
-.footer a {{ color: var(--muted); }}
-
-/* ---------- digest-specific ---------- */
-.date-line {{
-  color: var(--muted);
-  font-family: "JetBrains Mono", Consolas, monospace;
-  font-size: 11px;
-  letter-spacing: 0.10em;
-  text-transform: uppercase;
-  margin: 0 0 6px;
-}}
-.kicker {{
-  font-size: 18px;
-  line-height: 1.5;
-  color: var(--ink);
-  margin: 0 0 36px;
-  max-width: 56ch;
-}}
-.kicker .top-stat {{ color: var(--accent-deep); font-weight: 600; }}
-
-.section {{ margin: 0 0 36px; }}
-.section-title {{
-  font-family: "JetBrains Mono", Consolas, monospace;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--ink);
-  border-bottom: 1px solid var(--rule);
-  padding-bottom: 6px;
-  margin: 0 0 18px;
-  display: flex;
-  align-items: baseline;
-}}
-.section-title .count {{
-  margin-left: auto;
   color: var(--muted);
-  font-weight: 400;
+  text-align: right;
 }}
+.masthead-nav a {{
+  color: var(--muted);
+  margin-left: 14px;
+  border: 0;
+}}
+.masthead-nav a[aria-current=page] {{ color: var(--amber); }}
+.masthead-nav a:hover {{ color: var(--type); }}
 
-.item {{ padding: 0 0 22px; margin-bottom: 22px; border-bottom: 1px dashed var(--rule); }}
-.item:last-child {{ border-bottom: none; }}
-.item-title {{ margin: 0 0 8px; font-size: 18px; line-height: 1.35; font-weight: 600; }}
-.item-title a {{ color: var(--ink); }}
-.item-summary {{ margin: 0 0 8px; color: var(--ink); line-height: 1.55; }}
-.item-meta {{
-  font-family: "JetBrains Mono", Consolas, monospace;
-  font-size: 11px;
-  letter-spacing: 0.05em;
-  color: var(--muted);
+/* ---------- ticker strip ---------- */
+.ticker {{
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 0;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0 0 18px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 24px;
+}}
+.ticker span {{
+  padding: 0 14px;
+  border-right: 1px solid var(--rule-strong);
+}}
+.ticker span:first-child {{ padding-left: 0; }}
+.ticker span:last-child {{ border-right: 0; }}
+.ticker b {{ color: var(--amber); font-weight: 700; }}
+
+/* ---------- top stories ---------- */
+.top {{ margin: 0 0 28px; }}
+.top-head {{
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--amber);
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+}}
+.top-head .label {{
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--amber);
+}}
+.top-head .count {{ color: var(--muted); font-size: 10px; letter-spacing: 0.14em; }}
+.top ol {{ list-style: none; padding: 0; margin: 0; counter-reset: t; }}
+.top li {{
+  counter-increment: t;
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 14px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--rule);
   align-items: baseline;
 }}
-.item-meta .src {{ color: var(--ink); }}
-.item-meta .rel {{ color: var(--accent-deep); }}
-.item-meta a {{ color: var(--muted); text-decoration-color: var(--rule); }}
-.item-meta a:hover {{ color: var(--accent-deep); }}
-.doctrine-tag {{
-  display: inline-block;
-  padding: 0 6px;
-  border: 1px solid var(--accent);
-  color: var(--accent-deep);
-  font-family: "JetBrains Mono", Consolas, monospace;
+.top li:last-child {{ border-bottom: 0; }}
+.top li::before {{
+  content: counter(t, decimal-leading-zero);
+  color: var(--amber);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}}
+.top a {{
+  color: var(--type);
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 16px;
+  line-height: 1.4;
+  border-bottom: 1px solid transparent;
+}}
+.top a:hover {{
+  color: var(--amber);
+  border-bottom-color: var(--amber);
+}}
+.top .ref {{ color: var(--muted); font-size: 10px; margin-left: 6px; letter-spacing: 0.08em; }}
+
+/* ---------- sections ---------- */
+.section {{ margin: 0 0 30px; }}
+.section-head {{
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+}}
+.section-head .label {{
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--type);
+}}
+.section-head .count {{
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}}
+
+/* ---------- items ---------- */
+.item {{
+  padding: 14px 0 16px;
+  border-bottom: 1px solid var(--rule);
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 14px;
+}}
+.item:last-child {{ border-bottom: 0; }}
+.item-n {{
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding-top: 2px;
+}}
+.item-body .title {{
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 16px;
+  line-height: 1.4;
+  font-weight: 600;
+  color: var(--type);
+  margin: 0 0 6px;
+}}
+.item-body .title a {{
+  color: var(--type);
+  border-bottom: 1px solid transparent;
+}}
+.item-body .title a:hover {{
+  color: var(--amber);
+  border-bottom-color: var(--amber);
+}}
+.item-body .summary {{
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 14px;
+  color: var(--type-dim);
+  margin: 0 0 8px;
+  line-height: 1.55;
+}}
+.item-body .meta {{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: var(--muted);
   font-size: 10px;
   letter-spacing: 0.10em;
   text-transform: uppercase;
 }}
-
-/* ---------- top stories (no heavy panel, just a small block) ---------- */
-.top-stories {{ margin: 0 0 42px; }}
-.top-stories ol {{ margin: 0; padding: 0; list-style: none; counter-reset: top; }}
-.top-stories li {{
-  counter-increment: top;
-  padding: 10px 0;
-  display: grid;
-  grid-template-columns: 28px 1fr;
-  gap: 14px;
-  align-items: baseline;
-  border-top: 1px solid var(--rule);
-}}
-.top-stories li:first-child {{ border-top: none; }}
-.top-stories li::before {{
-  content: counter(top);
-  color: var(--accent);
+.item-body .meta .src {{ color: var(--type-dim); }}
+.item-body .meta .rel {{ color: var(--amber); }}
+.item-body .meta .sev {{ color: var(--muted); }}
+.item-body .meta a {{ color: var(--cyan); border: 0; }}
+.item-body .meta a:hover {{ color: var(--amber); }}
+.doctrine-tag {{
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  padding: 1px 6px;
+  font-size: 9px;
+  letter-spacing: 0.14em;
   font-weight: 700;
-  font-family: "JetBrains Mono", Consolas, monospace;
-  font-size: 14px;
 }}
-.top-stories a {{ color: var(--ink); font-size: 17px; line-height: 1.4; }}
 
-/* ---------- index / archive ---------- */
-.archive-item {{
+/* ---------- footer ---------- */
+.foot {{
+  margin-top: 56px;
+  padding-top: 14px;
+  border-top: 1px solid var(--amber);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--muted);
+}}
+.foot a {{ color: var(--muted); border: 0; }}
+.foot a:hover {{ color: var(--amber); }}
+
+/* ---------- archive ---------- */
+.archive-row {{
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 18px;
   padding: 14px 0;
   border-bottom: 1px solid var(--rule);
-  display: grid;
-  grid-template-columns: 140px 1fr;
-  gap: 16px;
   align-items: baseline;
 }}
 .archive-date {{
-  color: var(--muted);
-  font-family: "JetBrains Mono", Consolas, monospace;
-  font-size: 12px;
-  letter-spacing: 0.08em;
+  color: var(--amber);
+  font-size: 11px;
+  letter-spacing: 0.10em;
   text-transform: uppercase;
 }}
-.archive-title {{ font-size: 17px; line-height: 1.4; }}
-.archive-preview {{ color: var(--muted); font-size: 14px; line-height: 1.5; margin-top: 6px; }}
+.archive-title a {{
+  color: var(--type);
+  font-family: "Iowan Old Style", Georgia, serif;
+  font-size: 16px;
+  line-height: 1.4;
+  border-bottom: 1px solid transparent;
+}}
+.archive-title a:hover {{ color: var(--amber); border-bottom-color: var(--amber); }}
+.archive-preview {{ color: var(--muted); font-size: 12px; margin-top: 6px; line-height: 1.5; }}
 
-/* ---------- about-page ---------- */
+/* ---------- about ---------- */
+.about p, .about ul, .about li {{
+  font-family: "Iowan Old Style", Georgia, serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--type-dim);
+  max-width: 64ch;
+}}
 .about h2 {{
-  font-family: "JetBrains Mono", Consolas, monospace;
-  font-size: 12px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
   font-weight: 700;
+  color: var(--amber);
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 6px;
+  margin: 34px 0 14px;
+}}
+.about strong {{ color: var(--type); }}
+.about code {{
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 0.9em;
+  color: var(--amber);
+  background: var(--bg-deep);
+  padding: 1px 5px;
+  border: 1px solid var(--rule-strong);
+}}
+.source-block {{
+  margin: 0 0 22px;
+  padding: 8px 0 0 16px;
+  border-left: 1px solid var(--rule-strong);
+}}
+.source-block strong {{
+  display: block;
+  color: var(--amber);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  border-bottom: 1px solid var(--rule);
-  padding-bottom: 6px;
-  margin: 36px 0 16px;
+  margin-bottom: 4px;
 }}
-.about p {{ margin: 0 0 16px; max-width: 60ch; }}
-.about ul {{ margin: 0 0 16px 24px; padding: 0; }}
-.about li {{ margin-bottom: 6px; }}
-.about .source-block {{
-  border-left: 2px solid var(--rule);
-  padding: 4px 0 4px 14px;
-  margin: 0 0 18px;
+.source-block ul {{ list-style: none; padding: 0; margin: 0; }}
+.source-block li {{
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  color: var(--type-dim);
+  padding: 3px 0;
 }}
-.about .source-block strong {{ color: var(--ink); }}
-.about .source-block .note {{ color: var(--muted); font-size: 14px; }}
-.about .contact a {{
-  color: var(--accent-deep);
-  text-decoration-color: var(--accent);
-}}
+.source-block li .note {{ color: var(--muted); margin-left: 4px; }}
 
-/* ---------- print ---------- */
+/* ---------- print + mobile ---------- */
 @media print {{
-  body {{ background: white; }}
-  .wrap {{ max-width: none; padding: 24px 32px; }}
-  .item, .section {{ page-break-inside: avoid; }}
-  .masthead-nav, .footer {{ display: none; }}
+  html,body {{ background: white; color: black; }}
+  a {{ color: black; text-decoration: underline; }}
+  .masthead-nav, .foot {{ display: none; }}
 }}
-/* ---------- small screens ---------- */
-@media (max-width: 600px) {{
-  .wrap {{ padding: 36px 22px 64px; }}
-  .masthead {{ flex-wrap: wrap; }}
-  .masthead-nav {{ margin-left: 0; }}
-  .archive-item {{ grid-template-columns: 1fr; }}
-  .archive-date {{ font-size: 11px; }}
+@media (max-width: 640px) {{
+  .wrap {{ padding: 22px 18px 60px; }}
+  .masthead {{ grid-template-columns: 1fr; gap: 8px; }}
+  .masthead-tag {{ border-left: 0; padding-left: 0; margin-left: 0; }}
+  .masthead-nav {{ text-align: left; }}
+  .ticker {{ font-size: 9px; }}
+  .ticker span {{ padding: 0 8px; }}
+  .archive-row {{ grid-template-columns: 1fr; gap: 4px; }}
+  .item {{ grid-template-columns: 1fr; gap: 6px; }}
+  .item-n {{ font-size: 10px; padding: 0; }}
 }}
 """
 
@@ -311,31 +439,33 @@ def _doc(title: str, body: str) -> str:
     )
 
 
-def _masthead(*, on_page: str) -> str:
-    """on_page: 'home' | 'digest' | 'about'."""
-    home_attr = ' aria-current="page"' if on_page == "home" else ""
-    about_attr = ' aria-current="page"' if on_page == "about" else ""
+def _masthead(*, on_page: str, tag: str = "DAILY BRIEF") -> str:
+    """on_page: 'home' | 'digest' | 'archive' | 'about'."""
+    def _attr(p: str) -> str:
+        return ' aria-current="page"' if on_page == p else ""
     return f"""
 <header class="masthead">
   <h1 class="masthead-title"><a href="/">Dalila<span class="ar">دليلة</span></a></h1>
+  <div class="masthead-tag">{html.escape(tag)}</div>
   <nav class="masthead-nav">
-    <a href="/"{home_attr}>Archive</a>
-    <a href="/about.html"{about_attr}>About</a>
+    <a href="/"{_attr("home")}>Home</a>
+    <a href="/archive.html"{_attr("archive")}>Archive</a>
+    <a href="/about.html"{_attr("about")}>About</a>
   </nav>
 </header>
 """
 
 
 def _footer(*, contact_email: str, telegram_bot: str | None) -> str:
-    parts = [f'<span>© {datetime.now().year} Dalila</span>']
+    parts = [f'<span>© {datetime.now().year} Dalila — daily intelligence brief</span>']
     if telegram_bot:
         parts.append(f'<span><a href="https://t.me/{telegram_bot}">Subscribe on Telegram</a></span>')
-    parts.append(f'<span><a href="mailto:{contact_email}">Suggestions</a></span>')
-    return '<footer class="footer">' + "".join(parts) + '</footer>'
+    parts.append(f'<span><a href="mailto:{contact_email}">Suggest a source</a></span>')
+    return '<footer class="foot">' + "".join(parts) + '</footer>'
 
 
 # ===========================================================================
-# Per-digest page
+# Digest page
 # ===========================================================================
 
 def render_digest(
@@ -345,12 +475,13 @@ def render_digest(
     total_ingested: int | None = None,
     contact_email: str = "dalila.dev.digest@gmail.com",
     telegram_bot: str | None = "dalila_development_digest_bot",
+    on_page: str = "digest",
 ) -> str:
-    """Render one daily digest as a publishable HTML page."""
     cfg = get_config()
     tz = pytz.timezone(cfg.timezone)
     now = (when or datetime.now(tz)).astimezone(tz)
-    date_label = f"{now.strftime('%A')} {now.day} {now.strftime('%B %Y')}"
+    date_label = f"{now.strftime('%A').upper()} {now.day} {now.strftime('%B %Y').upper()}"
+    time_label = now.strftime("%H:%M %Z")
 
     numbered = [{**it, "n": n} for n, it in enumerate(items, start=1)]
 
@@ -362,40 +493,51 @@ def render_digest(
     for it in numbered:
         by_cat.setdefault(it.get("category") or "other", []).append(it)
 
-    body_parts = [_masthead(on_page="digest")]
-
-    body_parts.append(f'<p class="date-line">{html.escape(date_label)}</p>')
-    body_parts.append(
-        f'<p class="kicker">'
-        f'<span class="top-stat">{len(numbered)} items</span> above relevance threshold '
-        f'from <span class="top-stat">{total_ingested or len(numbered)}</span> reviewed in the last 24 hours.'
-        f'</p>'
-    )
-
-    body_parts.append(_top_stories_block(top3))
-
+    body: list[str] = []
+    body.append(_masthead(on_page=on_page))
+    body.append(_ticker_strip(date_label, time_label, len(numbered), total_ingested))
+    body.append(_top_block(top3))
     for cat_key, label in SECTIONS:
         rows = by_cat.get(cat_key) or []
         if rows:
-            body_parts.append(_section_block(label, rows))
+            body.append(_section_block(label, rows))
+    body.append(_footer(contact_email=contact_email, telegram_bot=telegram_bot))
 
-    body_parts.append(_footer(contact_email=contact_email, telegram_bot=telegram_bot))
-
-    return _doc(f"Dalila — {date_label}", "\n".join(body_parts))
+    return _doc(f"Dalila — {date_label.title()}", "\n".join(body))
 
 
-def _top_stories_block(top3: list[dict]) -> str:
+def _ticker_strip(date_label: str, time_label: str, n_items: int, total: int | None) -> str:
+    items_html = f'<span><b>{n_items}</b> ITEMS</span>'
+    rev_html = f'<span><b>{total or n_items}</b> REVIEWED 24H</span>' if (total or n_items) else ""
+    return f"""
+<div class="ticker">
+  <span>{html.escape(date_label)}</span>
+  {items_html}
+  {rev_html}
+  <span>COMPOSED {html.escape(time_label)}</span>
+</div>
+"""
+
+
+def _top_block(top3: list[dict]) -> str:
     if not top3:
         return ""
-    lis = []
+    lis: list[str] = []
     for it in top3:
         title = html.escape(it.get("title") or "")
         url = it.get("url") or ""
-        href = url if (url and url.startswith("http")) else f"#item-{it.get('n', 0)}"
-        lis.append(f'<li><a href="{html.escape(href)}">{title}</a></li>')
+        n = it.get("n") or 0
+        href = url if (url and url.startswith("http")) else f"#item-{n}"
+        lis.append(
+            f'<li><a href="{html.escape(href)}">{title}</a>'
+            f'<span class="ref">#{n}</span></li>'
+        )
     return (
-        '<section class="top-stories">'
-        '<h2 class="section-title">Top stories <span class="count">3</span></h2>'
+        '<section class="top">'
+        '<div class="top-head">'
+        '<span class="label">▌ Top stories</span>'
+        f'<span class="count">{len(top3):02d} of {len(top3):02d}</span>'
+        '</div>'
         '<ol>' + "\n".join(lis) + '</ol>'
         '</section>'
     )
@@ -404,7 +546,10 @@ def _top_stories_block(top3: list[dict]) -> str:
 def _section_block(label: str, rows: list[dict]) -> str:
     return (
         '<section class="section">'
-        f'<h2 class="section-title">{html.escape(label)} <span class="count">{len(rows)} item{"s" if len(rows) != 1 else ""}</span></h2>'
+        '<div class="section-head">'
+        f'<span class="label">▌ {html.escape(label)}</span>'
+        f'<span class="count">{len(rows):02d} ITEM{"S" if len(rows) != 1 else ""}</span>'
+        '</div>'
         + "".join(_item_block(it) for it in rows)
         + '</section>'
     )
@@ -431,32 +576,101 @@ def _item_block(it: dict) -> str:
     extras = extra.get("links") if isinstance(extra, dict) else None
     extra_links_html = ""
     if extras:
-        extra_links_html = " &middot; " + " &middot; ".join(
-            f'<a href="{html.escape(u)}" target="_blank" rel="noopener">link {i+1}</a>'
+        extra_links_html = " · " + " · ".join(
+            f'<a href="{html.escape(u)}" target="_blank" rel="noopener">L{i+1}</a>'
             for i, u in enumerate(extras[:5])
         )
 
     meta_parts = [
         f'<span class="src">{source}</span>' if source else "",
-        f'<span class="rel">rel {rel:.2f}</span>',
-        f'<span>sev {sev:.2f}</span>' if sev > 0 else "",
+        f'<span class="rel">REL {rel:.2f}</span>',
+        f'<span class="sev">SEV {sev:.2f}</span>' if sev > 0 else "",
         f'<span>{" · ".join(html.escape(str(c)) for c in countries[:3])}</span>' if countries else "",
-        f'<span>sector: {html.escape(sector)}</span>' if sector else "",
+        f'<span>{html.escape(sector.upper())}</span>' if sector else "",
         f'<span class="doctrine-tag">{html.escape(doctrine.upper())}</span>' if doctrine else "",
     ]
-    meta_html = " &middot; ".join(p for p in meta_parts if p) + extra_links_html
+    meta_html = " · ".join(p for p in meta_parts if p) + extra_links_html
 
     return (
         f'<article class="item" id="item-{n}">'
-        f'<h3 class="item-title">{title_html}</h3>'
-        f'<p class="item-summary">{summary}</p>'
-        f'<div class="item-meta">{meta_html}</div>'
+        f'<span class="item-n">#{n:02d}</span>'
+        '<div class="item-body">'
+        f'<h3 class="title">{title_html}</h3>'
+        f'<p class="summary">{summary}</p>'
+        f'<div class="meta">{meta_html}</div>'
+        '</div>'
         '</article>'
     )
 
 
 # ===========================================================================
-# About page (project, sources, subscribe, contact)
+# Home page (renders the latest digest inline, on_page=home so Home is current)
+# ===========================================================================
+
+def render_index(
+    latest_items: list[dict],
+    *,
+    when: datetime | None = None,
+    total_ingested: int | None = None,
+    contact_email: str = "dalila.dev.digest@gmail.com",
+    telegram_bot: str | None = "dalila_development_digest_bot",
+) -> str:
+    """Home page = latest digest, full content, with nav marking Home as current."""
+    return render_digest(
+        latest_items,
+        when=when,
+        total_ingested=total_ingested,
+        contact_email=contact_email,
+        telegram_bot=telegram_bot,
+        on_page="home",
+    )
+
+
+# ===========================================================================
+# Archive page (chronological list of all past briefs)
+# ===========================================================================
+
+def render_archive(
+    briefs: list[dict],
+    *,
+    contact_email: str = "dalila.dev.digest@gmail.com",
+    telegram_bot: str | None = "dalila_development_digest_bot",
+) -> str:
+    """Archive = list of all persisted briefs.
+
+    `briefs` is a list of dicts: { date_label, slug, preview }, newest first.
+    """
+    body: list[str] = []
+    body.append(_masthead(on_page="archive", tag="ARCHIVE"))
+
+    if not briefs:
+        body.append(
+            '<p style="color:var(--muted);font-size:13px;margin:32px 0 0;">'
+            'No briefs in the archive yet. The next one composes at 06:30 GST.</p>'
+        )
+    else:
+        body.append('<section class="archive">')
+        for b in briefs:
+            slug = html.escape(b.get("slug") or "")
+            date_label = html.escape(b.get("date_label") or "")
+            preview = html.escape(b.get("preview") or "")
+            body.append(
+                '<div class="archive-row">'
+                f'<div class="archive-date">{date_label}</div>'
+                '<div>'
+                f'<div class="archive-title"><a href="digests/{slug}.html">Morning brief — {date_label}</a></div>'
+                + (f'<div class="archive-preview">{preview}</div>' if preview else "")
+                + '</div>'
+                '</div>'
+            )
+        body.append('</section>')
+
+    body.append(_footer(contact_email=contact_email, telegram_bot=telegram_bot))
+    return _doc("Dalila — Archive", "\n".join(body))
+
+
+# ===========================================================================
+# About page
 # ===========================================================================
 
 def render_about(
@@ -465,10 +679,6 @@ def render_about(
     contact_email: str = "dalila.dev.digest@gmail.com",
     telegram_bot: str | None = "dalila_development_digest_bot",
 ) -> str:
-    """Render the static About page."""
-
-    # Bucket each enabled source by combinations of tags.
-    # The list order is the priority — first matching predicate wins.
     def _classify(tags: set) -> str:
         if "state" in tags:                            return "uae-state"
         if "entity" in tags:                           return "uae-entity"
@@ -486,7 +696,7 @@ def render_about(
         if "newsletter" in tags or "email" in tags:    return "newsletter"
         return "other"
 
-    bucket_order: list[tuple[str, str]] = [
+    bucket_order = [
         ("uae-state",     "UAE state & wire"),
         ("uae-entity",    "UAE operating entities"),
         ("uae-press",     "UAE & Gulf press"),
@@ -510,28 +720,35 @@ def render_about(
     bucket_labels = dict(bucket_order)
     sorted_buckets = [k for k, _ in bucket_order if k in grouped]
 
-    body = [_masthead(on_page="about")]
+    body: list[str] = []
+    body.append(_masthead(on_page="about", tag="ABOUT"))
     body.append('<div class="about">')
-    body.append('<p class="date-line">About</p>')
-    body.append('<p class="kicker">Dalila is a small daily intelligence brief on the global humanitarian, development, and philanthropy ecosystem — with a sharp focus on the UAE&rsquo;s role within it. It is built by one person, runs on free public sources, and exists to replace 30 to 60 minutes of fragmented morning reading.</p>')
+    body.append(
+        '<p style="font-size:17px;color:var(--type);margin-top:18px;">'
+        'Dalila is a daily intelligence brief on the global humanitarian, '
+        'development, and philanthropy ecosystem &mdash; with a sharp focus on '
+        'the UAE&rsquo;s role within it. Built by one person, free public '
+        'sources only, designed to replace 30 to 60 minutes of fragmented '
+        'morning reading.</p>'
+    )
 
     body.append('<h2>How it works</h2>')
     body.append(
-        '<p>Every 30 minutes, Dalila pulls new items from the sources listed below. '
-        'A cheap keyword and entity prefilter drops items unrelated to the UAE-aid '
-        'remit. Surviving items go through a classifier model that assigns a '
-        'category, UAE-relevance score, severity, and topical tags. Items that '
-        'cluster as the same story are deduplicated. At 06:30 GST, an editor '
-        'model composes the morning digest from the previous 24 hours of '
-        'classified items above threshold.</p>'
+        '<p>Every 30 minutes Dalila ingests new items from the sources below. '
+        'A keyword and entity prefilter drops items unrelated to the UAE-aid '
+        'remit. Surviving items go through a classifier that assigns a '
+        'category, UAE-relevance score, severity, and topical tags. Near-'
+        'duplicates are deduplicated. At 06:30 GST an editor model composes '
+        'the morning digest from the previous 24 hours of classified items '
+        'above threshold.</p>'
     )
     body.append(
         '<p>Two-way commands let subscribers ask for a deeper dive on a topic '
-        '(<code>/more &lt;topic&gt;</code>), review tracked UAE doctrine positions '
-        '(<code>/doctrine</code>), or pull recent UAE financial commitments and '
-        'bilateral meetings (<code>/commitments</code>, <code>/meetings</code>). '
-        'Items are numbered so a reply with <code>link 3</code> returns the '
-        'underlying source URL.</p>'
+        '(<code>/more &lt;topic&gt;</code>), review tracked UAE doctrine '
+        'positions (<code>/doctrine</code>), or pull recent UAE financial '
+        'commitments and bilateral meetings (<code>/commitments</code>, '
+        '<code>/meetings</code>). Items are numbered so a reply with '
+        '<code>link 3</code> returns the underlying source URL.</p>'
     )
 
     body.append('<h2>Sources</h2>')
@@ -540,8 +757,7 @@ def render_about(
         if not items:
             continue
         label = bucket_labels.get(bucket, bucket.title())
-        body.append(f'<div class="source-block"><strong>{html.escape(label)}</strong>')
-        body.append('<ul>')
+        body.append(f'<div class="source-block"><strong>{html.escape(label)}</strong><ul>')
         for s in sorted(items, key=lambda x: x.get("name") or ""):
             name = html.escape(s.get("name") or s.get("id", ""))
             url = s.get("url") or ""
@@ -567,57 +783,11 @@ def render_about(
 
     body.append('<h2>Suggestions</h2>')
     body.append(
-        f'<p class="contact">Feedback, source suggestions, bug reports, or '
-        f'requests for new features: <a href="mailto:{html.escape(contact_email)}">{html.escape(contact_email)}</a>.</p>'
+        f'<p>Feedback, source suggestions, bug reports, or requests for new '
+        f'features: <a href="mailto:{html.escape(contact_email)}">'
+        f'{html.escape(contact_email)}</a>.</p>'
     )
+    body.append('</div>')
 
-    body.append('</div>')  # close .about
     body.append(_footer(contact_email=contact_email, telegram_bot=telegram_bot))
     return _doc("Dalila — About", "\n".join(body))
-
-
-# ===========================================================================
-# Index / archive page
-# ===========================================================================
-
-def render_index(
-    recent_digests: list[dict],
-    *,
-    contact_email: str = "dalila.dev.digest@gmail.com",
-    telegram_bot: str | None = "dalila_development_digest_bot",
-) -> str:
-    """Render the archive landing page.
-
-    `recent_digests` is a list of dicts with: date_label, slug (date for url),
-    and optionally `preview` (a short prose summary or "X items, top: ...").
-    Most recent first.
-    """
-    body = [_masthead(on_page="home")]
-    body.append('<p class="date-line">Daily archive</p>')
-    body.append(
-        '<p class="kicker">Daily intelligence brief on humanitarian, development, '
-        'and philanthropy — with a focus on the UAE. Composed at 06:30 GST.</p>'
-    )
-
-    if not recent_digests:
-        body.append(
-            '<p class="kicker">No digests published yet — the first morning '
-            'digest will appear here.</p>'
-        )
-    else:
-        for d in recent_digests:
-            date_label = html.escape(d.get("date_label") or "")
-            slug = html.escape(d.get("slug") or "")
-            preview = html.escape(d.get("preview") or "")
-            body.append(
-                '<div class="archive-item">'
-                f'<div class="archive-date">{date_label}</div>'
-                '<div>'
-                f'<div class="archive-title"><a href="digests/{slug}.html">Morning digest — {date_label}</a></div>'
-                + (f'<div class="archive-preview">{preview}</div>' if preview else "")
-                + '</div>'
-                '</div>'
-            )
-
-    body.append(_footer(contact_email=contact_email, telegram_bot=telegram_bot))
-    return _doc("Dalila — Daily Development Brief", "\n".join(body))

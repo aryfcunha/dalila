@@ -46,8 +46,11 @@ def main(argv: list[str] | None = None) -> int:
     p_html.add_argument("--min-relevance", type=float, default=0.4)
     p_html.add_argument("--max-items", type=int, default=25)
     p_html.add_argument("--out", type=str, default="digest.html", help="Output path (default ./digest.html)")
-    p_site = sub.add_parser("publish-site", help="Generate the full static site (index, about, digests/) — ready for GitHub Pages")
+    p_site = sub.add_parser("publish-site", help="Generate the full static site (index, archive, about, digests/) — ready for GitHub Pages")
     p_site.add_argument("--out", type=str, default="docs", help="Output directory (default ./docs, matches GitHub Pages source)")
+    p_back = sub.add_parser("backfill-digests", help="Compose a brief for each of the past N days (one LLM call per day)")
+    p_back.add_argument("--days", type=int, default=5, help="How many days back to backfill (default 5)")
+    p_back.add_argument("--min-relevance", type=float, default=0.4)
     p_doctrine = sub.add_parser("doctrine", help="Run the doctrine extraction pass over pending classified items")
     p_doctrine.add_argument("--limit", type=int, default=20, help="Max items to process this run")
     sub.add_parser("verify-sources", help="Probe every enabled source and report fetched count + sample title")
@@ -118,6 +121,15 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Published {result['digests']} digest page(s) to {result['out_dir']}")
         for p in result["wrote"]:
             print(f"  · {p}")
+        return 0
+
+    if args.cmd == "backfill-digests":
+        from dalila.pipeline import run_backfill_digests
+        db.init_db()
+        results = run_backfill_digests(days=args.days, min_relevance=args.min_relevance)
+        print(f"Backfilled {len(results)} brief(s):")
+        for r in results:
+            print(f"  · #{r['digest_id']:>3d}  {r['date_label']:>25s}  {r['char_count']:>5d} chars")
         return 0
 
     if args.cmd == "doctrine":

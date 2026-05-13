@@ -254,9 +254,22 @@ def save_classifier_error(conn: sqlite3.Connection, item_id: int, error: str) ->
     )
 
 
-def items_for_digest(conn: sqlite3.Connection, since_hours: int = 24, min_relevance: float = 0.4) -> list[dict]:
-    """Items classified in the last N hours above the relevance threshold."""
-    cutoff = (datetime.now(timezone.utc) - timedelta(hours=since_hours)).isoformat()
+def items_for_digest(
+    conn: sqlite3.Connection,
+    since_hours: int = 24,
+    min_relevance: float = 0.4,
+    *,
+    as_of: datetime | None = None,
+) -> list[dict]:
+    """Items classified within the [as_of − since_hours, as_of] window.
+
+    `as_of` defaults to "now" (UTC). Set it to a past datetime for backfill —
+    e.g. to compose yesterday's digest, pass `as_of=yesterday-06:30-utc`.
+    The window is a sliding 24-hour cut against `classified_at`, so this
+    reflects items the bot had on hand at that moment in time.
+    """
+    end = as_of or datetime.now(timezone.utc)
+    start = end - timedelta(hours=since_hours)
     rows = conn.execute(
         """
         SELECT i.id, i.title, i.url, i.body, i.one_line_summary, i.category,
@@ -267,12 +280,13 @@ def items_for_digest(conn: sqlite3.Connection, since_hours: int = 24, min_releva
         JOIN sources s ON s.id = i.source_id
         WHERE i.classified_at IS NOT NULL
           AND i.classified_at >= ?
+          AND i.classified_at <= ?
           AND COALESCE(i.uae_relevance, 0) >= ?
           AND i.category != 'other'
         ORDER BY (i.uae_relevance * COALESCE(i.severity, 0.5) * s.quality) DESC,
                  i.ingested_at DESC
         """,
-        (cutoff, min_relevance),
+        (start.isoformat(), end.isoformat(), min_relevance),
     ).fetchall()
     out = []
     for r in rows:

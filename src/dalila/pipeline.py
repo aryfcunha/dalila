@@ -258,20 +258,87 @@ def run_deep_dive(topic: str, since_hours: int = 720, max_items: int = 20) -> tu
     return text, ids
 
 
-def run_compose_digest(since_hours: int = 24, min_relevance: float = 0.4, max_items: int = 25) -> tuple[int, str]:
-    """Compose today's digest. Returns (digest_id, content)."""
+def run_compose_digest(
+    since_hours: int = 24,
+    min_relevance: float = 0.4,
+    max_items: int = 25,
+    *,
+    as_of: datetime | None = None,
+) -> tuple[int, str]:
+    """Compose a digest. Returns (digest_id, content).
+
+    `as_of` defaults to now. Set to a past UTC datetime to backfill a
+    historical brief — the editor receives items classified in the 24h
+    window ending at `as_of`, and the saved date_label / composed_at
+    reflect that moment.
+    """
+    import pytz
+    cfg = get_config()
+    tz = pytz.timezone(cfg.timezone)
+
+    end_utc = as_of or datetime.now(timezone.utc)
+    end_local = end_utc.astimezone(tz)
+    date_label = end_local.strftime("%A %d %B %Y")
+
     with db.connect() as conn:
-        items = db.items_for_digest(conn, since_hours=since_hours, min_relevance=min_relevance)
+        items = db.items_for_digest(
+            conn, since_hours=since_hours, min_relevance=min_relevance, as_of=end_utc,
+        )
         items = _dedupe_by_simhash(items)
         items = items[:max_items]
-        content, _ = compose_digest(items)
-        cfg = get_config()
-        # Use cfg.timezone for the date label saved alongside the digest
-        import pytz
-        tz = pytz.timezone(cfg.timezone)
-        date_label = datetime.now(tz).strftime("%A %d %B %Y")
-        digest_id = db.save_digest(conn, date_label=date_label, content=content, item_ids=[i["id"] for i in items])
+        # Compose with the local clock at `as_of`, not "now"
+        content, _ = compose_digest(items, when=end_local)
+        digest_id = db.save_digest(
+            conn,
+            date_label=date_label,
+            content=content,
+            item_ids=[i["id"] for i in items],
+        )
     return digest_id, content
+
+
+def run_backfill_digests(days: int = 5, min_relevance: float = 0.4) -> list[dict]:
+    """Compose `days` daily briefs, one per day for the past N days at 06:30 GST.
+
+    Each brief sees items classified in the 24h window ending at that day's
+    06:30 GST — the same window the live cron uses. Useful for populating the
+    archive on first deploy.
+
+    Returns a list of {as_of, digest_id, item_count, date_label} dicts.
+    """
+    import pytz
+    cfg = get_config()
+    tz = pytz.timezone(cfg.timezone)
+    hour, minute = (int(x) for x in cfg.digest_time.split(":"))
+    today_local = datetime.now(tz).replace(hour=hour, minute=minute, second=0, microsecond=0)
+
+    results: list[dict] = []
+    for d in range(days):
+        as_of_local = today_local - timedelta(days=d)
+        # Skip future timestamps (e.g. if today's 06:30 hasn't happened yet)
+        if as_of_local > datetime.now(tz):
+            continue
+        as_of_utc = as_of_local.astimezone(timezone.utc)
+        log.info("backfill: composing brief for %s (%s)",
+                 as_of_local.strftime("%A %d %B %Y"), as_of_utc.isoformat())
+        try:
+            digest_id, content = run_compose_digest(
+                since_hours=24,
+                min_relevance=min_relevance,
+                max_items=25,
+                as_of=as_of_utc,
+            )
+        except Exception as exc:
+            log.warning("backfill: compose failed for %s: %s",
+                        as_of_local.date(), exc)
+            continue
+        results.append({
+            "as_of": as_of_utc.isoformat(),
+            "digest_id": digest_id,
+            "char_count": len(content),
+            "date_label": as_of_local.strftime("%A %d %B %Y"),
+        })
+    return results
 
 
 def run_render_html_digest(
@@ -295,30 +362,33 @@ def run_render_html_digest(
 
 def run_publish_site(out_dir: "Path") -> dict:
     """Generate the full static site at `out_dir`:
-        index.html                           — archive landing page
-        about.html                           — project info, sources, subscribe
-        digests/<YYYY-MM-DD>.html            — one per persisted digest
+        index.html                — home page: shows the LATEST brief inline
+        archive.html              — chronological list of all past briefs
+        about.html                — project info, sources, subscribe
+        digests/<YYYY-MM-DD>.html — one page per persisted brief
 
-    Uses already-persisted digests (db.digests) where available — re-rendering
-    each as an HTML page from the items they referenced. The most recent day
-    also picks up items classified TODAY that haven't been formally digested
-    yet (so the index always reflects the latest classified data).
+    Re-renders every persisted digest from the items they referenced. The
+    home page reuses the latest brief's content. Files are idempotent;
+    safe to re-run.
     """
     from pathlib import Path
     import json as _json
+
     from dalila.config import load_sources
-    from dalila.html_digest import render_about, render_digest, render_index
+    from dalila.html_digest import render_about, render_archive, render_digest, render_index
 
     out_dir = Path(out_dir)
     digests_dir = out_dir / "digests"
     digests_dir.mkdir(parents=True, exist_ok=True)
 
     written: list[dict] = []
+    latest_items: list[dict] | None = None
+    latest_when: datetime | None = None
 
     with db.connect() as conn:
-        # Pull persisted digests, newest first.
         rows = conn.execute(
-            "SELECT id, composed_at, date_label, item_ids_json FROM digests ORDER BY composed_at DESC LIMIT 60"
+            "SELECT id, composed_at, date_label, item_ids_json FROM digests "
+            "ORDER BY composed_at DESC LIMIT 60"
         ).fetchall()
 
         for row in rows:
@@ -331,7 +401,6 @@ def run_publish_site(out_dir: "Path") -> dict:
             items = _items_by_ids(conn, item_ids)
             if not items:
                 continue
-            # composed_at is ISO; pick the calendar date from it
             try:
                 composed = datetime.fromisoformat(row["composed_at"].replace("Z", "+00:00"))
             except Exception:
@@ -344,24 +413,41 @@ def run_publish_site(out_dir: "Path") -> dict:
                 "date_label": row["date_label"],
                 "preview": _preview_text(items, n=2),
             })
+            # Latest = first (newest) digest with items
+            if latest_items is None:
+                latest_items = items
+                latest_when = composed
 
-    # If no persisted digests, render today from live items so the site isn't empty.
-    if not written:
-        html_str, items = run_render_html_digest()
-        if items:
+    # If no persisted digests, render today's snapshot for the home page so
+    # the site isn't completely blank.
+    if latest_items is None:
+        live_html, live_items = run_render_html_digest()
+        if live_items:
             slug = datetime.now().strftime("%Y-%m-%d")
-            (digests_dir / f"{slug}.html").write_text(html_str, encoding="utf-8")
+            (digests_dir / f"{slug}.html").write_text(live_html, encoding="utf-8")
+            latest_items = live_items
+            latest_when = datetime.now(timezone.utc)
             written.append({
                 "slug": slug,
                 "date_label": slug,
-                "preview": _preview_text(items, n=2),
+                "preview": _preview_text(live_items, n=2),
             })
 
-    # Index (archive)
-    index_html = render_index(written)
+    # 1. Home page = latest brief inline
+    if latest_items:
+        index_html = render_index(
+            latest_items, when=latest_when, total_ingested=len(latest_items),
+        )
+    else:
+        # Truly empty — render the archive page as home so visitors see something
+        index_html = render_archive(written)
     (out_dir / "index.html").write_text(index_html, encoding="utf-8")
 
-    # About
+    # 2. Archive page = list of all briefs
+    archive_html = render_archive(written)
+    (out_dir / "archive.html").write_text(archive_html, encoding="utf-8")
+
+    # 3. About page
     sources = load_sources()
     about_html = render_about(sources)
     (out_dir / "about.html").write_text(about_html, encoding="utf-8")
@@ -369,8 +455,11 @@ def run_publish_site(out_dir: "Path") -> dict:
     return {
         "out_dir": str(out_dir),
         "digests": len(written),
-        "wrote": [str(out_dir / "index.html"), str(out_dir / "about.html")] +
-                 [str(digests_dir / f"{d['slug']}.html") for d in written],
+        "wrote": [
+            str(out_dir / "index.html"),
+            str(out_dir / "archive.html"),
+            str(out_dir / "about.html"),
+        ] + [str(digests_dir / f"{d['slug']}.html") for d in written],
     }
 
 
