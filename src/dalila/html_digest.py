@@ -1248,19 +1248,28 @@ def render_countries(
 
     # World map (D3 + world-atlas topojson, rendered client-side).
     # The container is empty server-side; JS injects a Natural-Earth-projected
-    # SVG and colours each country path by mention count. Arcs for co-mentions
-    # are drawn into the `.carto-overlay` layer the same way the old cartogram
-    # did, just between SVG path centroids instead of tile centres.
+    # SVG, colours each country path by mention count, and on selection
+    # appends a <g class="overlay-layer"> INSIDE that same SVG containing the
+    # arcs + capital dots + labels. Keeping them in one SVG guarantees the
+    # arcs share the exact same coordinate system as the country paths —
+    # which is the whole point: a previous separate-overlay-SVG design had
+    # different physical dimensions and shifted dots ~48px below their
+    # countries. The tooltip and legend stay outside the SVG (they're HTML).
     body.append(
         '<div class="carto-wrap">'
+        '<div class="map-frame">'
         '<div id="world-map" class="world-map" aria-label="World mention heatmap">'
-        '<div class="map-loading">Loading world map…</div>'
+        '<div class="map-loading">'
+        '<span class="loading-tick"></span><span class="loading-tick"></span><span class="loading-tick"></span>'
+        '<span class="loading-text">Resolving geography…</span>'
         '</div>'
-        '<svg class="carto-overlay" aria-hidden="true"></svg>'
+        '</div>'
         '<div id="map-tooltip" class="map-tooltip" hidden></div>'
+        '</div>'
         '<div class="map-legend" id="map-legend" aria-hidden="true">'
         '<span class="legend-label">MENTIONS</span>'
-        '<span class="legend-swatch" data-h="0" title="0"></span>'
+        '<div class="legend-bar">'
+        '<span class="legend-swatch" data-h="0"></span>'
         '<span class="legend-swatch" data-h="1"></span>'
         '<span class="legend-swatch" data-h="2"></span>'
         '<span class="legend-swatch" data-h="3"></span>'
@@ -1269,8 +1278,9 @@ def render_countries(
         '<span class="legend-swatch" data-h="6"></span>'
         '<span class="legend-swatch" data-h="7"></span>'
         '<span class="legend-swatch" data-h="8"></span>'
-        '<span class="legend-low">low</span>'
-        '<span class="legend-high" id="legend-high">high</span>'
+        '</div>'
+        '<span class="legend-tick legend-low">0</span>'
+        '<span class="legend-tick legend-high" id="legend-high">—</span>'
         '</div>'
         '</div>'
     )
@@ -1382,78 +1392,175 @@ def _country_view_styles() -> str:
   .region-btn.active { color:var(--bg); background:var(--amber); border-color:var(--amber); }
   .region-btn .rb-count { color:inherit; opacity:.7; margin-left:6px; }
 
-  /* world map (D3 + world-atlas) */
-  .carto-wrap { position:relative; margin:0 0 24px; background:var(--bg-deep);
-    border:1px solid var(--rule-strong); padding:8px;
+  /* ─────────────────────────────────────────────────────────────────
+     World map — D3 + world-atlas 50m, Natural Earth projection.
+     ARCHITECTURAL NOTE: country paths, arcs, capital dots, and ISO
+     labels all live in the SAME <svg>. A separate overlay SVG was
+     producing a ~48px vertical mismatch because two SVGs sized to
+     different parents (the map's parent vs the wrapper's parent +
+     legend) get different physical pixel-per-viewBox-unit ratios
+     even when given identical viewBoxes. One SVG = one coordinate
+     space = arcs land exactly on the countries they should.
+     ───────────────────────────────────────────────────────────── */
+  .carto-wrap {
+    position:relative; margin:0 0 24px;
+    background:
+      radial-gradient(ellipse 90% 70% at 50% 45%, #15110a 0%, #0a0805 70%, #050402 100%);
+    border:1px solid var(--rule-strong);
+    padding:14px 14px 0;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 207, 102, 0.04),
+      inset 0 -1px 0 rgba(0,0,0,0.4);
   }
-  .carto-overlay {
-    position:absolute; inset:0; width:100%; height:100%;
-    pointer-events:none; overflow:visible;
+  .map-frame {
+    position:relative;
   }
-  .carto-overlay path {
-    fill:none; stroke:var(--amber); opacity:.65;
-    stroke-linecap:round;
+  .world-map { width:100%; min-height:380px; }
+  .world-map svg {
+    display:block; width:100%; height:auto;
+    /* Faint inner shadow on the SVG itself separates the map from
+       its container without an obvious border. */
+    filter: drop-shadow(0 1px 0 rgba(0,0,0,0.4));
   }
-  /* Capital markers — explicit fill set inline so they show even though
-     the overlay layer sits above the heatmapped country paths. */
-  .carto-overlay circle {
-    pointer-events: none;
-  }
-  .world-map { width:100%; min-height:420px; }
-  .world-map svg { display:block; width:100%; height:auto; }
+
+  /* Country polygons — the heatmap layer. */
   .world-map path.country {
-    /* Default fill is overridden inline by JS via fillForCount(); this is
-       the pre-paint state and the "no data" fallback. Stroke is a touch
-       darker than the lightest stop so the lowest-tier countries still
-       show their borders. */
-    fill:#1a1612; stroke:#0a0805; stroke-width:0.4;
-    cursor:pointer; transition:fill .12s, stroke .12s;
+    fill:#1a1612; stroke:#0a0805; stroke-width:0.35;
+    cursor:pointer;
+    transition: filter .14s ease, stroke .14s ease, stroke-width .14s ease;
   }
   .world-map path.country.has-data { cursor:pointer; }
   .world-map path.country:hover {
-    stroke:var(--amber); stroke-width:1.0;
+    stroke:#ffcf66; stroke-width:0.9;
+    filter: brightness(1.18);
   }
   .world-map path.country.selected {
-    stroke:var(--amber); stroke-width:1.5;
+    stroke:#ffcf66; stroke-width:1.4;
+    filter: brightness(1.25) drop-shadow(0 0 3px rgba(255,207,102,0.55));
   }
-  .world-map path.country.dim { opacity:.22; }
+  .world-map path.country.dim { opacity:.18; }
   .world-map .graticule {
-    fill:none; stroke:#1f1a12; stroke-width:0.3; opacity:.55;
+    fill:none; stroke:#1f1a12; stroke-width:0.25; opacity:.45;
   }
   .world-map .sphere {
-    fill:#0e0c08; stroke:#2a2218; stroke-width:0.5;
+    fill:#0a0805; stroke:#241c10; stroke-width:0.6;
   }
+
+  /* Overlay layer (arcs + dots + labels) — INSIDE the main SVG. */
+  .world-map .arc {
+    fill:none;
+    stroke:url(#arc-gradient);
+    stroke-linecap:round;
+  }
+  .world-map .arc-faint {
+    fill:none;
+    stroke:#ffcf66; opacity:.16;
+    stroke-linecap:round;
+    stroke-dasharray:2 3;
+  }
+  .world-map .marker {
+    fill:#ffcf66;
+    stroke:#0a0805; stroke-width:0.6;
+  }
+  .world-map .marker-source-ring {
+    fill:none;
+    stroke:#ffcf66; stroke-width:0.7;
+    opacity:0.55;
+  }
+  .world-map .marker-label-bg {
+    fill:#0a0805; opacity:0.88;
+    stroke:#3d2a14; stroke-width:0.4;
+  }
+  .world-map .marker-label {
+    fill:#ffcf66;
+    font:700 8.5px "JetBrains Mono","IBM Plex Mono",Consolas,monospace;
+    letter-spacing:0.06em;
+    text-anchor:middle;
+    pointer-events:none;
+    paint-order:stroke;
+  }
+  .world-map .marker-source-label {
+    fill:#0a0805;
+    font:700 9px "JetBrains Mono",Consolas,monospace;
+    letter-spacing:0.08em;
+    text-anchor:middle;
+    pointer-events:none;
+  }
+
+  /* Tooltip — HTML element above the SVG. */
   .map-tooltip {
     position:absolute; pointer-events:none; z-index:20;
-    background:rgba(10,10,10,0.95); color:var(--type);
-    border:1px solid var(--amber); padding:6px 9px;
-    font:600 11px/1.3 "JetBrains Mono",Consolas,monospace;
-    letter-spacing:0.04em; max-width:220px;
-    transform:translate(-50%, calc(-100% - 10px));
+    background:rgba(8,6,3,0.96); color:var(--type);
+    border:1px solid #ffcf66; padding:7px 11px;
+    font:600 11px/1.3 "JetBrains Mono","IBM Plex Mono",Consolas,monospace;
+    letter-spacing:0.04em; max-width:240px;
+    transform:translate(-50%, calc(-100% - 12px));
+    box-shadow: 0 4px 12px rgba(0,0,0,0.6);
   }
-  .map-tooltip b { color:var(--amber); }
+  .map-tooltip::after {
+    /* Little tick pointing down at the cursor */
+    content:""; position:absolute; left:50%; bottom:-5px;
+    width:8px; height:8px; transform:translateX(-50%) rotate(45deg);
+    background:rgba(8,6,3,0.96);
+    border-right:1px solid #ffcf66; border-bottom:1px solid #ffcf66;
+  }
+  .map-tooltip b { color:#ffcf66; font-weight:700; }
+  .map-tooltip .tt-name {
+    font-family:"Iowan Old Style","Source Serif Pro",Georgia,serif;
+    font-style:italic; font-weight:400; font-size:13px;
+    letter-spacing:0; color:#ffcf66; display:block; margin-bottom:2px;
+  }
+  .map-tooltip .tt-meta {
+    color:var(--muted); font-size:10px;
+    text-transform:uppercase; letter-spacing:0.10em;
+  }
 
-  /* loading hint shown until the topojson + D3 load */
+  /* Loading hint with subtle pulse animation. */
   .map-loading {
     padding:120px 20px; text-align:center; color:var(--muted);
-    font:600 12px/1.3 "JetBrains Mono",Consolas,monospace;
-    letter-spacing:0.10em; text-transform:uppercase;
+    font:600 11px/1.3 "JetBrains Mono",Consolas,monospace;
+    letter-spacing:0.18em; text-transform:uppercase;
+    display:flex; align-items:center; justify-content:center; gap:10px;
+  }
+  .map-loading .loading-tick {
+    width:6px; height:6px; background:var(--amber); display:inline-block;
+    animation: load-pulse 1.2s ease-in-out infinite;
+  }
+  .map-loading .loading-tick:nth-child(2) { animation-delay:0.18s; }
+  .map-loading .loading-tick:nth-child(3) { animation-delay:0.36s; }
+  .map-loading .loading-text { margin-left:4px; color:var(--type-dim); }
+  @keyframes load-pulse {
+    0%, 80%, 100% { opacity:0.25; transform:scale(0.85); }
+    40% { opacity:1; transform:scale(1); }
   }
 
-  /* legend below the map */
+  /* Legend — horizontal scale below the map. */
   .map-legend {
-    display:flex; align-items:center; gap:4px;
-    margin:10px 4px 0; padding-top:8px;
-    border-top:1px dashed var(--rule);
-    font:600 10px/1 "JetBrains Mono",Consolas,monospace;
-    letter-spacing:0.10em; color:var(--type-dim);
+    display:grid;
+    grid-template-columns: auto 1fr auto;
+    align-items:center;
+    gap:14px;
+    margin:14px 4px 0; padding:12px 0 4px;
+    border-top:1px solid #1f1a12;
+    font:700 10px/1 "JetBrains Mono","IBM Plex Mono",Consolas,monospace;
+    letter-spacing:0.14em; color:var(--type-dim);
+    text-transform:uppercase;
   }
-  .legend-label { margin-right:8px; }
+  .legend-label { white-space:nowrap; }
+  .legend-bar {
+    display:flex;
+    height:8px;
+    /* The bar itself is a flush row of swatches with no gap, giving it
+       a continuous "data-spectrum" reading instead of a row of squares. */
+  }
   .legend-swatch {
-    width:22px; height:14px; display:inline-block;
-    border:1px solid #2a2218;
+    flex:1;
+    border:0;
+    border-top:1px solid #2a2218;
+    border-bottom:1px solid #2a2218;
   }
-  /* Heat swatches — kept in sync with HEAT_STOPS in _country_view_script */
+  .legend-swatch:first-child { border-left:1px solid #2a2218; }
+  .legend-swatch:last-child { border-right:1px solid #2a2218; }
   .legend-swatch[data-h="0"] { background:#1a1612; }
   .legend-swatch[data-h="1"] { background:#3d2a14; }
   .legend-swatch[data-h="2"] { background:#5e3d18; }
@@ -1463,8 +1570,11 @@ def _country_view_styles() -> str:
   .legend-swatch[data-h="6"] { background:#dba038; }
   .legend-swatch[data-h="7"] { background:#f0b84a; }
   .legend-swatch[data-h="8"] { background:#ffcf66; }
-  .legend-low { margin-left:6px; color:var(--muted); }
-  .legend-high { margin-left:auto; color:var(--amber); }
+  .legend-tick {
+    font-size:10px; color:var(--muted);
+    letter-spacing:0.10em;
+  }
+  .legend-tick.legend-high { color:#ffcf66; }
 
   /* detail panel */
   .detail { margin:24px 0 12px; }
@@ -1550,7 +1660,6 @@ def _country_view_script() -> str:
 (function() {
   const wrap = document.querySelector('.carto-wrap');
   const mapEl = document.getElementById('world-map');
-  const overlay = document.querySelector('.carto-overlay');
   const tooltip = document.getElementById('map-tooltip');
   const detail = document.getElementById('detail');
   const empty = document.getElementById('empty-state');
@@ -1662,47 +1771,63 @@ def _country_view_script() -> str:
     "ZW":[31.05,-17.83]
   };
 
+  // SVG layer references — populated by buildMap.
+  let mapSvg = null;       // <svg> root
+  let arcsLayer = null;    // <g class="arcs-layer"> — arcs + dots + labels
+
   function buildMap(world) {
     countriesGeo = topojson.feature(world, world.objects.countries);
     // world-atlas 50m has a duplicate id="036" — Australia mainland *and*
-    // Ashmore & Cartier Is. (a tiny offshore territory). When d3 binds
-    // features by id, the lookup non-deterministically picks one. Drop
-    // Ashmore by name so the AU lookup always resolves to mainland.
-    // (Verified via scripts/verify_capitals.py: this is the only
-    // duplicate-id collision among ISO-coded countries in the dataset.)
+    // Ashmore & Cartier Is. Drop Ashmore so AU resolves to mainland.
     countriesGeo.features = countriesGeo.features.filter(f =>
       ((f.properties || {}).name || "") !== "Ashmore and Cartier Is."
     );
-    // fitSize with land-only feature collection rather than the full sphere —
-    // Natural Earth's actual landmass extents fill the viewport better than
-    // fitExtent against the polar regions, which were leaving empty bands.
     projection = d3.geoNaturalEarth1()
       .fitSize([WIDTH, HEIGHT], countriesGeo);
     pathGen = d3.geoPath(projection);
 
-    // Remove the "Loading world map…" placeholder.
     const loader = mapEl.querySelector('.map-loading');
     if (loader) loader.remove();
 
     const svg = d3.select(mapEl).append("svg")
       .attr("viewBox", "0 0 " + WIDTH + " " + HEIGHT)
       .attr("preserveAspectRatio", "xMidYMid meet");
-    svg.append("path").datum({type: "Sphere"})
-      .attr("class", "sphere").attr("d", pathGen);
-    svg.append("path").datum(d3.geoGraticule10())
-      .attr("class", "graticule").attr("d", pathGen);
+
+    // Defs: arc gradient (amber → bright at midpoint → amber), drop-shadow filter.
+    const defs = svg.append("defs");
+    const grad = defs.append("linearGradient")
+      .attr("id", "arc-gradient")
+      .attr("gradientUnits", "userSpaceOnUse");
+    grad.append("stop").attr("offset", "0%").attr("stop-color", "#ffcf66").attr("stop-opacity", "0.85");
+    grad.append("stop").attr("offset", "50%").attr("stop-color", "#ffe0a0").attr("stop-opacity", "1");
+    grad.append("stop").attr("offset", "100%").attr("stop-color", "#ffcf66").attr("stop-opacity", "0.85");
+    // Soft glow filter for arcs and source marker.
+    const glow = defs.append("filter")
+      .attr("id", "amber-glow").attr("x", "-50%").attr("y", "-50%")
+      .attr("width", "200%").attr("height", "200%");
+    glow.append("feGaussianBlur").attr("stdDeviation", "1.2").attr("result", "blur");
+    const merge = glow.append("feMerge");
+    merge.append("feMergeNode").attr("in", "blur");
+    merge.append("feMergeNode").attr("in", "SourceGraphic");
+
+    // Layers, painted back-to-front:
+    svg.append("path").datum({type: "Sphere"}).attr("class", "sphere").attr("d", pathGen);
+    svg.append("path").datum(d3.geoGraticule10()).attr("class", "graticule").attr("d", pathGen);
     svg.append("g").attr("class", "countries")
       .selectAll("path")
       .data(countriesGeo.features)
       .join("path")
-      .attr("class", "country")
-      .attr("d", pathGen)
-      .attr("data-iso", d => N3_TO_A2[String(d.id).padStart(3, "0")] || "")
-      .attr("data-name", d => (d.properties && d.properties.name) || "");
+        .attr("class", "country")
+        .attr("d", pathGen)
+        .attr("data-iso", d => N3_TO_A2[String(d.id).padStart(3, "0")] || "")
+        .attr("data-name", d => (d.properties && d.properties.name) || "");
+    arcsLayer = svg.append("g").attr("class", "arcs-layer");
+
+    mapSvg = svg.node();
     mapReady = true;
     repaintHeat();
 
-    // Hover handlers
+    // Hover + click on country paths.
     svg.selectAll("path.country")
       .on("mousemove", function(ev) {
         const iso = this.dataset.iso;
@@ -1710,7 +1835,11 @@ def _country_view_script() -> str:
         const c = DATA.countries[iso] || {};
         const cnt = parseInt(this.dataset.count || "0", 10);
         const name = c.name || this.dataset.name || iso;
-        tooltip.innerHTML = name + ' &middot; <b>' + cnt + '</b> mention' + (cnt === 1 ? '' : 's');
+        const region = c.region ? (DATA.regions[c.region] || c.region) : '';
+        tooltip.innerHTML =
+          '<span class="tt-name">' + escapeHtml(name) + '</span>' +
+          '<b>' + cnt + '</b> mention' + (cnt === 1 ? '' : 's') +
+          (region ? ' <span class="tt-meta">· ' + escapeHtml(region) + '</span>' : '');
         const r = wrap.getBoundingClientRect();
         tooltip.style.left = (ev.clientX - r.left) + "px";
         tooltip.style.top  = (ev.clientY - r.top)  + "px";
@@ -1842,20 +1971,21 @@ def _country_view_script() -> str:
     if (selectedIso) drawArcs(selectedIso);  // re-render arcs in new SVG space
   }
 
-  function clearOverlay() { overlay.innerHTML = ''; }
+  function clearArcs() {
+    if (arcsLayer) arcsLayer.selectAll("*").remove();
+  }
 
   // Anchor point for arcs — capital city if known, polygon centroid otherwise.
   // Capitals are the geographically-meaningful pin for arc endpoints
   // (USA centroid is in Kansas; capital is Washington DC, much more useful).
-  function centroidFor(iso) {
+  function anchorFor(iso) {
     if (!mapReady) return null;
     const cap = CAPITALS[iso];
     if (cap && projection) {
       const xy = projection(cap);
       if (xy && isFinite(xy[0]) && isFinite(xy[1])) return xy;
     }
-    // Fallback: polygon centroid (for any country not in CAPITALS table,
-    // or if projection somehow can't resolve the lon/lat).
+    // Fallback: polygon centroid for countries missing from CAPITALS.
     const feature = countriesGeo.features.find(
       f => (N3_TO_A2[String(f.id).padStart(3, "0")] || "") === iso
     );
@@ -1864,65 +1994,93 @@ def _country_view_script() -> str:
   }
 
   function drawArcs(iso) {
-    clearOverlay();
-    if (!mapReady) return;
+    clearArcs();
+    if (!mapReady || !arcsLayer) return;
     const co = DATA.co[iso] || {};
     const entries = Object.entries(co).sort((a, b) => b[1] - a[1]).slice(0, 20);
     if (!entries.length) return;
-    // Arcs draw into the overlay SVG, sized to the same viewBox as the map.
-    overlay.setAttribute('viewBox', '0 0 ' + WIDTH + ' ' + HEIGHT);
-    overlay.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-    const src = centroidFor(iso);
+    const src = anchorFor(iso);
     if (!src) return;
     const [sx, sy] = src;
     const maxCount = Math.max(...entries.map(e => e[1]));
+
+    // 5 discrete tiers: [stroke-width, opacity, stroke-dasharray-or-null]
+    // Faintest tier uses dashed line so 1-co-mention reads as "tenuous".
     const TIERS = [
-      [0.4, 0.35],
-      [0.9, 0.50],
-      [1.5, 0.65],
-      [2.2, 0.80],
-      [3.0, 0.95],
+      [0.5, 0.45, "1.5 2.5"],
+      [0.9, 0.60, null],
+      [1.4, 0.75, null],
+      [2.0, 0.88, null],
+      [2.8, 1.00, null],
     ];
 
-    function addDot(x, y, radius, opacity) {
-      const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      c.setAttribute('cx', x.toFixed(2));
-      c.setAttribute('cy', y.toFixed(2));
-      c.setAttribute('r', radius.toFixed(2));
-      c.setAttribute('fill', '#ffcf66');
-      c.setAttribute('stroke', '#0a0805');
-      c.setAttribute('stroke-width', '0.6');
-      c.setAttribute('opacity', opacity.toFixed(2));
-      overlay.appendChild(c);
+    // Update the arc gradient endpoints once per draw so it tracks the
+    // source-to-farthest-target axis. Looks better than a fixed direction.
+    const farthest = entries.map(e => anchorFor(e[0])).filter(Boolean)
+      .reduce((best, p) => {
+        const d = Math.hypot(p[0] - sx, p[1] - sy);
+        return (!best || d > best.d) ? { p, d } : best;
+      }, null);
+    if (farthest) {
+      const grad = d3.select("#arc-gradient");
+      grad.attr("x1", sx).attr("y1", sy)
+          .attr("x2", farthest.p[0]).attr("y2", farthest.p[1]);
     }
 
-    // Source marker — slightly larger, distinct so the user can see where
-    // the arcs originate (especially useful for small-country sources like UAE).
-    addDot(sx, sy, 4.0, 1.0);
-
+    // Build arcs, then dots, then labels (z-order matters: labels on top).
+    const arcsData = [];
     for (const [other, cnt] of entries) {
-      const tgt = centroidFor(other);
+      const tgt = anchorFor(other);
       if (!tgt) continue;
       const [tx, ty] = tgt;
       const dx = tx - sx, dy = ty - sy;
       const dist = Math.hypot(dx, dy) || 1;
-      const cx = (sx + tx) / 2 + (-dy / dist) * (dist * 0.22);
-      const cy = (sy + ty) / 2 + ( dx / dist) * (dist * 0.22);
+      // Bezier control: midpoint shifted perpendicular. Bow scales with
+      // distance so cross-ocean arcs curve dramatically, neighbours stay flat.
+      const bow = Math.min(0.32, 0.18 + dist / WIDTH * 0.20);
+      const cx = (sx + tx) / 2 + (-dy / dist) * (dist * bow);
+      const cy = (sy + ty) / 2 + ( dx / dist) * (dist * bow);
       const r = Math.sqrt(cnt / Math.max(maxCount, 1));
       const tier = Math.min(TIERS.length - 1, Math.floor(r * TIERS.length));
-      const [w, op] = TIERS[tier];
-      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', 'M ' + sx + ' ' + sy + ' Q ' + cx + ' ' + cy + ' ' + tx + ' ' + ty);
-      path.setAttribute('stroke-width', w.toFixed(2));
-      path.setAttribute('opacity', op.toFixed(2));
-      overlay.appendChild(path);
-      // Target endpoint marker — the radius scales with co-mention count so
-      // a strong-tie country has an obviously chunky dot, a weak-tie one
-      // has a discreet pinprick. Crucially, the dot makes it visually
-      // unambiguous *which point* the arc is anchored at, even when the
-      // target country is tiny on the world map (UAE, Singapore, Lebanon).
-      addDot(tx, ty, 1.6 + 2.2 * r, 0.85);
+      const [w, op, dash] = TIERS[tier];
+      arcsData.push({ iso: other, sx, sy, tx, ty, cx, cy, w, op, dash, cnt, r });
     }
+
+    // Layer 1 — arcs
+    arcsLayer.selectAll("path.arc")
+      .data(arcsData)
+      .join("path")
+      .attr("class", "arc")
+      .attr("d", a => "M " + a.sx + " " + a.sy + " Q " + a.cx + " " + a.cy + " " + a.tx + " " + a.ty)
+      .attr("stroke-width", a => a.w)
+      .attr("opacity", a => a.op)
+      .attr("stroke-dasharray", a => a.dash || "")
+      .style("filter", "url(#amber-glow)");
+
+    // Layer 2 — target dots
+    arcsLayer.selectAll("circle.target-marker")
+      .data(arcsData)
+      .join("circle")
+      .attr("class", "marker target-marker")
+      .attr("cx", a => a.tx)
+      .attr("cy", a => a.ty)
+      .attr("r", a => 1.8 + 1.8 * a.r);
+
+    // Layer 3 — source marker: filled dot + outer ring for emphasis
+    arcsLayer.append("circle")
+      .attr("class", "marker-source-ring")
+      .attr("cx", sx).attr("cy", sy).attr("r", 7);
+    arcsLayer.append("circle")
+      .attr("class", "marker-source-ring")
+      .attr("cx", sx).attr("cy", sy).attr("r", 5);
+    arcsLayer.append("circle")
+      .attr("class", "marker")
+      .attr("cx", sx).attr("cy", sy).attr("r", 3.2)
+      .style("filter", "url(#amber-glow)");
+
+    // No labels — the dots themselves convey position, and the country
+    // selected is already named in the detail panel below. Co-mention chips
+    // there list the named targets in priority order. Keeps the map clean.
   }
 
   function showDetail(iso) {
@@ -1988,7 +2146,7 @@ def _country_view_script() -> str:
     mapEl.querySelectorAll('path.country').forEach(p => p.classList.remove('selected'));
     detail.hidden = true;
     empty.classList.remove('hidden');
-    clearOverlay();
+    clearArcs();
   }
 
   function applyRegionFilter(region) {
