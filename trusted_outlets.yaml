@@ -1,0 +1,225 @@
+# Trusted-outlet allowlist for GDELT-sourced items.
+#
+# GDELT crawls the entire web of news domains, so without filtering we end up
+# accepting articles from regional papers with limited circulation
+# (e.g. semissourian.com) alongside Reuters and the FT. This list narrows
+# GDELT intake to outlets that are either:
+#
+#   (a) widely recognised global press with national or international circulation,
+#   (b) leading press in a specific country (especially MENA, sub-Saharan
+#       Africa, Asia — regions Dalila covers heavily), or
+#   (c) specialist humanitarian / development / multilateral publications.
+#
+# Domain matching is suffix-based: any subdomain of a listed root passes
+# (e.g. "english.aawsat.com" matches "aawsat.com"). Strip protocol and
+# "www." before comparing.
+#
+# To allow a new outlet, append its bare domain (no protocol, no www).
+# Subscriptions / paywalls are fine — Dalila stores titles and URLs only.
+
+outlets:
+  # ─── International wires & global press ───────────────────────────────
+  - reuters.com
+  - apnews.com
+  - ap.org
+  - afp.com
+  - bbc.com
+  - bbc.co.uk
+  - aljazeera.com
+  - aljazeera.net
+  - ft.com
+  - economist.com
+  - wsj.com
+  - nytimes.com
+  - washingtonpost.com
+  - theguardian.com
+  - guardian.co.uk
+  - bloomberg.com
+  - cnn.com
+  - npr.org
+  - france24.com
+  - rfi.fr
+  - dw.com
+  - euronews.com
+  - politico.com
+  - politico.eu
+  - axios.com
+  - semafor.com
+  - thehill.com
+  - cbsnews.com
+  - nbcnews.com
+  - abcnews.go.com
+  - cbc.ca
+  - cbsnews.com
+  - latimes.com
+  - usatoday.com
+
+  # ─── Middle East & Gulf / Arabic-region press ─────────────────────────
+  - wam.ae                  # Emirates News Agency
+  - thenationalnews.com     # The National (UAE)
+  - gulfnews.com            # Gulf News (UAE)
+  - khaleejtimes.com        # Khaleej Times (UAE)
+  - alittihad.ae            # Al Ittihad (UAE)
+  - albayan.ae              # Al Bayan (UAE)
+  - arabnews.com            # Arab News (Saudi)
+  - saudigazette.com.sa     # Saudi Gazette
+  - alarabiya.net           # Al Arabiya
+  - aawsat.com              # Asharq Al-Awsat
+  - middleeastmonitor.com   # Middle East Monitor
+  - middleeasteye.net       # Middle East Eye
+  - jordantimes.com         # Jordan Times
+  - dailystar.com.lb        # Daily Star (Lebanon)
+  - haaretz.com             # Haaretz (Israel)
+  - timesofisrael.com       # Times of Israel
+  - jpost.com               # Jerusalem Post
+  - egyptindependent.com    # Egypt Independent
+  - english.ahram.org.eg    # Al-Ahram (Egypt, English)
+  - ahram.org.eg            # Al-Ahram (Arabic)
+  - dailysabah.com          # Daily Sabah (Turkey)
+  - hurriyetdailynews.com   # Hürriyet Daily News (Turkey)
+
+  # ─── Africa ───────────────────────────────────────────────────────────
+  - nation.africa
+  - nation.co.ke
+  - theeastafrican.co.ke
+  - standardmedia.co.ke
+  - mg.co.za
+  - dailymaverick.co.za
+  - timeslive.co.za
+  - news24.com
+  - businesslive.co.za
+  - iol.co.za
+  - punchng.com
+  - premiumtimesng.com
+  - dailytrust.com
+  - vanguardngr.com
+  - guardian.ng
+  - thisdaylive.com
+  - graphic.com.gh           # Daily Graphic (Ghana)
+  - allafrica.com
+  - ethiopianreporter.com
+  - africanews.com
+  - afrik.com
+  - jeuneafrique.com
+
+  # ─── Asia ─────────────────────────────────────────────────────────────
+  - scmp.com                 # South China Morning Post
+  - chinadailyhk.com
+  - chinadaily.com.cn
+  - globaltimes.cn
+  - japantimes.co.jp
+  - asahi.com
+  - mainichi.jp
+  - nhk.or.jp
+  - nikkei.com
+  - timesofindia.indiatimes.com
+  - timesofindia.com
+  - indiatimes.com
+  - hindustantimes.com
+  - thehindu.com
+  - indianexpress.com
+  - thewire.in
+  - scroll.in
+  - channelnewsasia.com
+  - straitstimes.com
+  - bangkokpost.com
+  - jakartapost.com
+  - dawn.com                 # Dawn (Pakistan)
+  - tribune.com.pk
+  - thedailystar.net         # Daily Star (Bangladesh)
+  - manilatimes.net          # Manila Times (Philippines)
+  - inquirer.net             # Philippine Daily Inquirer
+  - rappler.com              # Rappler (Philippines)
+  - koreatimes.co.kr         # Korea Times (South Korea)
+  - koreaherald.com          # Korea Herald (South Korea)
+  - vnexpress.net            # VnExpress (Vietnam)
+
+  # ─── Europe (non-UK) ──────────────────────────────────────────────────
+  - lemonde.fr
+  - lefigaro.fr
+  - liberation.fr
+  - spiegel.de
+  - faz.net
+  - sueddeutsche.de
+  - zeit.de
+  - elpais.com
+  - elmundo.es
+  - corriere.it
+  - repubblica.it
+  - lastampa.it
+  - nrc.nl                   # NRC (Netherlands)
+  - dn.se                    # Dagens Nyheter (Sweden)
+  - aftenposten.no
+  - hs.fi                    # Helsingin Sanomat (Finland)
+  - politico.eu
+
+  # ─── UK (in addition to BBC/Guardian/FT) ──────────────────────────────
+  - telegraph.co.uk
+  - independent.co.uk
+  - thetimes.co.uk
+  - sky.com                  # Sky News
+  - news.sky.com
+  - irishtimes.com
+  - rte.ie
+
+  # ─── Americas (non-US) ────────────────────────────────────────────────
+  - theglobeandmail.com
+  - cbc.ca
+  - folha.uol.com.br
+  - oglobo.globo.com
+  - estadao.com.br
+  - clarin.com
+  - lanacion.com.ar
+  - infobae.com
+  - eluniversal.com.mx
+  - reforma.com
+
+  # ─── Oceania ──────────────────────────────────────────────────────────
+  - smh.com.au               # Sydney Morning Herald
+  - theage.com.au
+  - abc.net.au               # ABC Australia
+  - theaustralian.com.au
+  - afr.com                  # Australian Financial Review
+  - stuff.co.nz
+  - nzherald.co.nz
+
+  # ─── Non-Western wires ────────────────────────────────────────────────
+  - xinhuanet.com
+  - news.cn
+  - tass.com
+  - sputnikglobe.com
+  - rt.com
+  - aa.com.tr                # Anadolu Agency (Turkey)
+  - prensa-latina.cu
+  - aninews.in                # ANI (Asian News International — Indian wire)
+
+  # ─── Humanitarian / development / multilateral specialists ─────────────
+  - devex.com
+  - thenewhumanitarian.org
+  - ipsnews.net
+  - reliefweb.int
+  - news.un.org
+  - unhcr.org
+  - iom.int
+  - who.int
+  - oecd.org
+  - oecd-development-matters.org
+  - worldbank.org
+  - blogs.worldbank.org
+  - imf.org
+  - afdb.org
+  - cgdev.org                # Center for Global Development
+  - odi.org
+  - ssir.org                 # Stanford Social Innovation Review
+  - alliancemagazine.org
+  - philanthropy.com
+  - philanthropynewsdigest.org
+  - climatechangenews.com
+  - carbonbrief.org
+  - foreignpolicy.com
+  - foreignaffairs.com
+  - project-syndicate.org
+  - chathamhouse.org
+  - ecfr.eu
+  - csis.org
+  - rusi.org

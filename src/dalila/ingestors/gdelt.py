@@ -15,18 +15,84 @@ no body text; the prefilter and classifier work off title + URL only.
 from __future__ import annotations
 
 import csv
+import functools
 import io
 import logging
+import re
 import sys
 import zipfile
 from datetime import date, datetime, time as dtime, timedelta, timezone
+from pathlib import Path
 from typing import Iterator
+from urllib.parse import urlparse
 
 import httpx
+import yaml
 
 from dalila.models import RawItem
 
 log = logging.getLogger(__name__)
+
+# Path to the curated outlet allowlist — repo-root YAML, easy to edit
+# without touching code. Loaded lazily and cached.
+_OUTLETS_YAML = Path(__file__).resolve().parents[3] / "trusted_outlets.yaml"
+
+
+@functools.lru_cache(maxsize=1)
+def _load_trusted_outlets() -> frozenset[str]:
+    """Read trusted_outlets.yaml once, return a frozenset of bare domains.
+
+    Missing file → empty set (filter degrades to "accept everything"); logged
+    once so it's discoverable but never crashes ingest.
+    """
+    try:
+        with open(_OUTLETS_YAML, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+        outlets = data.get("outlets") or []
+        # Strip any accidental leading "www." / protocol in the list itself.
+        cleaned = {
+            re.sub(r"^(https?://)?(www\.)?", "", str(o).strip().lower()).rstrip("/")
+            for o in outlets
+            if o
+        }
+        log.info("gdelt: loaded %d trusted outlets from %s",
+                 len(cleaned), _OUTLETS_YAML.name)
+        return frozenset(cleaned)
+    except FileNotFoundError:
+        log.warning("gdelt: %s not found — GDELT items will not be domain-filtered",
+                    _OUTLETS_YAML)
+        return frozenset()
+    except Exception as exc:
+        log.warning("gdelt: failed to load %s: %s — disabling filter",
+                    _OUTLETS_YAML, exc)
+        return frozenset()
+
+
+def _is_trusted_url(url: str, allowlist: frozenset[str]) -> bool:
+    """Suffix-match the URL's hostname against the allowlist.
+
+    Empty allowlist passes everything (degrades-open). Otherwise the URL's
+    host (minus leading "www.") must equal a listed domain, OR end with
+    ".<listed-domain>" (so "english.aawsat.com" matches "aawsat.com").
+    """
+    if not allowlist:
+        return True
+    try:
+        host = urlparse(url).hostname or ""
+    except ValueError:
+        return False
+    host = host.lower().lstrip(".")
+    if host.startswith("www."):
+        host = host[4:]
+    if not host:
+        return False
+    # Walk up the dotted hierarchy: host, then each suffix.
+    parts = host.split(".")
+    for i in range(len(parts) - 1):
+        candidate = ".".join(parts[i:])
+        if candidate in allowlist:
+            return True
+    return False
 
 # GDELT GKG rows have THEMES / ORGS / PERSONS columns that can easily exceed
 # Python's default csv field cap (131072 chars). Raise it to ~10MB once at
@@ -95,6 +161,8 @@ def fetch(src: dict) -> list[RawItem]:
             log.debug("gdelt: skipping bad CSV row: %s", exc)
             continue
         rows.append(row)
+    allowlist = _load_trusted_outlets()
+    skipped_outlets = 0
     # Sample most recent (rows are chronological — take last N)
     for row in rows[-GDELT_MAX_ITEMS_PER_POLL:]:
         if len(row) < 14:
@@ -106,6 +174,13 @@ def fetch(src: dict) -> list[RawItem]:
         orgs = row[13]
 
         if not doc_url or not doc_url.startswith("http"):
+            continue
+        # Trusted-outlet filter — drop articles from publishers not on the
+        # curated allowlist (see trusted_outlets.yaml). GDELT indexes the
+        # whole news web including small regional papers; without this we
+        # pollute the items table with low-circulation outlets.
+        if not _is_trusted_url(doc_url, allowlist):
+            skipped_outlets += 1
             continue
         # GDELT doesn't carry article title in GKG. Fabricate a placeholder
         # from URL + themes; classifier will work off URL + themes for prefilter.
@@ -135,6 +210,9 @@ def fetch(src: dict) -> list[RawItem]:
             published_at=published_at,
             extra={"gdelt_themes": themes, "gdelt_orgs": orgs},
         ))
+    if skipped_outlets:
+        log.info("gdelt live: kept %d items, dropped %d from non-allowlisted outlets",
+                 len(items), skipped_outlets)
     return items
 
 
@@ -186,6 +264,7 @@ def _parse_slice(zip_bytes: bytes, source_id: str, *, cap: int) -> list[RawItem]
             log.debug("gdelt: skipping bad CSV row: %s", exc)
             continue
         rows.append(row)
+    allowlist = _load_trusted_outlets()
     for row in rows[-cap:]:
         if len(row) < 14:
             continue
@@ -195,6 +274,9 @@ def _parse_slice(zip_bytes: bytes, source_id: str, *, cap: int) -> list[RawItem]
         persons = row[11]
         orgs = row[13]
         if not doc_url or not doc_url.startswith("http"):
+            continue
+        # Trusted-outlet filter (see trusted_outlets.yaml).
+        if not _is_trusted_url(doc_url, allowlist):
             continue
         title_seed = doc_url.split("/")[-1] or doc_url
         title_seed = title_seed.replace("-", " ").replace("_", " ").rstrip(".html").strip()
