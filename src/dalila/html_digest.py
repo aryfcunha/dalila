@@ -2495,14 +2495,21 @@ def render_about(
     )
     body.append(
         '<p>Alongside the news feeds, Dalila ingests forecast and '
-        'early-warning indices (ACLED CAST for conflict escalation; '
-        'ACAPS INFORM for crisis severity; WFP HungerMap for food insecurity; '
-        'GDACS for real-time disaster alerts). These appear in the digest&rsquo;s '
-        '<em>Foresight</em> section, but with a strict rule: only changes '
-        'are surfaced, never states. Sudan being hungry every day produces '
-        'zero items; Sudan getting hungrier produces one, tagged 🔴 '
-        '(worsening) or 🟢 (improving) and showing the delta against the '
-        'prior observation.</p>'
+        'early-warning indices (ACLED CAST for conflict-escalation risk '
+        'shipped; ACAPS INFORM for crisis severity, WFP HungerMap for food '
+        'insecurity, and GDACS for real-time disaster alerts in the '
+        'pipeline). These appear in the digest&rsquo;s <em>Foresight</em> '
+        'section, but with a strict rule: only changes are surfaced, '
+        'never states. Sudan being hungry every day produces zero items; '
+        'Sudan getting hungrier produces one, tagged 🔴 (worsening) or 🟢 '
+        '(improving) and showing the delta against the prior observation.</p>'
+    )
+    body.append(
+        '<p>Every brief is preserved. The <a href="archive.html">archive'
+        '</a> lists every past brief; the <a href="countries.html">country'
+        '</a> view renders an interactive heatmap of country mentions on a '
+        'world map, with co-mention arcs from any selected country to the '
+        'other countries it most frequently appears alongside.</p>'
     )
     body.append(
         '<p>Every numeric threshold, sampling rate, and editorial rule in '
