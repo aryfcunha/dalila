@@ -295,6 +295,35 @@ a:hover {
 }
 .archive-title a:hover { color: var(--amber); border-bottom-color: var(--amber); }
 .archive-preview { color: var(--muted); font-size: 12px; margin-top: 6px; line-height: 1.5; }
+.archive-row.hidden { display: none; }
+.archive-count {
+  color: var(--type-dim);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  margin: 14px 0 18px;
+}
+.archive-count #archive-count-shown, .archive-count #archive-count-total {
+  color: var(--amber); font-weight: 700;
+}
+.archive-more { margin: 28px 0 0; text-align: center; }
+.archive-more button {
+  background: transparent;
+  color: var(--amber);
+  border: 1px solid var(--amber);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 12px 28px;
+  cursor: pointer;
+  transition: background .14s ease, color .14s ease;
+}
+.archive-more button:hover {
+  background: var(--amber);
+  color: var(--bg);
+}
 
 /* ---------- about ---------- */
 .about p, .about ul, .about li {
@@ -579,11 +608,11 @@ a:hover {
 </header>
 
 <div class="about">
-<p style="font-size:17px;color:var(--type);margin-top:18px;">Dalila is a daily intelligence brief on the global humanitarian, development, and philanthropy ecosystem &mdash; with a sharp focus on the UAE&rsquo;s role within it. It exists both as a website and a Telegram bot (<a href="#subscribe">steps to subscribe</a>). Dalila skims through dozens of news sources, multilateral feeds, and forecast indices to get development practitioners the context they need to make informed decisions.</p>
+<p style="font-size:17px;color:var(--type);margin-top:18px;">Dalila is a daily intelligence brief on the global humanitarian, development, and philanthropy ecosystem &mdash; with a sharp focus on the UAE&rsquo;s role within it. It exists both as a website and a <a href="#subscribe">Telegram bot</a>. Dalila skims through dozens of news sources, multilateral feeds, and forecast indices to get development practitioners the context they need to make informed decisions.</p>
 <h2>How it works</h2>
-<p>Every 30 minutes Dalila ingests new items from the sources below. A keyword and entity prefilter drops items unrelated to the humanitarian, development, and philanthropy ecosystem remit. Surviving items go through a classifier that assigns a category, UAE-relevance score, severity, and topical tags. Near-duplicates are deduplicated. At 06:30 GST an editor model composes the morning digest from the previous 24 hours of classified items above threshold. The digest is shared with subscribers on Telegram (<a href="#subscribe">steps to subscribe</a>).</p>
-<p>Alongside the news feeds, Dalila ingests <strong>forecast and early-warning indices</strong> (ACLED CAST for conflict escalation; ACAPS INFORM for crisis severity; WFP HungerMap for food insecurity; GDACS for real-time disaster alerts). These appear in the digest&rsquo;s <em>Foresight</em> section, but with a strict rule: only <strong>changes</strong> are surfaced, never states. Sudan being hungry every day produces zero items; Sudan getting hungrier produces one, tagged 🔴 (worsening) or 🟢 (improving) and showing the delta against the prior observation.</p>
-<p>Every numeric threshold, sampling rate, and model choice in this pipeline is documented in the <a href="methodology.html">methodology page</a> with its rationale and the empirical evidence behind it. When a knob is tuned, the rationale is updated in the same commit.</p>
+<p>Every 30 minutes Dalila ingests new items from the sources below. A keyword and entity prefilter drops items unrelated to the humanitarian, development, and philanthropy ecosystem remit. Surviving items go through a classifier that assigns a category, UAE-relevance score, severity, and topical tags. Near-duplicates are deduplicated. At 06:30 GST an editor model composes the morning digest from the previous 24 hours of classified items above threshold. The digest is shared with <a href="#subscribe">subscribers on Telegram</a>.</p>
+<p>Alongside the news feeds, Dalila ingests forecast and early-warning indices (ACLED CAST for conflict escalation; ACAPS INFORM for crisis severity; WFP HungerMap for food insecurity; GDACS for real-time disaster alerts). These appear in the digest&rsquo;s <em>Foresight</em> section, but with a strict rule: only changes are surfaced, never states. Sudan being hungry every day produces zero items; Sudan getting hungrier produces one, tagged 🔴 (worsening) or 🟢 (improving) and showing the delta against the prior observation.</p>
+<p>Every numeric threshold, sampling rate, and editorial rule in this pipeline is documented in the <a href="methodology.html">methodology page</a>, along with the rationale for each.</p>
 <p>Subscribers can ask for a deeper dive on a topic (<code>/more &lt;topic&gt;</code>), review tracked UAE doctrine positions (<code>/doctrine</code>), pull recent UAE financial commitments and bilateral meetings (<code>/commitments</code>, <code>/meetings</code>), or zoom in on recent news related to a specific country (<code>/country &lt;name&gt;</code>). Items are numbered so a reply with <code>link 3</code> returns the underlying source URL.</p>
 <h2>Sources</h2>
 <div class="source-block"><strong>UAE operating entities</strong><ul>
