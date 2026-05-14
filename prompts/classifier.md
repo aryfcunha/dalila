@@ -150,6 +150,7 @@ Return **ONLY a single JSON object** — no prose, no markdown fences, no commen
     {"name": "UN OCHA", "in_watchlist": true}
   ],
   "doctrine_relation": null,
+  "translated_title": "OCHA warns of imminent famine in Darfur",
   "one_line_summary": "OCHA upgrades Darfur famine risk to IPC 5 affecting 4M people.",
   "rationale": "Direct UAE relevance because UAE is a major Sudan aid donor.",
   "financial_commitments": [],
@@ -166,8 +167,11 @@ Field constraints:
 - `capital_signals` — object with all five boolean keys (default false)
 - `entities` — array (may be empty) of `{name, in_watchlist}`
 - `doctrine_relation` — string or null
-- `one_line_summary` — one sentence under 25 words
-- `rationale` — one sentence under 30 words
+- `translated_title` — English translation of the news title (max 15 words)
+- `one_line_summary` — one sentence under 25 words (in English)
+- `rationale` — one sentence under 30 words (in English)
 - `financial_commitments`, `bilateral_meetings` — arrays (may be empty)
+
+**CRITICAL: All text fields (`translated_title`, `one_line_summary`, `rationale`) MUST be in English regardless of the input language.**
 
 If you cannot classify (empty text), return `category: "other"`, `uae_relevance: 0.0`, all signals false, all lists empty. Never refuse — always return valid JSON.

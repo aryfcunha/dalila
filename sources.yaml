@@ -211,8 +211,8 @@ sources:
   - id: gdelt_v2
     name: GDELT 2.0 Events
     kind: gdelt
-    # No URL — ingestor pulls from data.gdeltproject.org/gdeltv2/lastupdate.txt
-    url: ""
+    # Ingestor pulls from data.gdeltproject.org/gdeltv2/lastupdate.txt
+    url: https://www.gdeltproject.org/
     quality: 3
     tags: [events, signal]
     enabled: true
@@ -288,7 +288,7 @@ sources:
     # an item whose body includes the IATI-reported transaction amounts —
     # the classifier's financial_commitments extraction picks those up.
     kind: iati
-    url: ""             # ingestor uses the Datastore API directly
+    url: https://iatistandard.org/
     quality: 5
     tags: [iati, dev-finance, structured]
     enabled: true

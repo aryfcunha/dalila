@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dalila — Market Signals</title>
+<title>Customize Dalila</title>
 <style>
 :root {
   --bg:#0A0A0A;
@@ -686,108 +686,23 @@ a:hover {
 
 <header class="masthead">
   <h1 class="masthead-title"><a href="./">Dalila<span class="ar">دليلة</span></a></h1>
-  <div class="masthead-tag">MARKET SIGNALS</div>
+  <div class="masthead-tag">Build your own</div>
   <nav class="masthead-nav">
     <a href="./">Home</a>
     <a href="archive.html">Archive</a>
-    <a href="markets.html" aria-current="page">Markets</a>
+    <a href="markets.html">Markets</a>
     <a href="countries.html">Countries</a>
     <a href="methodology.html">Methodology</a>
     <a href="about.html">About</a>
-    <a href="customize.html">Customize</a>
+    <a href="customize.html" aria-current="page">Customize</a>
   </nav>
 </header>
 
-<div class="about">
-<p style="font-size:17px;color:var(--type);margin-top:18px;">This page tracks shifts in global sentiment and geopolitical risk through prediction markets. By monitoring the "wisdom of the crowd" on platforms like Manifold and Kalshi, Dalila captures emerging trends before they stabilise in official news cycles.</p>
-<h2 style="margin-top:40px;">Active Risk Indicators</h2>
-<div class="market-grid" style="margin-top:20px;">
-
-            <a href="None" target="_blank" rel="noopener" style="text-decoration:none; color:inherit;">
-            <div class="market-card">
-                <div class="market-prob" style="display:flex; justify-content:space-between; align-items:baseline;">
-                    <span> 6.1%</span>
-                    <div style="font-size:12px; font-weight:normal; display:flex; gap:8px; align-items:baseline;">
-                        <span class="market-delta">-- (24h)</span>
-                        <span class="market-delta">-- (1w)</span>
-                    </div>
-                </div>
-                <div class="market-meta">
-                    <span class="market-source">MANIFOLD</span>
-                </div>
-                <div class="market-q">Strait of Hormuz traffic returns to normal by end of May? [Polymarket]</div>
-            </div>
-            </a>
-            
-
-            <a href="None" target="_blank" rel="noopener" style="text-decoration:none; color:inherit;">
-            <div class="market-card">
-                <div class="market-prob" style="display:flex; justify-content:space-between; align-items:baseline;">
-                    <span>60.3%</span>
-                    <div style="font-size:12px; font-weight:normal; display:flex; gap:8px; align-items:baseline;">
-                        <span class="market-delta">-- (24h)</span>
-                        <span class="market-delta">-- (1w)</span>
-                    </div>
-                </div>
-                <div class="market-meta">
-                    <span class="market-source">MANIFOLD</span>
-                </div>
-                <div class="market-q">Will there be a food shortage related to the closure of the Strait of Hormuz?</div>
-            </div>
-            </a>
-            
-
-            <a href="None" target="_blank" rel="noopener" style="text-decoration:none; color:inherit;">
-            <div class="market-card">
-                <div class="market-prob" style="display:flex; justify-content:space-between; align-items:baseline;">
-                    <span>17.6%</span>
-                    <div style="font-size:12px; font-weight:normal; display:flex; gap:8px; align-items:baseline;">
-                        <span class="market-delta">-- (24h)</span>
-                        <span class="market-delta">-- (1w)</span>
-                    </div>
-                </div>
-                <div class="market-meta">
-                    <span class="market-source">MANIFOLD</span>
-                </div>
-                <div class="market-q">Will Europe find a peaceful agreement with Iran to pass the Strait of Hormuz in 2026 while the US/Iran war continues?</div>
-            </div>
-            </a>
-            
-
-            <a href="None" target="_blank" rel="noopener" style="text-decoration:none; color:inherit;">
-            <div class="market-card">
-                <div class="market-prob" style="display:flex; justify-content:space-between; align-items:baseline;">
-                    <span>42.3%</span>
-                    <div style="font-size:12px; font-weight:normal; display:flex; gap:8px; align-items:baseline;">
-                        <span class="market-delta">-- (24h)</span>
-                        <span class="market-delta">-- (1w)</span>
-                    </div>
-                </div>
-                <div class="market-meta">
-                    <span class="market-source">MANIFOLD</span>
-                </div>
-                <div class="market-q">Hamas-Israel hostilities in Gaza resume by June 30, 2026?</div>
-            </div>
-            </a>
-            
-
-            <a href="None" target="_blank" rel="noopener" style="text-decoration:none; color:inherit;">
-            <div class="market-card">
-                <div class="market-prob" style="display:flex; justify-content:space-between; align-items:baseline;">
-                    <span>26.4%</span>
-                    <div style="font-size:12px; font-weight:normal; display:flex; gap:8px; align-items:baseline;">
-                        <span class="market-delta">-- (24h)</span>
-                        <span class="market-delta">-- (1w)</span>
-                    </div>
-                </div>
-                <div class="market-meta">
-                    <span class="market-source">MANIFOLD</span>
-                </div>
-                <div class="market-q">US - Iran nuclear deal by end of June?</div>
-            </div>
-            </a>
-            
-</div>
+<div class="serif" style="max-width:680px; margin:40px auto; line-height:1.7; font-size:16px; color:var(--type-dim);">
+<h2 style="color:var(--type); margin-top:0;">Open Source & Customizable</h2>
+<p>Dalila is an <strong>open source</strong> intelligence agent. The full codebase is published and maintained on GitHub at <a href="https://github.com/aryfcunha/dalila" style="color:var(--amber); border-bottom:1px solid var(--amber);">github.com/aryfcunha/dalila</a>.</p>
+<p>This means that Dalila is built to be yours. Anyone can clone the repository to build their own version, add new data sources, implement custom features, or fix bugs. Whether you need to track specific regions, monitor niche sectors, or align the intelligence workflow with your unique preferences, the code is fully accessible and extensible.</p>
+<p>We believe in transparent, reproducible intelligence. By making Dalila open source, we enable the humanitarian and development community to contribute to and benefit from a shared set of tools for navigating global complexity.</p>
 </div>
 <footer class="foot"><span>© 2026 Dalila</span> · <span><a href="./">Home</a></span> · <span><a href="archive.html">Archive</a></span> · <span><a href="markets.html">Markets</a></span> · <span><a href="about.html">About</a></span> · <span><a href="customize.html">Customize</a></span> · <span><a href="https://t.me/dalila_development_digest_bot">Telegram</a></span> · <span><a href="mailto:dalila.dev.digest@gmail.com">Feedback</a></span></footer>
 </div>

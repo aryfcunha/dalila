@@ -112,7 +112,11 @@ def _seed_sources(conn: sqlite3.Connection) -> None:
 import re
 
 def clean_title(title: str) -> str:
-    new_title = re.sub(r'\b\d+\.\d{5,}\b', '', title)
+    # Remove 'Opt:' prefix (common in some sources)
+    new_title = re.sub(r'^Opt:\s*', '', title, flags=re.IGNORECASE)
+    
+    # Remove random numbers like 1.500538495 or similar long floats/identifiers
+    new_title = re.sub(r'\b\d+\.\d{5,}\b', '', new_title)
     new_title = re.sub(r'\b\d{8,}\b', '', new_title)
     new_title = re.sub(r'\s+', ' ', new_title).strip()
     if new_title and new_title[0].islower():
@@ -210,6 +214,8 @@ def save_classification(conn: sqlite3.Connection, item_id: int, c: Classificatio
             country_focus_json = ?,
             capital_signals_json = ?,
             graduation_signal = ?,
+            title = COALESCE(?, title),
+            title_simhash = CASE WHEN ? IS NOT NULL THEN ? ELSE title_simhash END,
             classifier_error = NULL
         WHERE id = ?
         """,
@@ -227,6 +233,9 @@ def save_classification(conn: sqlite3.Connection, item_id: int, c: Classificatio
             json.dumps(c.country_focus, ensure_ascii=False) if c.country_focus else None,
             json.dumps(c.capital_signals, ensure_ascii=False) if c.capital_signals else None,
             1 if c.graduation_signal else 0,
+            clean_title(c.translated_title) if c.translated_title else None,
+            clean_title(c.translated_title) if c.translated_title else None,
+            to_hex(simhash64(clean_title(c.translated_title))) if c.translated_title else None,
             item_id,
         ),
     )

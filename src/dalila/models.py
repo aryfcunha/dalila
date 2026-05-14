@@ -94,6 +94,7 @@ class Classification:
     doctrine_relation: str | None
     one_line_summary: str
     rationale: str
+    translated_title: str | None = None
 
     # New (migration 004) — per UAE Foreign Aid Policy 2026
     policy_sector: str | None = None              # one of POLICY_SECTORS
@@ -139,6 +140,7 @@ class Classification:
             doctrine_relation=d.get("doctrine_relation"),
             one_line_summary=str(d.get("one_line_summary", "")),
             rationale=str(d.get("rationale", "")),
+            translated_title=_clean(d.get("translated_title")),
             policy_sector=_clean(d.get("policy_sector"), lower=True),
             country_focus=country_focus,
             capital_signals=capital_signals,

@@ -777,6 +777,7 @@ def _masthead(*, on_page: str, tag: str = "DAILY BRIEF", link_prefix: str = "") 
     <a href="{link_prefix}countries.html"{_attr("countries")}>Countries</a>
     <a href="{link_prefix}methodology.html"{_attr("methodology")}>Methodology</a>
     <a href="{link_prefix}about.html"{_attr("about")}>About</a>
+    <a href="{link_prefix}customize.html"{_attr("customize")}>Customize</a>
   </nav>
 </header>
 """
@@ -790,6 +791,7 @@ def _footer(*, contact_email: str, telegram_bot: str | None, link_prefix: str = 
         f'<span><a href="{link_prefix}archive.html">Archive</a></span>',
         f'<span><a href="{link_prefix}markets.html">Markets</a></span>',
         f'<span><a href="{link_prefix}about.html">About</a></span>',
+        f'<span><a href="{link_prefix}customize.html">Customize</a></span>',
     ]
     if telegram_bot:
         parts.append(f'<span><a href="https://t.me/{telegram_bot}">Telegram</a></span>')
@@ -2789,3 +2791,20 @@ def render_markets(
     
     body.append(_footer(contact_email=contact_email, telegram_bot=telegram_bot))
     return _doc("Dalila — Market Signals", "\n".join(body))
+def render_customize(
+    *,
+    contact_email: str = "dalila.dev.digest@gmail.com",
+    telegram_bot: str | None = "dalila_development_digest_bot",
+) -> str:
+    """Explains that the tool is open source and customizable."""
+    body = [
+        _masthead(tag="Build your own", on_page="customize"),
+        '<div class="serif" style="max-width:680px; margin:40px auto; line-height:1.7; font-size:16px; color:var(--type-dim);">',
+        '<h2 style="color:var(--type); margin-top:0;">Open Source & Customizable</h2>',
+        '<p>Dalila is an <strong>open source</strong> intelligence agent. The full codebase is published and maintained on GitHub at <a href="https://github.com/aryfcunha/dalila" style="color:var(--amber); border-bottom:1px solid var(--amber);">github.com/aryfcunha/dalila</a>.</p>',
+        '<p>This means that Dalila is built to be yours. Anyone can clone the repository to build their own version, add new data sources, implement custom features, or fix bugs. Whether you need to track specific regions, monitor niche sectors, or align the intelligence workflow with your unique preferences, the code is fully accessible and extensible.</p>',
+        '<p>We believe in transparent, reproducible intelligence. By making Dalila open source, we enable the humanitarian and development community to contribute to and benefit from a shared set of tools for navigating global complexity.</p>',
+        '</div>',
+        _footer(contact_email=contact_email, telegram_bot=telegram_bot),
+    ]
+    return _doc("Customize Dalila", "\n".join(body))

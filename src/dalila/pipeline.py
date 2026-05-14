@@ -649,8 +649,7 @@ def run_render_html_digest(
         items = db.items_for_digest(conn, since_hours=since_hours, min_relevance=min_relevance)
 
         # Calculate true total ingested in the window
-        cutoff = (datetime.now(timezone.utc) - timedelta(hours=since_hours)).isoformat()
-        total = conn.execute("SELECT COUNT(*) FROM items WHERE ingested_at >= ?", (cutoff,)).fetchone()[0]
+        total = db.count_reviewed_24h(conn, as_of=when or datetime.now(timezone.utc))
 
         items = _dedupe_by_simhash(items)
         items = items[:max_items]
@@ -686,7 +685,7 @@ def run_publish_site(out_dir: "Path") -> dict:
     from dalila.config import load_countries, load_sources
     from dalila.html_digest import (
         render_about, render_archive, render_countries, render_digest, render_index,
-        render_methodology, render_markets,
+        render_methodology, render_markets, render_customize,
     )
 
     out_dir = Path(out_dir)
@@ -758,29 +757,15 @@ def run_publish_site(out_dir: "Path") -> dict:
                 latest_items = items
                 latest_when = composed
 
-    # If no persisted digests, render today's snapshot for the home page so
-    # the site isn't completely blank.
-    if latest_items is None:
-        live_html, live_items = run_render_html_digest()
-        if live_items:
-            slug = datetime.now().strftime("%Y-%m-%d")
-            (digests_dir / f"{slug}.html").write_text(live_html, encoding="utf-8")
-            latest_items = live_items
-            latest_when = datetime.now(timezone.utc)
-            written.append({
-                "slug": slug,
-                "date_label": slug,
-                "preview": _preview_text(live_items, n=2),
-            })
-
-    # 1. Home page = latest brief inline
-    if latest_items:
-        index_html = render_index(
-            latest_items, when=latest_when, total_ingested=len(latest_items),
-        )
-    else:
-        # Truly empty — render the archive page as home so visitors see something
-        index_html = render_archive(written)
+        # 1. Home page = latest brief inline
+        if latest_items:
+            total = db.count_reviewed_24h(conn, as_of=latest_when) or len(latest_items)
+            index_html = render_index(
+                latest_items, when=latest_when, total_ingested=total,
+            )
+        else:
+            # Truly empty — render the archive page as home so visitors see something
+            index_html = render_archive(written)
     (out_dir / "index.html").write_text(index_html, encoding="utf-8")
 
     # 2. Archive page = list of all briefs
@@ -798,6 +783,12 @@ def run_publish_site(out_dir: "Path") -> dict:
         (out_dir / "methodology.html").write_text(methodology_html, encoding="utf-8")
     except Exception:
         log.exception("publish-site: methodology page generation failed")
+    # 3c. Customize page
+    try:
+        customize_html = render_customize()
+        (out_dir / "customize.html").write_text(customize_html, encoding="utf-8")
+    except Exception:
+        log.exception("publish-site: customize page generation failed")
 
     # 4. Countries view (region-grouped heatmap + per-country news on click)
     try:
@@ -851,6 +842,7 @@ def run_publish_site(out_dir: "Path") -> dict:
             str(out_dir / "markets.html"),
             str(out_dir / "methodology.html"),
             str(out_dir / "about.html"),
+            str(out_dir / "customize.html"),
         ] + [str(digests_dir / f"{d['slug']}.html") for d in written],
     }
 
