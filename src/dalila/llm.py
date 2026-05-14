@@ -158,7 +158,9 @@ def _run_claude(
         import os
         # Fallback to DeepSeek if configured
         if os.getenv("DEEPSEEK_API_KEY"):
-            return _call_deepseek(model=model, system_prompt=system_prompt, user_prompt=user_prompt, purpose=purpose, timeout=timeout)
+            resp = _call_deepseek(model=model, system_prompt=system_prompt, user_prompt=user_prompt, purpose=purpose, timeout=timeout)
+            success = True
+            return resp
         error = f"`{cfg.claude_bin}` not on PATH"
         raise LLMError(error) from None
 
