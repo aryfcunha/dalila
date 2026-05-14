@@ -78,6 +78,25 @@ outlets:
   - ahram.org.eg            # Al-Ahram (Arabic)
   - dailysabah.com          # Daily Sabah (Turkey)
   - hurriyetdailynews.com   # Hürriyet Daily News (Turkey)
+  # ── MENA gaps (one outlet per country) ────────────────────────────
+  - gdnonline.com           # Gulf Daily News (Bahrain)
+  - gulf-times.com          # Gulf Times (Qatar)
+  - thepeninsulaqatar.com   # The Peninsula (Qatar)
+  - timesofoman.com         # Times of Oman
+  - kuwaittimes.com         # Kuwait Times
+  - tehrantimes.com         # Tehran Times (Iran)
+  - financialtribune.com    # Financial Tribune (Iran)
+  - rudaw.net               # Rudaw (Iraq / Kurdistan, English)
+  - english.wafa.ps         # WAFA news agency (Palestine)
+  - maannews.com            # Ma'an News Agency (Palestine)
+  - moroccoworldnews.com    # Morocco World News
+  - hespress.com            # Hespress (Morocco)
+  - tap.info.tn             # Tunis Afrique Presse
+  - businessnews.com.tn     # Business News (Tunisia)
+  - aps.dz                  # Algeria Press Service
+  - libyaobserver.ly        # Libya Observer (English)
+  - yementimes.com          # Yemen Times
+  - sana.sy                 # SANA (Syria, state news agency)
 
   # ─── Africa ───────────────────────────────────────────────────────────
   - nation.africa
@@ -102,6 +121,48 @@ outlets:
   - africanews.com
   - afrik.com
   - jeuneafrique.com
+  # ── Africa gaps (one outlet per country, alphabetical) ────────────
+  - angop.ao                # Angola Press Agency (ANGOP)
+  - lanationbenin.info      # La Nation (Benin)
+  - mmegi.bw                # Mmegi (Botswana)
+  - lefaso.net              # Lefaso.net (Burkina Faso)
+  - iwacu-burundi.org       # Iwacu (Burundi)
+  - expressodasilhas.cv     # Expresso das Ilhas (Cabo Verde)
+  - cameroontribune.cm      # Cameroon Tribune
+  - tchadinfos.com          # Tchad Infos (Chad)
+  - alwatwan.net            # Al-Watwan (Comoros)
+  - lasemaineafricaine.net  # La Semaine Africaine (Congo / Brazzaville)
+  - actualite.cd            # Actualité.cd (DRC)
+  - fratmat.info            # Fraternité Matin (Côte d'Ivoire)
+  - ladn.dj                 # La Nation (Djibouti)
+  - shabait.com             # Shabait (Eritrea, state)
+  - times.co.sz             # Times of Eswatini
+  - gabonactu.com           # Gabon Actu
+  - thepoint.gm             # The Point (Gambia)
+  - guineematin.com         # Guinée Matin (Guinea)
+  - lestimes.com            # Lesotho Times
+  - frontpageafricaonline.com  # FrontPage Africa (Liberia)
+  - madagascar-tribune.com  # Madagascar Tribune
+  - mwnation.com            # The Nation (Malawi)
+  - essor.ml                # L'Essor (Mali)
+  - rimnow.com              # Rimnow (Mauritania)
+  - lexpress.mu             # L'Express (Mauritius)
+  - clubofmozambique.com    # Club of Mozambique (English)
+  - namibian.com.na         # The Namibian
+  - actuniger.com           # ActuNiger (Niger)
+  - newtimes.co.rw          # The New Times (Rwanda)
+  - lesoleil.sn             # Le Soleil (Senegal)
+  - nation.sc               # Seychelles Nation
+  - politicosl.com          # Politico SL (Sierra Leone)
+  - hiiraan.com             # Hiiraan (Somalia)
+  - radiotamazuj.org        # Radio Tamazuj (South Sudan)
+  - sudantribune.com        # Sudan Tribune
+  - thecitizen.co.tz        # The Citizen (Tanzania)
+  - togofirst.com           # Togo First
+  - monitor.co.ug           # Daily Monitor (Uganda)
+  - lusakatimes.com         # Lusaka Times (Zambia)
+  - theindependent.co.zw    # The Independent (Zimbabwe)
+  - myjoyonline.com         # Joy News (Ghana, complement to graphic.com.gh)
 
   # ─── Asia ─────────────────────────────────────────────────────────────
   - scmp.com                 # South China Morning Post
@@ -135,6 +196,27 @@ outlets:
   - koreatimes.co.kr         # Korea Times (South Korea)
   - koreaherald.com          # Korea Herald (South Korea)
   - vnexpress.net            # VnExpress (Vietnam)
+  # ── Asia gaps (one outlet per country) ────────────────────────────
+  - tolonews.com             # TOLOnews (Afghanistan)
+  - armenpress.am            # Armenpress (Armenia)
+  - trend.az                 # Trend News Agency (Azerbaijan)
+  - kuenselonline.com        # Kuensel (Bhutan's national paper)
+  - borneobulletin.com.bn    # Borneo Bulletin (Brunei)
+  - phnompenhpost.com        # Phnom Penh Post (Cambodia)
+  - agenda.ge                # Agenda.ge (Georgia, English)
+  - astanatimes.com          # Astana Times (Kazakhstan)
+  - 24.kg                    # 24.kg (Kyrgyzstan)
+  - vientianetimes.org.la    # Vientiane Times (Laos)
+  - thestar.com.my           # The Star (Malaysia, national daily)
+  - themalaymailonline.com   # Malay Mail (Malaysia)
+  - freemalaysiatoday.com    # Free Malaysia Today
+  - mihaaru.com              # Mihaaru (Maldives)
+  - news.mn                  # News.mn (Mongolia)
+  - irrawaddy.com            # The Irrawaddy (Myanmar, exile)
+  - kathmandupost.com        # Kathmandu Post (Nepal)
+  - dailymirror.lk           # Daily Mirror (Sri Lanka)
+  - asiaplustj.info          # Asia-Plus (Tajikistan)
+  - uzdaily.com              # UzDaily (Uzbekistan)
 
   # ─── Europe (non-UK) ──────────────────────────────────────────────────
   - lemonde.fr
@@ -154,6 +236,40 @@ outlets:
   - aftenposten.no
   - hs.fi                    # Helsingin Sanomat (Finland)
   - politico.eu
+  # ── Europe gaps (one outlet per country) ──────────────────────────
+  - tiranatimes.com          # Tirana Times (Albania)
+  - derstandard.at           # Der Standard (Austria)
+  - lesoir.be                # Le Soir (Belgium)
+  - belsat.eu                # Belsat (Belarus, exiled coverage)
+  - oslobodjenje.ba          # Oslobođenje (Bosnia)
+  - novinite.com             # Novinite (Bulgaria, English)
+  - total-croatia-news.com   # Total Croatia News (English)
+  - cyprus-mail.com          # Cyprus Mail
+  - radio.cz                 # Radio Prague (Czech, English)
+  - politiken.dk             # Politiken (Denmark)
+  - postimees.ee             # Postimees (Estonia)
+  - ekathimerini.com         # Kathimerini (Greece, English)
+  - telex.hu                 # Telex (Hungary)
+  - hungarytoday.hu          # Hungary Today (English)
+  - icelandreview.com        # Iceland Review (English)
+  - lsm.lv                   # LSM (Latvia public media, English)
+  - lrt.lt                   # LRT (Lithuanian public broadcaster, English)
+  - luxtimes.lu              # Luxembourg Times
+  - timesofmalta.com         # Times of Malta
+  - ipn.md                   # IPN (Moldova, English)
+  - vijesti.me               # Vijesti (Montenegro)
+  - independent.mk           # Independent (North Macedonia)
+  - notesfrompoland.com      # Notes from Poland (English)
+  - wyborcza.pl              # Gazeta Wyborcza (Poland)
+  - publico.pt               # Público (Portugal)
+  - expresso.pt              # Expresso (Portugal)
+  - romania-insider.com      # Romania Insider (English)
+  - n1info.com               # N1 (Serbia / regional)
+  - spectator.sme.sk         # Slovak Spectator (English)
+  - total-slovenia-news.com  # Total Slovenia News (English)
+  - swissinfo.ch             # Swissinfo (Switzerland, English)
+  - kyivindependent.com      # Kyiv Independent (Ukraine, English)
+  - kyivpost.com             # Kyiv Post (Ukraine, English)
 
   # ─── UK (in addition to BBC/Guardian/FT) ──────────────────────────────
   - telegraph.co.uk
@@ -175,6 +291,34 @@ outlets:
   - infobae.com
   - eluniversal.com.mx
   - reforma.com
+  # ── Americas gaps (one outlet per country) ────────────────────────
+  - antiguaobserver.com      # Antigua Observer
+  - thenassauguardian.com    # Nassau Guardian (Bahamas)
+  - barbadostoday.bb         # Barbados Today
+  - amandala.com.bz          # Amandala (Belize)
+  - lostiempos.com           # Los Tiempos (Bolivia)
+  - emol.com                 # Emol / El Mercurio (Chile)
+  - latercera.com            # La Tercera (Chile)
+  - eltiempo.com             # El Tiempo (Colombia)
+  - nacion.com               # La Nación (Costa Rica)
+  - listindiario.com         # Listín Diario (Dominican Republic)
+  - elcomercio.com           # El Comercio (Ecuador)
+  - elsalvador.com           # El Salvador
+  - laprensagrafica.com      # La Prensa Gráfica (El Salvador)
+  - prensalibre.com          # Prensa Libre (Guatemala)
+  - stabroeknews.com         # Stabroek News (Guyana)
+  - lenouvelliste.com        # Le Nouvelliste (Haiti)
+  - laprensa.hn              # La Prensa (Honduras)
+  - jamaica-gleaner.com      # Jamaica Gleaner
+  - laprensa.com.ni          # La Prensa (Nicaragua)
+  - laestrella.com.pa        # La Estrella de Panamá
+  - ultimahora.com           # Última Hora (Paraguay)
+  - elcomercio.pe            # El Comercio (Peru)
+  - stluciatimes.com         # St Lucia Times
+  - newsday.co.tt            # Trinidad & Tobago Newsday
+  - elpais.com.uy            # El País (Uruguay)
+  - eluniversal.com          # El Universal (Venezuela)
+  - granma.cu                # Granma (Cuba, state)
 
   # ─── Oceania ──────────────────────────────────────────────────────────
   - smh.com.au               # Sydney Morning Herald
@@ -184,6 +328,13 @@ outlets:
   - afr.com                  # Australian Financial Review
   - stuff.co.nz
   - nzherald.co.nz
+  # ── Oceania gaps (one outlet per country with a credible domestic press) ──
+  - fijitimes.com            # Fiji Times
+  - postcourier.com.pg       # Post-Courier (Papua New Guinea)
+  - samoaobserver.ws         # Samoa Observer
+  - solomonstarnews.com      # Solomon Star
+  - matangitonga.to          # Matangi Tonga
+  - dailypost.vu             # Vanuatu Daily Post
 
   # ─── Non-Western wires ────────────────────────────────────────────────
   - xinhuanet.com
