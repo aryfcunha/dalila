@@ -814,12 +814,12 @@ def run_publish_site(out_dir: "Path") -> dict:
         (out_dir / "methodology.html").write_text(methodology_html, encoding="utf-8")
     except Exception:
         log.exception("publish-site: methodology page generation failed")
-    # 3c. Customize page
+    # 3c. Build page
     try:
-        customize_html = render_customize()
-        (out_dir / "customize.html").write_text(customize_html, encoding="utf-8")
+        build_html = render_customize()
+        (out_dir / "build.html").write_text(build_html, encoding="utf-8")
     except Exception:
-        log.exception("publish-site: customize page generation failed")
+        log.exception("publish-site: build page generation failed")
 
     # 4. Countries view (region-grouped heatmap + per-country news on click)
     try:

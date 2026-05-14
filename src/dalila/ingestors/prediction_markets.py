@@ -50,6 +50,12 @@ _DOMAIN_SEEDS = [
     "global recession 2026",
     "Sudan famine",
     "GCC economy",
+    "Red Sea shipping",
+    "Hezbollah Israel",
+    "BRICS UAE",
+    "artificial intelligence safety",
+    "climate change migration",
+    "oil price 2026",
 ]
 
 
@@ -112,7 +118,7 @@ def _search_manifold(query: str, limit: int = 5, min_vol: float | None = None) -
                 "question":    question,
                 "probability": float(prob),
                 "volume":      vol,
-                "url":         m.get("url", ""),
+                "url":         m.get("url") or f"https://manifold.markets/{m.get('creatorUsername')}/{m.get('slug')}",
             })
         return results
     except Exception as exc:
@@ -380,11 +386,11 @@ def discover_markets(conn: sqlite3.Connection) -> list[dict]:
 
     log.info("prediction markets: discovering markets for %d search terms", len(entities))
 
-    max_markets = int(_s("discovery.max_markets", 25))
+    max_markets = int(_s("discovery.max_markets", 50))
     seen: dict[str, dict] = {}  # market_id -> dict
 
-    for term in entities[:10]:  # cap API calls
-        for m in _search_manifold(term, limit=4):
+    for term in entities[:20]:  # cap API calls
+        for m in _search_manifold(term, limit=6):
             mid = m["market_id"]
             if mid not in seen:
                 seen[mid] = m
@@ -565,7 +571,7 @@ def _is_duplicate_topic(m1: dict, m2: dict) -> bool:
 def get_market_signals(conn: sqlite3.Connection,
                        digest_items: list[dict] | None = None) -> list[dict]:
     """Return top N market signals scored for today's digest content."""
-    top_n = int(_s("digest.top_n", 12))
+    top_n = int(_s("digest.top_n", 9))
 
     rows = conn.execute(
         """SELECT s.market_id, s.source, s.question, s.probability, s.volume, s.url,

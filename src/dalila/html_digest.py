@@ -778,6 +778,7 @@ def _masthead(*, on_page: str, tag: str = "DAILY BRIEF", link_prefix: str = "") 
     <a href="{link_prefix}markets.html"{_attr("markets")}>Markets</a>
     <a href="{link_prefix}countries.html"{_attr("countries")}>Countries</a>
     <a href="{link_prefix}methodology.html"{_attr("methodology")}>Methodology</a>
+    <a href="{link_prefix}build.html"{_attr("customize")}>Build</a>
     <a href="{link_prefix}about.html"{_attr("about")}>About</a>
   </nav>
 </header>
@@ -790,6 +791,7 @@ def _footer(*, contact_email: str, telegram_bot: str | None) -> str:
         f'<span><a href="index.html">Home</a></span>',
         f'<span><a href="archive.html">Archive</a></span>',
         f'<span><a href="markets.html">Markets</a></span>',
+        f'<span><a href="build.html">Build</a></span>',
         f'<span><a href="about.html">About</a></span>',
     ]
     if telegram_bot:
@@ -2762,7 +2764,7 @@ def render_markets(
 
             source = html.escape(m.get('source', 'unknown').upper())
             question = html.escape(m.get('question', ''))
-            url = m.get('url', '#')
+            url = m.get('url') or '#'
             
             body.append(f"""
             <a href="{url}" target="_blank" rel="noopener" 
@@ -2786,18 +2788,6 @@ def render_markets(
             
     body.append('</div>')
     
-    body.append('<h2 style="margin-top:60px;">Strategic Foresight Methodology</h2>')
-    body.append(
-        '<p>Dalila uses <strong>Log-Odds Shift</strong> scoring to identify the '
-        'most significant market movements. This mathematical approach prioritises '
-        'events where the crowd is rapidly changing its mind—particularly in '
-        'low-probability "tail risks" where a shift from 1% to 10% reflects a '
-        'massive increase in underlying risk.</p>'
-    )
-    body.append(
-        '<p>Our discovery engine weights different topics by their relevance to the '
-        'current news cycle and its alignment with UAE, humanitarian aid, and development.</p>'
-    )
     body.append('</div>')
     
     body.append(_footer(contact_email=contact_email, telegram_bot=telegram_bot))
@@ -2811,7 +2801,7 @@ def render_customize(
 ) -> str:
     """Explains that the tool is open source and customizable."""
     body = [
-        _masthead(tag="Build your own", on_page="customize"),
+        _masthead(tag="BUILD", on_page="customize"),
         '<div class="serif" style="max-width:680px; margin:40px auto; line-height:1.7; font-size:16px; color:var(--type-dim);">',
         '<h2 style="color:var(--type); margin-top:0;">Open Source & Customizable</h2>',
         '<p>Dalila is an <strong>open source</strong> intelligence agent. The full codebase is published and maintained on GitHub at <a href="https://github.com/aryfcunha/dalila" style="color:var(--amber); border-bottom:1px solid var(--amber);">github.com/aryfcunha/dalila</a>.</p>',
@@ -2820,4 +2810,4 @@ def render_customize(
         '</div>',
         _footer(contact_email=contact_email, telegram_bot=telegram_bot),
     ]
-    return _doc("Customize Dalila", "\n".join(body))
+    return _doc("Dalila — Build", "\n".join(body))
