@@ -104,36 +104,53 @@ def _run_claude(
             pass
 
 def _call_deepseek(model: str, system_prompt: str, user_prompt: str, purpose: str, timeout: int) -> LLMResponse:
-    import requests
+    """Fallback using DeepSeek API with urllib (proven path on VM)."""
+    import urllib.request
+    import urllib.error
+    
     api_key = os.getenv("DEEPSEEK_API_KEY")
+    if not api_key:
+        raise LLMError("DeepSeek fallback failed: DEEPSEEK_API_KEY not found in environment")
+    
     url = "https://api.deepseek.com/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {api_key}", 
-        "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    }
+    
+    # Use standard roles + headers from working deepseek.py module
     payload = {
         "model": "deepseek-chat",
         "messages": [
-            {
-                "role": "user", 
-                "content": f"SYSTEM INSTRUCTIONS:\n{system_prompt}\n\nUSER INPUT:\n{user_prompt}"[:10000]
-            }
+            {"role": "system", "content": system_prompt},
+            {"role": "user",   "content": user_prompt},
         ],
-        "temperature": 0.0
+        "temperature": 0.0,
+        "max_tokens": 8000,
     }
-    # Log payload length for debugging 'governor' rejects
-    content_len = len(payload["messages"][0]["content"])
-    log.info("DeepSeek request: content length %d chars", content_len)
+    body = json.dumps(payload).encode("utf-8")
+    
+    req = urllib.request.Request(
+        url,
+        data=body,
+        method="POST",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "Dalila/1.0",
+        },
+    )
     
     start = time.monotonic()
-    resp = requests.post(url, json=payload, timeout=timeout)
-    if resp.status_code != 200:
-        log.warning("DeepSeek API failed (%d): %s", resp.status_code, resp.text)
-        resp.raise_for_status()
-    data = resp.json()
-    text = data["choices"][0]["message"]["content"]
-    return LLMResponse(text=text, duration_ms=int((time.monotonic() - start) * 1000))
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            text = data["choices"][0]["message"]["content"]
+            return LLMResponse(text=text, duration_ms=int((time.monotonic() - start) * 1000))
+    except urllib.error.HTTPError as exc:
+        err_body = exc.read().decode("utf-8")
+        log.warning("DeepSeek API failed (%d): %s", exc.code, err_body)
+        raise LLMError(f"DeepSeek API error {exc.code}: {err_body}") from None
+    except Exception as exc:
+        log.warning("DeepSeek fallback exception: %s", exc)
+        raise LLMError(f"DeepSeek fallback exception: {exc}") from None
 
 def call(*, model: str, system_prompt: str, user_prompt: str, purpose: str, timeout: int = 120) -> str:
     return _run_claude(model=model, system_prompt=system_prompt, user_prompt=user_prompt, purpose=purpose, timeout=timeout).text
