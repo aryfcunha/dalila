@@ -30,8 +30,14 @@ from dalila.models import RawItem
 
 log = logging.getLogger(__name__)
 
-FTS_BASE = "https://keyfigures.api.unocha.org/v1"
-DEFAULT_HEADERS = {"User-Agent": "DalilaBot/0.1 (news monitoring)", "Accept": "application/json"}
+# OCHA exposes two FTS APIs:
+#   * keyfigures.api.unocha.org/v1  — aggregated key-figure summaries
+#   * api.hpc.tools/v2/public       — raw flow records (what we want)
+# The keyfigures endpoint rejects `groupby=flow` with HTTP 400 — that was the
+# previous fall-through. Switched to the canonical hpc.tools endpoint, which
+# uses `planYear` (not `year`) and doesn't need a groupby parameter.
+FTS_BASE = "https://api.hpc.tools/v2/public"
+DEFAULT_HEADERS = {"User-Agent": "DalilaBot/0.2 (news monitoring)", "Accept": "application/json"}
 
 
 def fetch(src: dict) -> list[RawItem]:
@@ -61,18 +67,28 @@ def fetch(src: dict) -> list[RawItem]:
 
 def _query(src: dict, *, donor: str | None, since: str, seen: set[str],
            label: str, limit: int = 80) -> list[RawItem]:
-    """One API call. Builds RawItems for new flow IDs."""
+    """One API call against api.hpc.tools/v2/public/fts/flow.
+
+    Canonical raw-flow endpoint. Params:
+      planYear   — required filter on the plan year (vs the previous `year`)
+      limit      — page size
+      sourceCountry / destinationCountry / sourceOrganization — filters
+    """
     params: dict = {
-        "year": datetime.now(timezone.utc).year,
+        "planYear": datetime.now(timezone.utc).year,
         "limit": limit,
-        "groupby": "flow",
     }
     if donor:
-        params["donor"] = donor
+        # hpc.tools uses sourceOrganization for donor org names.
+        params["sourceOrganization"] = donor
 
     try:
         resp = httpx.get(
-            f"{FTS_BASE}/fts/flow", params=params, headers=DEFAULT_HEADERS, timeout=30
+            f"{FTS_BASE}/fts/flow",
+            params=params,
+            headers=DEFAULT_HEADERS,
+            timeout=30,
+            follow_redirects=True,
         )
         resp.raise_for_status()
         payload = resp.json()
