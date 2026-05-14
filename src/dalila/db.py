@@ -1013,7 +1013,9 @@ def count_reviewed_24h(conn, as_of: datetime | None = None) -> int:
     since_utc = as_of_utc - timedelta(hours=24)
     # Return count of items ingested in this window.
     row = conn.execute(
-        "SELECT COUNT(*) FROM items WHERE ingested_at >= ? AND ingested_at <= ?",
+        """SELECT COUNT(*) FROM items 
+           WHERE datetime(ingested_at) >= datetime(?) 
+             AND datetime(ingested_at) <= datetime(?)""",
         (since_utc.isoformat(), as_of_utc.isoformat())
     ).fetchone()
     return row[0] if row else 0
