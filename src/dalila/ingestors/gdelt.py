@@ -29,7 +29,7 @@ from urllib.parse import urlparse
 import httpx
 import yaml
 
-from dalila.models import RawItem
+from dalila.models import RawItem, title_case_clean
 
 log = logging.getLogger(__name__)
 
@@ -114,75 +114,8 @@ GDELT_MAX_ITEMS_PER_POLL = 300
 
 # Acronyms that should stay UPPERCASE even after title-casing the slug.
 # Order doesn't matter; we substring-replace word-by-word.
-_TITLE_ACRONYMS = {
-    "uae", "us", "usa", "uk", "un", "eu", "uk", "nato", "oecd", "imf",
-    "who", "wfp", "fao", "iom", "unicef", "unhcr", "ohchr", "ocha",
-    "icc", "icj", "g7", "g20", "g77", "asean", "ecowas", "ecb", "fed",
-    "cia", "fbi", "nsa", "mi6", "mi5", "fco", "fcdo", "kgb", "isis",
-    "uss", "uae's", "us's", "uk's", "ai", "vp", "ceo", "cfo", "pm",
-    "mp", "mps", "hq", "tv", "bbc", "cnn", "ap", "afp", "wam",
-    "adia", "adq", "adnoc", "mbz", "mbs", "mbr", "abu", "iaea",
-    "icj", "icrc", "ngo", "ngos", "ip", "phd", "wto", "dpr", "drc",
-}
-
 # Lowercase-stays-lowercase (mid-sentence connectors). First word still
 # gets capitalised regardless.
-_TITLE_LOWER = {
-    "a", "an", "and", "as", "at", "but", "by", "for", "from", "in",
-    "of", "on", "or", "the", "to", "vs", "via", "with",
-}
-
-
-def _hash_suffix_re():
-    """Compile once: trailing token of 6–32 chars containing both letters
-    and digits (or all-hex) → publisher tracking ID. Strip from slugs."""
-    import re
-    return re.compile(
-        r"\s+[a-f0-9]{6,32}$",      # hex-only suffix (the ef796d64 case)
-        re.IGNORECASE,
-    )
-
-
-_HASH_SUFFIX_RE = _hash_suffix_re()
-
-
-def _clean_slug_title(slug: str) -> str:
-    """Turn a URL-slug derived raw string into a readable title:
-
-      'us ambassador to israel says ... defend country ef796d64'
-      → 'US Ambassador to Israel Says ... Defend Country'
-
-    Steps:
-      1. Strip trailing publisher hash (6+ hex chars after a space).
-      2. Title-case each word.
-      3. Lowercase the small connector words (a, an, the, of, to, in, …)
-         except the first word of the title.
-      4. Uppercase known acronyms (UAE, US, UN, UNICEF, …).
-    """
-    s = (slug or "").strip()
-    if not s:
-        return s
-    # 1. Strip trailing hex hash
-    s = _HASH_SUFFIX_RE.sub("", s).strip()
-    # 2/3/4. Word-by-word casing. Small connectors lowercase EXCEPT first
-    # and last word of the title (standard AP/Chicago rule).
-    words = s.split()
-    last_i = len(words) - 1
-    out: list[str] = []
-    for i, word in enumerate(words):
-        lw = word.lower()
-        if lw in _TITLE_ACRONYMS:
-            out.append(lw.upper())
-        elif 0 < i < last_i and lw in _TITLE_LOWER:
-            out.append(lw)
-        elif "'" in word:
-            head, _, tail = word.partition("'")
-            out.append(head.capitalize() + "'" + tail.lower())
-        else:
-            out.append(word.capitalize())
-    return " ".join(out)
-
-
 def fetch(src: dict) -> list[RawItem]:
     try:
         index = httpx.get(LASTUPDATE_URL, timeout=20).text.strip().splitlines()
@@ -262,7 +195,7 @@ def fetch(src: dict) -> list[RawItem]:
         persons = row[11]
         orgs = row[13]
         # GDELT doesn't carry article title in GKG. Fabricate a placeholder
-        # from the URL slug. _clean_slug_title strips trailing tracking-hash
+        # from the URL slug. title_case_clean strips trailing tracking-hash
         # suffixes (e.g. "...defend-country-ef796d64") and applies readable
         # title-casing with acronym preservation (UAE / US / UN / WFP, etc.).
         slug = doc_url.split("/")[-1] or doc_url
@@ -271,7 +204,7 @@ def fetch(src: dict) -> list[RawItem]:
             if slug.lower().endswith(ext):
                 slug = slug[: -len(ext)]
         slug = slug.replace("-", " ").replace("_", " ").strip()
-        title_seed = _clean_slug_title(slug)
+        title_seed = title_case_clean(slug)
         if not title_seed:
             continue
         body_parts = []
@@ -373,7 +306,7 @@ def _parse_slice(zip_bytes: bytes, source_id: str, *, cap: int) -> list[RawItem]
             if slug.lower().endswith(ext):
                 slug = slug[: -len(ext)]
         slug = slug.replace("-", " ").replace("_", " ").strip()
-        title_seed = _clean_slug_title(slug)
+        title_seed = title_case_clean(slug)
         if not title_seed:
             continue
         body_parts = []

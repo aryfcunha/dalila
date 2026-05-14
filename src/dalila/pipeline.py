@@ -17,7 +17,7 @@ from dalila.config import (
 )
 from dalila.editor import compose_deep_dive, compose_digest
 from dalila.ingestors.base import ingest_source, iter_enabled_sources
-from dalila.models import RawItem
+from dalila.models import RawItem, title_case_clean
 from dalila.simhash import is_near_duplicate
 
 log = logging.getLogger(__name__)
@@ -55,10 +55,13 @@ def run_ingest() -> dict:
                 items = []
 
             for it in items:
+                if it.title:
+                    it.title = title_case_clean(it.title)
+                
                 # Source-level boost: UAE state/entity sources always pass the prefilter
                 # because their full output is high-signal by definition.
                 src_tags = src.get("tags") or []
-                is_high_signal = any(t in ("uae", "state", "entity") for t in src_tags)
+                is_high_signal = any(t in ("state", "entity") for t in src_tags)
                 passed = is_high_signal or _prefilter_match(it, keywords, aliases)
 
                 row_id = db.insert_item(conn, it, prefilter_passed=passed)
@@ -644,7 +647,11 @@ def run_render_html_digest(
     from dalila.html_digest import render_digest
     with db.connect() as conn:
         items = db.items_for_digest(conn, since_hours=since_hours, min_relevance=min_relevance)
-        total = len(items)
+        
+        # Calculate true total ingested in the window, rather than just the filtered items
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=since_hours)).isoformat()
+        total = conn.execute("SELECT COUNT(*) FROM items WHERE ingested_at >= ?", (cutoff,)).fetchone()[0]
+        
         items = _dedupe_by_simhash(items)
         items = items[:max_items]
     html_str = render_digest(items, when=when, total_ingested=total)

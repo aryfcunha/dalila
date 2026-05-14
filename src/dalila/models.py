@@ -193,3 +193,48 @@ POLICY_SECTORS = {
     "financing",
     "convening",
 }
+
+# Acronyms that should stay UPPERCASE even after title-casing the slug.
+_TITLE_ACRONYMS = {
+    "uae", "us", "usa", "uk", "un", "eu", "nato", "oecd", "imf",
+    "who", "wfp", "fao", "iom", "unicef", "unhcr", "ohchr", "ocha",
+    "icc", "icj", "g7", "g20", "g77", "asean", "ecowas", "ecb", "fed",
+    "cia", "fbi", "nsa", "mi6", "mi5", "fco", "fcdo", "kgb", "isis",
+    "uss", "uae's", "us's", "uk's", "ai", "vp", "ceo", "cfo", "pm",
+    "mp", "mps", "hq", "tv", "bbc", "cnn", "ap", "afp", "wam",
+    "adia", "adq", "adnoc", "mbz", "mbs", "mbr", "abu", "iaea",
+    "icrc", "ngo", "ngos", "ip", "phd", "wto", "dpr", "drc",
+}
+
+# Lowercase-stays-lowercase (mid-sentence connectors). First word still gets capitalised regardless.
+_TITLE_LOWER = {
+    "a", "an", "and", "as", "at", "but", "by", "for", "from", "in",
+    "of", "on", "or", "the", "to", "vs", "via", "with",
+}
+
+def title_case_clean(title: str) -> str:
+    s = (title or "").strip()
+    if not s:
+        return s
+    
+    # Strip trailing numeric or decimal numbers to fix weird ID endings
+    import re
+    s = re.sub(r'\s+[\d\.]+$', '', s).strip()
+    s = re.sub(r'\s+[a-f0-9]{6,32}$', '', s, flags=re.IGNORECASE).strip()
+    
+    words = s.split()
+    if not words: return ""
+    last_i = len(words) - 1
+    out: list[str] = []
+    for i, word in enumerate(words):
+        lw = word.lower()
+        if lw in _TITLE_ACRONYMS:
+            out.append(lw.upper())
+        elif 0 < i < last_i and lw in _TITLE_LOWER:
+            out.append(lw)
+        elif "'" in word:
+            head, _, tail = word.partition("'")
+            out.append(head.capitalize() + "'" + tail.lower())
+        else:
+            out.append(word.capitalize())
+    return " ".join(out)

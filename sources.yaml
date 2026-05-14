@@ -649,17 +649,20 @@ prefilter_keywords:
   - Dubai
   - Sharjah
   - humanitarian
-  - aid
+  - foreign aid
+  - foreign assistance
+  - sustainable development
+  - global health
+  - climate finance
+  - energy transition
+  - sovereign wealth
+  - development bank
   - refugee
   - displacement
   - famine
-  - donor
-  - philanthropy
-  - foundation
-  - sustainable development
-  - foreign assistance
   - food security
-  - climate finance
+  - philanthropy
+  - donor
   - Gaza
   - Sudan
   - Yemen
@@ -669,3 +672,14 @@ prefilter_keywords:
   - Sahel
   - Ethiopia
   - Horn of Africa
+  - GCC
+  - Middle East
+  - technology
+  - artificial intelligence
+  - Strait of Hormuz
+  - Iran
+  - Israel
+  - Hezbollah
+  - drone
+  - airspace
+  - diplomacy

@@ -27,8 +27,29 @@ _RATE_LIMIT_BUFFER = timedelta(seconds=60)
 _classify_paused_until: datetime | None = None
 
 
+_last_full_ingest_time: datetime | None = None
+
 def _ingest_job() -> None:
-    log.info("scheduler: ingest tick")
+    global _last_full_ingest_time
+    now = datetime.now(timezone.utc)
+    
+    # Check if breaking news in last 4 hours
+    is_breaking_active = False
+    with db.connect() as conn:
+        cutoff = (now - timedelta(hours=4)).isoformat()
+        res = conn.execute("SELECT COUNT(*) FROM items WHERE is_breaking_candidate = 1 AND classified_at >= ?", (cutoff,)).fetchone()[0]
+        if res > 0:
+            is_breaking_active = True
+
+    cfg = get_config()
+    interval = 5 if is_breaking_active else cfg.ingest_interval_minutes
+    
+    if _last_full_ingest_time and (now - _last_full_ingest_time).total_seconds() < interval * 60 - 10:
+        return
+        
+    _last_full_ingest_time = now
+
+    log.info("scheduler: ingest tick (interval=%dm, breaking=%s)", interval, is_breaking_active)
     stats = run_ingest()
     total_new = sum(s["new"] for s in stats.values())
     total_passed = sum(s["prefilter_passed"] for s in stats.values())
@@ -165,10 +186,10 @@ def attach_jobs(scheduler: AsyncIOScheduler, app: Application) -> None:
     cfg = get_config()
     tz = pytz.timezone(cfg.timezone)
 
-    # Ingest every N minutes
+    # Ingest every 5 minutes (the _ingest_job itself backs off if no breaking news)
     scheduler.add_job(
         _ingest_job,
-        trigger=IntervalTrigger(minutes=cfg.ingest_interval_minutes),
+        trigger=IntervalTrigger(minutes=5),
         id="ingest",
         replace_existing=True,
         next_run_time=None,  # don't fire immediately on bot start
