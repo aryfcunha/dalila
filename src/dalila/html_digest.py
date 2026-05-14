@@ -299,12 +299,12 @@ a:hover {{
 
 
 /* ---------- market page grid ---------- */
-.market-grid {
+.market-grid {{
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 20px;
-}
-.market-card {
+}}
+.market-card {{
   background: var(--bg-deep);
   border: 1px solid var(--rule-strong);
   padding: 20px;
@@ -312,33 +312,33 @@ a:hover {{
   flex-direction: column;
   gap: 12px;
   transition: border-color 0.15s ease;
-}
-.market-card:hover { border-color: var(--amber); }
-.market-prob {
+}}
+.market-card:hover {{ border-color: var(--amber); }}
+.market-prob {{
   font-size: 28px;
   font-weight: 700;
   color: var(--amber);
   line-height: 1;
-}
-.market-meta {
+}}
+.market-meta {{
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-}
-.market-source { color: var(--muted); }
-.market-delta.up { color: var(--green); }
-.market-delta.down { color: var(--red); }
-.market-q {
+}}
+.market-source {{ color: var(--muted); }}
+.market-delta.up {{ color: var(--green); }}
+.market-delta.down {{ color: var(--red); }}
+.market-q {{
   font-family: var(--serif);
   font-size: 15px;
   line-height: 1.45;
   color: var(--type);
-}
-.market-q a { color: var(--type); border: 0; }
-.market-q a:hover { color: var(--amber); }
+}}
+.market-q a {{ color: var(--type); border: 0; }}
+.market-q a:hover {{ color: var(--amber); }}
 .item {{
   padding: 14px 0 16px;
   border-bottom: 1px solid var(--rule);
