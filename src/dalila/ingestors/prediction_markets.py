@@ -227,17 +227,11 @@ def discover_markets(conn: sqlite3.Connection) -> list[dict]:
     """
     entities = _recent_digest_entities(conn)
 
-    # Fallback when no digest history yet
-    if len(entities) < 3:
-        log.info("prediction markets: sparse digest history — using domain seeds")
-        entities = list(_DOMAIN_SEEDS)
-    else:
-        # Also append a few domain seeds as anchors so UAE/humanitarian lens
-        # is never completely absent even when the digest is all geopolitics
-        seeds = _s("discovery.domain_seeds", _DOMAIN_SEEDS)
-        for seed in seeds[:3]:
-            if seed not in entities:
-                entities.append(seed)
+    # Always include a selection of domain seeds to ensure regional consistency
+    seeds = _s("discovery.domain_seeds", _DOMAIN_SEEDS)
+    for seed in seeds:
+        if seed not in entities:
+            entities.append(seed)
 
     log.info("prediction markets: discovering markets for %d search terms", len(entities))
 
