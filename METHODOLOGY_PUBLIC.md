@@ -16,3 +16,8 @@ Beyond traditional news, Dalila tracks emerging trends through conflict-risk ind
 
 ## Transparency
 While the pipeline is automated to ensure consistency and speed, the rules it follows are documented and stable. This methodology ensures that every brief is reproducible and grounded in a clearly defined editorial framework focused on UAE development priorities.
+
+## Strategic Foresight Methodology
+Dalila uses **Log-Odds Shift** scoring to identify the most significant market movements. This mathematical approach prioritises events where the crowd is rapidly changing its mind—particularly in low-probability "tail risks" where a shift from 1% to 10% reflects a massive increase in underlying risk.
+
+Our discovery engine weights different topics by their relevance to the current news cycle and its alignment with UAE, humanitarian aid, and development.

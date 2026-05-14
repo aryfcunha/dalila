@@ -109,8 +109,19 @@ def _seed_sources(conn: sqlite3.Connection) -> None:
         )
 
 
+import re
+
+def clean_title(title: str) -> str:
+    new_title = re.sub(r'\b\d+\.\d{5,}\b', '', title)
+    new_title = re.sub(r'\b\d{8,}\b', '', new_title)
+    new_title = re.sub(r'\s+', ' ', new_title).strip()
+    if new_title and new_title[0].islower():
+        new_title = new_title[0].upper() + new_title[1:]
+    return new_title
+
 def insert_item(conn: sqlite3.Connection, item: RawItem, prefilter_passed: bool) -> int | None:
     """Insert a new item; return the row id, or None if it was a duplicate."""
+    item.title = clean_title(item.title)
     h = url_hash(item.url, item.title)
     sh = to_hex(simhash64(item.title))
     try:

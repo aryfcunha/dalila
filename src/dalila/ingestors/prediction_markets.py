@@ -441,15 +441,16 @@ def _upsert(conn: sqlite3.Connection, m: dict, prob: float,
     now = datetime.now(timezone.utc).isoformat()
     conn.execute(
         """INSERT INTO prediction_market_snapshots
-               (market_id, source, question, probability, volume, topic_tags, recorded_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?)
+               (market_id, source, question, probability, volume, url, topic_tags, recorded_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
            ON CONFLICT(market_id, source) DO UPDATE SET
                probability = excluded.probability,
                volume      = COALESCE(excluded.volume, prediction_market_snapshots.volume),
+               url         = COALESCE(excluded.url, prediction_market_snapshots.url),
                question    = excluded.question,
                recorded_at = excluded.recorded_at""",
         (m["market_id"], m["source"], m.get("question", m["market_id"]),
-         prob, volume, None, now),
+         prob, volume, m.get("url"), None, now),
     )
     conn.execute(
         """INSERT INTO prediction_market_history
