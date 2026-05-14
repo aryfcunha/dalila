@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dalila — About</title>
+<title>Dalila — Monday 16 March 2026</title>
 <style>
 :root {
   --bg:#0A0A0A;
@@ -596,84 +596,32 @@ a:hover {
 <div class="wrap">
 
 <header class="masthead">
-  <h1 class="masthead-title"><a href="./">Dalila<span class="ar">دليلة</span></a></h1>
-  <div class="masthead-tag">ABOUT</div>
+  <h1 class="masthead-title"><a href="../">Dalila<span class="ar">دليلة</span></a></h1>
+  <div class="masthead-tag">DAILY BRIEF</div>
   <nav class="masthead-nav">
-    <a href="./">Home</a>
-    <a href="archive.html">Archive</a>
-    <a href="countries.html">Countries</a>
-    <a href="methodology.html">Methodology</a>
-    <a href="about.html" aria-current="page">About</a>
+    <a href="../">Home</a>
+    <a href="../archive.html">Archive</a>
+    <a href="../countries.html">Countries</a>
+    <a href="../methodology.html">Methodology</a>
+    <a href="../about.html">About</a>
   </nav>
 </header>
 
-<div class="about">
-<p style="font-size:17px;color:var(--type);margin-top:18px;">Dalila is a daily intelligence brief on the global humanitarian, development, and philanthropy ecosystem &mdash; with a sharp focus on the UAE&rsquo;s role within it. It exists both as a website and a <a href="#subscribe">Telegram bot</a>. Dalila skims through dozens of news sources, multilateral feeds, and forecast indices to get development practitioners the context they need to make informed decisions.</p>
-<h2>How it works</h2>
-<p>Every 30 minutes Dalila ingests new items from the sources below. A keyword and entity prefilter drops items unrelated to the humanitarian, development, and philanthropy ecosystem remit. Surviving items go through a classifier that assigns a category, UAE-relevance score, severity, and topical tags. Near-duplicates are deduplicated. At 06:30 GST an editor model composes the morning digest from the previous 24 hours of classified items above threshold. The digest is shared with <a href="#subscribe">subscribers on Telegram</a>.</p>
-<p>Alongside the news feeds, Dalila ingests forecast and early-warning indices (ACLED CAST for conflict-escalation risk shipped; ACAPS INFORM for crisis severity, WFP HungerMap for food insecurity, and GDACS for real-time disaster alerts in the pipeline). These appear in the digest&rsquo;s <em>Foresight</em> section, but with a strict rule: only changes are surfaced, never states. Sudan being hungry every day produces zero items; Sudan getting hungrier produces one, tagged 🔴 (worsening) or 🟢 (improving) and showing the delta against the prior observation.</p>
-<p>Every brief is preserved. The <a href="archive.html">archive</a> lists every past brief; the <a href="countries.html">country</a> view renders an interactive heatmap of country mentions on a world map, with co-mention arcs from any selected country to the other countries it most frequently appears alongside.</p>
-<p>Every numeric threshold, sampling rate, and editorial rule in this pipeline is documented in the <a href="methodology.html">methodology page</a>, along with the rationale for each.</p>
-<p>Subscribers can ask for a deeper dive on a topic (<code>/more &lt;topic&gt;</code>), review tracked UAE doctrine positions (<code>/doctrine</code>), pull recent UAE financial commitments and bilateral meetings (<code>/commitments</code>, <code>/meetings</code>), or zoom in on recent news related to a specific country (<code>/country &lt;name&gt;</code>). Items are numbered so a reply with <code>link 3</code> returns the underlying source URL.</p>
-<h2>Sources</h2>
-<div class="source-block"><strong>UAE operating entities</strong><ul>
-<li>ACAPS INFORM — humanitarian crisis severity <span class="note">— inform</span></li>
-<li>ACLED CAST — conflict escalation forecast <span class="note">— cast</span></li>
-<li>GDACS — real-time disaster alerts <span class="note">— gdacs</span></li>
-<li>WFP HungerMap LIVE — food insecurity counts <span class="note">— hungermap</span></li>
-</ul></div>
-<div class="source-block"><strong>UAE &amp; Gulf press</strong><ul>
-<li><a href="https://gulfnews.com/feed" target="_blank" rel="noopener">Gulf News</a> <span class="note">— rss</span></li>
-<li><a href="https://www.thenationalnews.com/arc/outboundfeeds/rss/?outputType=xml" target="_blank" rel="noopener">The National</a> <span class="note">— rss</span></li>
-</ul></div>
-<div class="source-block"><strong>UN agencies</strong><ul>
-<li><a href="https://www.ohchr.org/en/rss.xml" target="_blank" rel="noopener">OHCHR — UN Human Rights Office</a> <span class="note">— rss</span></li>
-<li><a href="https://news.un.org/feed/subscribe/en/news/all/rss.xml" target="_blank" rel="noopener">UN News</a> <span class="note">— rss</span></li>
-</ul></div>
-<div class="source-block"><strong>Multilateral finance</strong><ul>
-<li><a href="https://www.imf.org/en/News/RSS?Language=ENG" target="_blank" rel="noopener">IMF — News</a> <span class="note">— rss</span></li>
-<li><a href="https://reliefweb.int/updates/rss.xml" target="_blank" rel="noopener">ReliefWeb</a> <span class="note">— rss</span></li>
-</ul></div>
-<div class="source-block"><strong>Donor agencies (peer set)</strong><ul>
-<li><a href="https://www.afd.fr/en/rss.xml" target="_blank" rel="noopener">AFD — Agence Française de Développement</a> <span class="note">— rss</span></li>
-<li><a href="https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom" target="_blank" rel="noopener">FCDO — UK Foreign, Commonwealth &amp; Development Office</a> <span class="note">— rss</span></li>
-</ul></div>
-<div class="source-block"><strong>Specialist trade press</strong><ul>
-<li><a href="https://www.alliancemagazine.org/feed/" target="_blank" rel="noopener">Alliance Magazine — Philanthropy</a> <span class="note">— rss</span></li>
-<li><a href="https://www.climatechangenews.com/feed/" target="_blank" rel="noopener">Climate Home News</a> <span class="note">— rss</span></li>
-<li>Gmail newsletters — CGD / Economist / Devex <span class="note">— gmail</span></li>
-<li><a href="https://ssir.org/site/rss_2.0/articles" target="_blank" rel="noopener">Stanford Social Innovation Review</a> <span class="note">— rss</span></li>
-</ul></div>
-<div class="source-block"><strong>Wires &amp; global news</strong><ul>
-<li><a href="https://www.aljazeera.com/xml/rss/all.xml" target="_blank" rel="noopener">Al Jazeera English</a> <span class="note">— rss</span></li>
-<li><a href="http://feeds.bbci.co.uk/news/world/rss.xml" target="_blank" rel="noopener">BBC News — World</a> <span class="note">— rss</span></li>
-<li><a href="https://rss.dw.com/rdf/rss-en-all" target="_blank" rel="noopener">Deutsche Welle — Top stories</a> <span class="note">— rss</span></li>
-<li><a href="https://www.foreignaffairs.com/rss.xml" target="_blank" rel="noopener">Foreign Affairs — Table of Contents</a> <span class="note">— rss</span></li>
-<li><a href="https://foreignpolicy.com/feed/" target="_blank" rel="noopener">Foreign Policy</a> <span class="note">— rss</span></li>
-<li><a href="https://www.france24.com/en/rss" target="_blank" rel="noopener">France 24 English</a> <span class="note">— rss</span></li>
-<li><a href="https://rss.nytimes.com/services/xml/rss/nyt/Africa.xml" target="_blank" rel="noopener">New York Times — Africa</a> <span class="note">— rss</span></li>
-<li><a href="https://rss.nytimes.com/services/xml/rss/nyt/MiddleEast.xml" target="_blank" rel="noopener">New York Times — Middle East</a> <span class="note">— rss</span></li>
-<li><a href="https://rss.nytimes.com/services/xml/rss/nyt/World.xml" target="_blank" rel="noopener">New York Times — World</a> <span class="note">— rss</span></li>
-<li><a href="https://www.scmp.com/rss/91/feed" target="_blank" rel="noopener">South China Morning Post — Africa</a> <span class="note">— rss</span></li>
-<li><a href="http://feeds.washingtonpost.com/rss/world" target="_blank" rel="noopener">Washington Post — World</a> <span class="note">— rss</span></li>
-</ul></div>
-<div class="source-block"><strong>Humanitarian-specialist</strong><ul>
-<li><a href="https://www.internal-displacement.org/rss.xml" target="_blank" rel="noopener">IDMC — Internal Displacement Monitoring Centre</a> <span class="note">— rss</span></li>
-<li>OCHA Financial Tracking Service <span class="note">— fts</span></li>
-</ul></div>
-<div class="source-block"><strong>Real-time event detection</strong><ul>
-<li>ACLED — armed conflict events <span class="note">— acled</span></li>
-<li>GDELT 2.0 Events <span class="note">— gdelt</span></li>
-</ul></div>
-<div class="source-block"><strong>Aid-activity data</strong><ul>
-<li>IATI Datastore — UAE-related activities <span class="note">— iati</span></li>
-</ul></div>
-<h2 id="subscribe">Subscribe</h2>
-<p>1. Open Telegram and search for <a href="https://t.me/dalila_development_digest_bot">@dalila_development_digest_bot</a>.<br>2. Tap <strong>Start</strong> (or send <code>/start</code>).<br>3. The morning digest will arrive around 06:30 GST each day.</p>
-<p>To unsubscribe, send <code>/stop</code> in the same chat.</p>
-<h2>Suggestions</h2>
-<p>Feedback, source suggestions, bug reports, or requests for new features: <a href="mailto:dalila.dev.digest@gmail.com">dalila.dev.digest@gmail.com</a>.</p>
+
+<div class="ticker">
+  <span>MONDAY 16 MARCH 2026</span>
+  <span><b>14</b> ITEMS</span>
+  <span><b>14</b> REVIEWED 24H</span>
+  <span>COMPOSED 04:00 +04</span>
 </div>
+
+<section class="top"><div class="top-head"><span class="label">▌ Top stories</span><span class="count">03 of 03</span></div><ol><li><a href="https://www.thenationalnews.com/news/uae/2026/03/16/fire-near-dubai-airport-after-drone-strike-hits-fuel-tank/">fire near dubai airport after drone strike hits fuel tank</a><span class="ref">#1</span></li>
+<li><a href="https://www.thenationalnews.com/news/uae/2026/03/15/president-sheikh-mohamed-and-egypts-el-sisi-discuss-iran-war/">president sheikh mohamed and egypts el sisi discuss iran war</a><span class="ref">#2</span></li>
+<li><a href="https://www.thenationalnews.com/news/mena/2026/03/15/israeli-forces-kill-palestinian-family-during-eid-shopping-trip-in-occupied-west-bank/">israeli forces kill palestinian family during eid shopping trip in occupied west bank</a><span class="ref">#3</span></li></ol></section>
+<section class="section"><div class="section-head"><span class="label">▌ HUMANITARIAN</span><span class="count">04 ITEMS</span></div><article class="item" id="item-1"><span class="item-n">#01</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/03/16/fire-near-dubai-airport-after-drone-strike-hits-fuel-tank/" target="_blank" rel="noopener">fire near dubai airport after drone strike hits fuel tank</a></h3><p class="summary">Drone strike hits fuel tank near Dubai airport; fire breaks out; UAE targeted.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.90</span></div></div></article><article class="item" id="item-3"><span class="item-n">#03</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/03/15/israeli-forces-kill-palestinian-family-during-eid-shopping-trip-in-occupied-west-bank/" target="_blank" rel="noopener">israeli forces kill palestinian family during eid shopping trip in occupied west bank</a></h3><p class="summary">Israeli military kills Palestinian family during Eid shopping in occupied West Bank.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.60</span> · <span class="sev">SEV 0.90</span></div></div></article><article class="item" id="item-6"><span class="item-n">#06</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/03/15/not-the-first-or-the-last-time-rescuers-turned-targets-in-deadly-israeli-attacks-on-lebanon-health-workers/" target="_blank" rel="noopener">not the first or the last time rescuers turned targets in deadly israeli attacks on lebanon health workers</a></h3><p class="summary">Report documents pattern of Israeli forces targeting health workers and rescuers in Lebanon.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.50</span> · <span class="sev">SEV 0.80</span></div></div></article><article class="item" id="item-8"><span class="item-n">#08</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/2026/03/15/best-photos-of-march-15-from-protests-in-rome-to-displaced-residents-in-beirut/" target="_blank" rel="noopener">best photos of march 15 from protests in rome to displaced residents in beirut</a></h3><p class="summary">Photo dispatch: global scenes including displaced residents in Beirut.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.40</span> · <span class="sev">SEV 0.50</span></div></div></article></section>
+<section class="section"><div class="section-head"><span class="label">▌ REPORTS &amp; EVIDENCE</span><span class="count">06 ITEMS</span></div><article class="item" id="item-9"><span class="item-n">#09</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/energy/2026/03/15/did-the-us-account-for-strait-of-hormuz-closure-in-its-iran-war-plan/" target="_blank" rel="noopener">did the us account for strait of hormuz closure in its iran war plan</a></h3><p class="summary">Analysis: did US military plan account for Strait of Hormuz closure scenarios?</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.80</span></div></div></article><article class="item" id="item-10"><span class="item-n">#10</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/2026/03/15/bahrains-alba-to-cut-19-of-aluminium-production-capacity-amid-hormuz-disruption/" target="_blank" rel="noopener">bahrains alba to cut 19 of aluminium production capacity amid hormuz disruption</a></h3><p class="summary">Bahrain&#x27;s ALBA cuts 19% of aluminum production amid Hormuz disruption risk.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.70</span></div></div></article><article class="item" id="item-11"><span class="item-n">#11</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/03/15/indian-cbse-grade-12-exams-cancelled-in-middle-east-as-iran-war-rages/" target="_blank" rel="noopener">indian cbse grade 12 exams cancelled in middle east as iran war rages</a></h3><p class="summary">CBSE cancels Grade 12 exams across Middle East due to Iran-US military conflict.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.80</span></div></div></article><article class="item" id="item-12"><span class="item-n">#12</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/03/15/el-sisi-defends-governments-handling-of-egypts-economy-after-oil-price-hike/" target="_blank" rel="noopener">el sisi defends governments handling of egypts economy after oil price hike</a></h3><p class="summary">Egypt&#x27;s President El Sisi defends economic policy amid oil price increases.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.50</span></div></div></article><article class="item" id="item-13"><span class="item-n">#13</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/03/15/ali-khamenei-reported-to-have-opposed-succession-of-son-as-supreme-leader/" target="_blank" rel="noopener">ali khamenei reported to have opposed succession of son as supreme leader</a></h3><p class="summary">Report: Iran&#x27;s Supreme Leader reportedly opposed son&#x27;s succession as leader.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.70</span></div></div></article><article class="item" id="item-14"><span class="item-n">#14</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/opinion/cartoon/2026/03/15/oil-gas-price-jump-rise-global-war-iran-us-israel-middle-east-gulf/" target="_blank" rel="noopener">oil gas price jump rise global war iran us israel middle east gulf</a></h3><p class="summary">Cartoon: surge in global oil and gas prices driven by Iran-US-Israel conflict.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.80</span></div></div></article></section>
+<section class="section"><div class="section-head"><span class="label">▌ UAE FOREIGN-POLICY SIGNALS</span><span class="count">03 ITEMS</span></div><article class="item" id="item-2"><span class="item-n">#02</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/03/15/president-sheikh-mohamed-and-egypts-el-sisi-discuss-iran-war/" target="_blank" rel="noopener">president sheikh mohamed and egypts el sisi discuss iran war</a></h3><p class="summary">UAE President Sheikh Mohamed discusses Iran-US conflict with Egyptian counterpart El Sisi.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.60</span></div></div></article><article class="item" id="item-4"><span class="item-n">#04</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/03/16/trump-leans-on-allies-to-help-secure-strait-of-hormuz/" target="_blank" rel="noopener">trump leans on allies to help secure strait of hormuz</a></h3><p class="summary">Trump administration pressures Gulf allies including UAE to help secure Strait of Hormuz.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.60</span></div></div></article><article class="item" id="item-5"><span class="item-n">#05</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/03/15/iran-welcomes-any-regional-initiative-leading-to-a-just-end-to-war-says-araghchi/" target="_blank" rel="noopener">iran welcomes any regional initiative leading to a just end to war says araghchi</a></h3><p class="summary">Iran&#x27;s Foreign Minister signals openness to regional conflict resolution initiatives.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.50</span></div></div></article></section>
+<section class="section"><div class="section-head"><span class="label">▌ UAE DOCTRINE</span><span class="count">01 ITEM</span></div><article class="item" id="item-7"><span class="item-n">#07</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/03/15/emirati-childrens-day-president-sheikh-mohamed-says-youth-remain-safe-and-protected-in-challenging-times/" target="_blank" rel="noopener">emirati childrens day president sheikh mohamed says youth remain safe and protected in challenging times</a></h3><p class="summary">President Sheikh Mohamed affirms youth safety commitment amid regional crisis.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.30</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article></section>
 <footer class="foot"><span>© 2026 Dalila — daily intelligence brief</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Submit a suggestion</a></span></footer>
 </div>
 </body>

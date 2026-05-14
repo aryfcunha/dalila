@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dalila — About</title>
+<title>Dalila — Saturday 3 January 2026</title>
 <style>
 :root {
   --bg:#0A0A0A;
@@ -596,84 +596,31 @@ a:hover {
 <div class="wrap">
 
 <header class="masthead">
-  <h1 class="masthead-title"><a href="./">Dalila<span class="ar">دليلة</span></a></h1>
-  <div class="masthead-tag">ABOUT</div>
+  <h1 class="masthead-title"><a href="../">Dalila<span class="ar">دليلة</span></a></h1>
+  <div class="masthead-tag">DAILY BRIEF</div>
   <nav class="masthead-nav">
-    <a href="./">Home</a>
-    <a href="archive.html">Archive</a>
-    <a href="countries.html">Countries</a>
-    <a href="methodology.html">Methodology</a>
-    <a href="about.html" aria-current="page">About</a>
+    <a href="../">Home</a>
+    <a href="../archive.html">Archive</a>
+    <a href="../countries.html">Countries</a>
+    <a href="../methodology.html">Methodology</a>
+    <a href="../about.html">About</a>
   </nav>
 </header>
 
-<div class="about">
-<p style="font-size:17px;color:var(--type);margin-top:18px;">Dalila is a daily intelligence brief on the global humanitarian, development, and philanthropy ecosystem &mdash; with a sharp focus on the UAE&rsquo;s role within it. It exists both as a website and a <a href="#subscribe">Telegram bot</a>. Dalila skims through dozens of news sources, multilateral feeds, and forecast indices to get development practitioners the context they need to make informed decisions.</p>
-<h2>How it works</h2>
-<p>Every 30 minutes Dalila ingests new items from the sources below. A keyword and entity prefilter drops items unrelated to the humanitarian, development, and philanthropy ecosystem remit. Surviving items go through a classifier that assigns a category, UAE-relevance score, severity, and topical tags. Near-duplicates are deduplicated. At 06:30 GST an editor model composes the morning digest from the previous 24 hours of classified items above threshold. The digest is shared with <a href="#subscribe">subscribers on Telegram</a>.</p>
-<p>Alongside the news feeds, Dalila ingests forecast and early-warning indices (ACLED CAST for conflict-escalation risk shipped; ACAPS INFORM for crisis severity, WFP HungerMap for food insecurity, and GDACS for real-time disaster alerts in the pipeline). These appear in the digest&rsquo;s <em>Foresight</em> section, but with a strict rule: only changes are surfaced, never states. Sudan being hungry every day produces zero items; Sudan getting hungrier produces one, tagged 🔴 (worsening) or 🟢 (improving) and showing the delta against the prior observation.</p>
-<p>Every brief is preserved. The <a href="archive.html">archive</a> lists every past brief; the <a href="countries.html">country</a> view renders an interactive heatmap of country mentions on a world map, with co-mention arcs from any selected country to the other countries it most frequently appears alongside.</p>
-<p>Every numeric threshold, sampling rate, and editorial rule in this pipeline is documented in the <a href="methodology.html">methodology page</a>, along with the rationale for each.</p>
-<p>Subscribers can ask for a deeper dive on a topic (<code>/more &lt;topic&gt;</code>), review tracked UAE doctrine positions (<code>/doctrine</code>), pull recent UAE financial commitments and bilateral meetings (<code>/commitments</code>, <code>/meetings</code>), or zoom in on recent news related to a specific country (<code>/country &lt;name&gt;</code>). Items are numbered so a reply with <code>link 3</code> returns the underlying source URL.</p>
-<h2>Sources</h2>
-<div class="source-block"><strong>UAE operating entities</strong><ul>
-<li>ACAPS INFORM — humanitarian crisis severity <span class="note">— inform</span></li>
-<li>ACLED CAST — conflict escalation forecast <span class="note">— cast</span></li>
-<li>GDACS — real-time disaster alerts <span class="note">— gdacs</span></li>
-<li>WFP HungerMap LIVE — food insecurity counts <span class="note">— hungermap</span></li>
-</ul></div>
-<div class="source-block"><strong>UAE &amp; Gulf press</strong><ul>
-<li><a href="https://gulfnews.com/feed" target="_blank" rel="noopener">Gulf News</a> <span class="note">— rss</span></li>
-<li><a href="https://www.thenationalnews.com/arc/outboundfeeds/rss/?outputType=xml" target="_blank" rel="noopener">The National</a> <span class="note">— rss</span></li>
-</ul></div>
-<div class="source-block"><strong>UN agencies</strong><ul>
-<li><a href="https://www.ohchr.org/en/rss.xml" target="_blank" rel="noopener">OHCHR — UN Human Rights Office</a> <span class="note">— rss</span></li>
-<li><a href="https://news.un.org/feed/subscribe/en/news/all/rss.xml" target="_blank" rel="noopener">UN News</a> <span class="note">— rss</span></li>
-</ul></div>
-<div class="source-block"><strong>Multilateral finance</strong><ul>
-<li><a href="https://www.imf.org/en/News/RSS?Language=ENG" target="_blank" rel="noopener">IMF — News</a> <span class="note">— rss</span></li>
-<li><a href="https://reliefweb.int/updates/rss.xml" target="_blank" rel="noopener">ReliefWeb</a> <span class="note">— rss</span></li>
-</ul></div>
-<div class="source-block"><strong>Donor agencies (peer set)</strong><ul>
-<li><a href="https://www.afd.fr/en/rss.xml" target="_blank" rel="noopener">AFD — Agence Française de Développement</a> <span class="note">— rss</span></li>
-<li><a href="https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom" target="_blank" rel="noopener">FCDO — UK Foreign, Commonwealth &amp; Development Office</a> <span class="note">— rss</span></li>
-</ul></div>
-<div class="source-block"><strong>Specialist trade press</strong><ul>
-<li><a href="https://www.alliancemagazine.org/feed/" target="_blank" rel="noopener">Alliance Magazine — Philanthropy</a> <span class="note">— rss</span></li>
-<li><a href="https://www.climatechangenews.com/feed/" target="_blank" rel="noopener">Climate Home News</a> <span class="note">— rss</span></li>
-<li>Gmail newsletters — CGD / Economist / Devex <span class="note">— gmail</span></li>
-<li><a href="https://ssir.org/site/rss_2.0/articles" target="_blank" rel="noopener">Stanford Social Innovation Review</a> <span class="note">— rss</span></li>
-</ul></div>
-<div class="source-block"><strong>Wires &amp; global news</strong><ul>
-<li><a href="https://www.aljazeera.com/xml/rss/all.xml" target="_blank" rel="noopener">Al Jazeera English</a> <span class="note">— rss</span></li>
-<li><a href="http://feeds.bbci.co.uk/news/world/rss.xml" target="_blank" rel="noopener">BBC News — World</a> <span class="note">— rss</span></li>
-<li><a href="https://rss.dw.com/rdf/rss-en-all" target="_blank" rel="noopener">Deutsche Welle — Top stories</a> <span class="note">— rss</span></li>
-<li><a href="https://www.foreignaffairs.com/rss.xml" target="_blank" rel="noopener">Foreign Affairs — Table of Contents</a> <span class="note">— rss</span></li>
-<li><a href="https://foreignpolicy.com/feed/" target="_blank" rel="noopener">Foreign Policy</a> <span class="note">— rss</span></li>
-<li><a href="https://www.france24.com/en/rss" target="_blank" rel="noopener">France 24 English</a> <span class="note">— rss</span></li>
-<li><a href="https://rss.nytimes.com/services/xml/rss/nyt/Africa.xml" target="_blank" rel="noopener">New York Times — Africa</a> <span class="note">— rss</span></li>
-<li><a href="https://rss.nytimes.com/services/xml/rss/nyt/MiddleEast.xml" target="_blank" rel="noopener">New York Times — Middle East</a> <span class="note">— rss</span></li>
-<li><a href="https://rss.nytimes.com/services/xml/rss/nyt/World.xml" target="_blank" rel="noopener">New York Times — World</a> <span class="note">— rss</span></li>
-<li><a href="https://www.scmp.com/rss/91/feed" target="_blank" rel="noopener">South China Morning Post — Africa</a> <span class="note">— rss</span></li>
-<li><a href="http://feeds.washingtonpost.com/rss/world" target="_blank" rel="noopener">Washington Post — World</a> <span class="note">— rss</span></li>
-</ul></div>
-<div class="source-block"><strong>Humanitarian-specialist</strong><ul>
-<li><a href="https://www.internal-displacement.org/rss.xml" target="_blank" rel="noopener">IDMC — Internal Displacement Monitoring Centre</a> <span class="note">— rss</span></li>
-<li>OCHA Financial Tracking Service <span class="note">— fts</span></li>
-</ul></div>
-<div class="source-block"><strong>Real-time event detection</strong><ul>
-<li>ACLED — armed conflict events <span class="note">— acled</span></li>
-<li>GDELT 2.0 Events <span class="note">— gdelt</span></li>
-</ul></div>
-<div class="source-block"><strong>Aid-activity data</strong><ul>
-<li>IATI Datastore — UAE-related activities <span class="note">— iati</span></li>
-</ul></div>
-<h2 id="subscribe">Subscribe</h2>
-<p>1. Open Telegram and search for <a href="https://t.me/dalila_development_digest_bot">@dalila_development_digest_bot</a>.<br>2. Tap <strong>Start</strong> (or send <code>/start</code>).<br>3. The morning digest will arrive around 06:30 GST each day.</p>
-<p>To unsubscribe, send <code>/stop</code> in the same chat.</p>
-<h2>Suggestions</h2>
-<p>Feedback, source suggestions, bug reports, or requests for new features: <a href="mailto:dalila.dev.digest@gmail.com">dalila.dev.digest@gmail.com</a>.</p>
+
+<div class="ticker">
+  <span>SATURDAY 3 JANUARY 2026</span>
+  <span><b>11</b> ITEMS</span>
+  <span><b>11</b> REVIEWED 24H</span>
+  <span>COMPOSED 04:00 +04</span>
 </div>
+
+<section class="top"><div class="top-head"><span class="label">▌ Top stories</span><span class="count">03 of 03</span></div><ol><li><a href="https://www.thedailystar.net/news/world/middle-east/news/yemen-province-seven-killed-saudi-coalition-strikes-uae-backed-forces-4071866">Yemen Province Seven Killed Saudi Coalition Strikes UAE Backed Forces</a><span class="ref">#2</span></li>
+<li><a href="https://www.aljazeera.com/news/liveblog/2026/1/2/live-survivors-of-israels-war-on-gaza-brace-for-harsh-weather-in-tents?update=4209419">Live Survivors of Israels War on Gaza Brace for Harsh Weather in Tents?update=4209419</a><span class="ref">#3</span></li>
+<li><a href="https://www.wam.ae/en/article/1703cst-uae-field-hospital-continues-provide-medical">1703cst uae field hospital continues provide medical</a><span class="ref">#1</span></li></ol></section>
+<section class="section"><div class="section-head"><span class="label">▌ HUMANITARIAN</span><span class="count">05 ITEMS</span></div><article class="item" id="item-1"><span class="item-n">#01</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/1703cst-uae-field-hospital-continues-provide-medical" target="_blank" rel="noopener">1703cst uae field hospital continues provide medical</a></h3><p class="summary">UAE field hospital continues providing medical services.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.50</span></div></div></article><article class="item" id="item-2"><span class="item-n">#02</span><div class="item-body"><h3 class="title"><a href="https://www.thedailystar.net/news/world/middle-east/news/yemen-province-seven-killed-saudi-coalition-strikes-uae-backed-forces-4071866" target="_blank" rel="noopener">Yemen Province Seven Killed Saudi Coalition Strikes UAE Backed Forces</a></h3><p class="summary">7 killed in Saudi coalition strikes on UAE-backed forces.</p><div class="meta"><span class="src">GDELT 2.0 Events</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.70</span> · <span>YE · AE</span> · <span>HUMANITARIAN</span></div></div></article><article class="item" id="item-3"><span class="item-n">#03</span><div class="item-body"><h3 class="title"><a href="https://www.aljazeera.com/news/liveblog/2026/1/2/live-survivors-of-israels-war-on-gaza-brace-for-harsh-weather-in-tents?update=4209419" target="_blank" rel="noopener">Live Survivors of Israels War on Gaza Brace for Harsh Weather in Tents?update=4209419</a></h3><p class="summary">Gaza war survivors face harsh winter in tents.</p><div class="meta"><span class="src">GDELT 2.0 Events</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.80</span> · <span>PS</span> · <span>HUMANITARIAN</span></div></div></article><article class="item" id="item-7"><span class="item-n">#07</span><div class="item-body"><h3 class="title"><a href="https://www.al-monitor.com/originals/2026/01/trump-threatens-iran-over-protest-deaths-unrest-flares" target="_blank" rel="noopener">Trump Threatens Iran Over Protest Deaths Unrest Flares</a></h3><p class="summary">Trump threatens Iran over protest deaths as unrest flares.</p><div class="meta"><span class="src">GDELT 2.0 Events</span> · <span class="rel">REL 0.40</span> · <span class="sev">SEV 0.60</span></div></div></article><article class="item" id="item-8"><span class="item-n">#08</span><div class="item-body"><h3 class="title"><a href="https://www.middleeasteye.net/live-blog/live-blog-update/west-bank-israeli-army-raids-village-near-hebron-and-opens-fires" target="_blank" rel="noopener">West Bank Israeli Army Raids Village Near Hebron and Opens Fires</a></h3><p class="summary">Israeli army raids village near Hebron, opens fire.</p><div class="meta"><span class="src">GDELT 2.0 Events</span> · <span class="rel">REL 0.40</span> · <span class="sev">SEV 0.50</span> · <span>PS</span> · <span>HUMANITARIAN</span></div></div></article></section>
+<section class="section"><div class="section-head"><span class="label">▌ UAE FOREIGN-POLICY SIGNALS</span><span class="count">04 ITEMS</span></div><article class="item" id="item-4"><span class="item-n">#04</span><div class="item-body"><h3 class="title"><a href="https://www.wmra.org/2026-01-02/yemens-separatists-announce-a-constitution-for-an-independent-south" target="_blank" rel="noopener">Yemens Separatists Announce a Constitution for an Independent South</a></h3><p class="summary">Yemen separatists announce constitution.</p><div class="meta"><span class="src">GDELT 2.0 Events</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.60</span> · <span>YE · AE</span></div></div></article><article class="item" id="item-5"><span class="item-n">#05</span><div class="item-body"><h3 class="title"><a href="https://www.suncommercial.com/brazil_times/news/national/article_38e772ad-1b17-5149-8177-944b3436a837.html" target="_blank" rel="noopener">Article 38e772ad 1b17 5149 8177</a></h3><p class="summary">Yemen&#x27;s Southern Transitional Council activity involving Abu Dhabi.</p><div class="meta"><span class="src">GDELT 2.0 Events</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.50</span> · <span>YE · AE</span></div></div></article><article class="item" id="item-6"><span class="item-n">#06</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by0xk4i-joint-statement-foreign-ministers-uae-jordan" target="_blank" rel="noopener">by0xk4i joint statement foreign ministers uae jordan</a></h3><p class="summary">UAE and Jordan foreign ministers issue joint statement.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.20</span></div></div></article><article class="item" id="item-10"><span class="item-n">#10</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by0xkcz-uae-expresses-solidarity-with-switzerland-conveys" target="_blank" rel="noopener">by0xkcz uae expresses solidarity with switzerland conveys</a></h3><p class="summary">UAE expresses solidarity with Switzerland.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.50</span> · <span class="sev">SEV 0.10</span></div></div></article></section>
+<section class="section"><div class="section-head"><span class="label">▌ UAE ECOSYSTEM</span><span class="count">02 ITEMS</span></div><article class="item" id="item-9"><span class="item-n">#09</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/1703ct5-mohammed-bin-rashid-congratulates-professor" target="_blank" rel="noopener">1703ct5 mohammed bin rashid congratulates professor</a></h3><p class="summary">Mohammed bin Rashid congratulates professor.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.50</span> · <span class="sev">SEV 0.10</span></div></div></article><article class="item" id="item-11"><span class="item-n">#11</span><div class="item-body"><h3 class="title"><a href="https://www.vccircle.com/sovereignwealth-funds-bet-big-on-us-as-india-other-emerging-markets-slide" target="_blank" rel="noopener">Sovereignwealth Funds Bet Big on US as India Other Emerging Markets Slide</a></h3><p class="summary">Sovereign wealth funds including Mubadala shift to US from emerging markets.</p><div class="meta"><span class="src">GDELT 2.0 Events</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.10</span> · <span>AE · US · IN</span> · <span>FINANCING</span></div></div></article></section>
 <footer class="foot"><span>© 2026 Dalila — daily intelligence brief</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Submit a suggestion</a></span></footer>
 </div>
 </body>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dalila — About</title>
+<title>Dalila — Tuesday 6 January 2026</title>
 <style>
 :root {
   --bg:#0A0A0A;
@@ -596,84 +596,33 @@ a:hover {
 <div class="wrap">
 
 <header class="masthead">
-  <h1 class="masthead-title"><a href="./">Dalila<span class="ar">دليلة</span></a></h1>
-  <div class="masthead-tag">ABOUT</div>
+  <h1 class="masthead-title"><a href="../">Dalila<span class="ar">دليلة</span></a></h1>
+  <div class="masthead-tag">DAILY BRIEF</div>
   <nav class="masthead-nav">
-    <a href="./">Home</a>
-    <a href="archive.html">Archive</a>
-    <a href="countries.html">Countries</a>
-    <a href="methodology.html">Methodology</a>
-    <a href="about.html" aria-current="page">About</a>
+    <a href="../">Home</a>
+    <a href="../archive.html">Archive</a>
+    <a href="../countries.html">Countries</a>
+    <a href="../methodology.html">Methodology</a>
+    <a href="../about.html">About</a>
   </nav>
 </header>
 
-<div class="about">
-<p style="font-size:17px;color:var(--type);margin-top:18px;">Dalila is a daily intelligence brief on the global humanitarian, development, and philanthropy ecosystem &mdash; with a sharp focus on the UAE&rsquo;s role within it. It exists both as a website and a <a href="#subscribe">Telegram bot</a>. Dalila skims through dozens of news sources, multilateral feeds, and forecast indices to get development practitioners the context they need to make informed decisions.</p>
-<h2>How it works</h2>
-<p>Every 30 minutes Dalila ingests new items from the sources below. A keyword and entity prefilter drops items unrelated to the humanitarian, development, and philanthropy ecosystem remit. Surviving items go through a classifier that assigns a category, UAE-relevance score, severity, and topical tags. Near-duplicates are deduplicated. At 06:30 GST an editor model composes the morning digest from the previous 24 hours of classified items above threshold. The digest is shared with <a href="#subscribe">subscribers on Telegram</a>.</p>
-<p>Alongside the news feeds, Dalila ingests forecast and early-warning indices (ACLED CAST for conflict-escalation risk shipped; ACAPS INFORM for crisis severity, WFP HungerMap for food insecurity, and GDACS for real-time disaster alerts in the pipeline). These appear in the digest&rsquo;s <em>Foresight</em> section, but with a strict rule: only changes are surfaced, never states. Sudan being hungry every day produces zero items; Sudan getting hungrier produces one, tagged 🔴 (worsening) or 🟢 (improving) and showing the delta against the prior observation.</p>
-<p>Every brief is preserved. The <a href="archive.html">archive</a> lists every past brief; the <a href="countries.html">country</a> view renders an interactive heatmap of country mentions on a world map, with co-mention arcs from any selected country to the other countries it most frequently appears alongside.</p>
-<p>Every numeric threshold, sampling rate, and editorial rule in this pipeline is documented in the <a href="methodology.html">methodology page</a>, along with the rationale for each.</p>
-<p>Subscribers can ask for a deeper dive on a topic (<code>/more &lt;topic&gt;</code>), review tracked UAE doctrine positions (<code>/doctrine</code>), pull recent UAE financial commitments and bilateral meetings (<code>/commitments</code>, <code>/meetings</code>), or zoom in on recent news related to a specific country (<code>/country &lt;name&gt;</code>). Items are numbered so a reply with <code>link 3</code> returns the underlying source URL.</p>
-<h2>Sources</h2>
-<div class="source-block"><strong>UAE operating entities</strong><ul>
-<li>ACAPS INFORM — humanitarian crisis severity <span class="note">— inform</span></li>
-<li>ACLED CAST — conflict escalation forecast <span class="note">— cast</span></li>
-<li>GDACS — real-time disaster alerts <span class="note">— gdacs</span></li>
-<li>WFP HungerMap LIVE — food insecurity counts <span class="note">— hungermap</span></li>
-</ul></div>
-<div class="source-block"><strong>UAE &amp; Gulf press</strong><ul>
-<li><a href="https://gulfnews.com/feed" target="_blank" rel="noopener">Gulf News</a> <span class="note">— rss</span></li>
-<li><a href="https://www.thenationalnews.com/arc/outboundfeeds/rss/?outputType=xml" target="_blank" rel="noopener">The National</a> <span class="note">— rss</span></li>
-</ul></div>
-<div class="source-block"><strong>UN agencies</strong><ul>
-<li><a href="https://www.ohchr.org/en/rss.xml" target="_blank" rel="noopener">OHCHR — UN Human Rights Office</a> <span class="note">— rss</span></li>
-<li><a href="https://news.un.org/feed/subscribe/en/news/all/rss.xml" target="_blank" rel="noopener">UN News</a> <span class="note">— rss</span></li>
-</ul></div>
-<div class="source-block"><strong>Multilateral finance</strong><ul>
-<li><a href="https://www.imf.org/en/News/RSS?Language=ENG" target="_blank" rel="noopener">IMF — News</a> <span class="note">— rss</span></li>
-<li><a href="https://reliefweb.int/updates/rss.xml" target="_blank" rel="noopener">ReliefWeb</a> <span class="note">— rss</span></li>
-</ul></div>
-<div class="source-block"><strong>Donor agencies (peer set)</strong><ul>
-<li><a href="https://www.afd.fr/en/rss.xml" target="_blank" rel="noopener">AFD — Agence Française de Développement</a> <span class="note">— rss</span></li>
-<li><a href="https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom" target="_blank" rel="noopener">FCDO — UK Foreign, Commonwealth &amp; Development Office</a> <span class="note">— rss</span></li>
-</ul></div>
-<div class="source-block"><strong>Specialist trade press</strong><ul>
-<li><a href="https://www.alliancemagazine.org/feed/" target="_blank" rel="noopener">Alliance Magazine — Philanthropy</a> <span class="note">— rss</span></li>
-<li><a href="https://www.climatechangenews.com/feed/" target="_blank" rel="noopener">Climate Home News</a> <span class="note">— rss</span></li>
-<li>Gmail newsletters — CGD / Economist / Devex <span class="note">— gmail</span></li>
-<li><a href="https://ssir.org/site/rss_2.0/articles" target="_blank" rel="noopener">Stanford Social Innovation Review</a> <span class="note">— rss</span></li>
-</ul></div>
-<div class="source-block"><strong>Wires &amp; global news</strong><ul>
-<li><a href="https://www.aljazeera.com/xml/rss/all.xml" target="_blank" rel="noopener">Al Jazeera English</a> <span class="note">— rss</span></li>
-<li><a href="http://feeds.bbci.co.uk/news/world/rss.xml" target="_blank" rel="noopener">BBC News — World</a> <span class="note">— rss</span></li>
-<li><a href="https://rss.dw.com/rdf/rss-en-all" target="_blank" rel="noopener">Deutsche Welle — Top stories</a> <span class="note">— rss</span></li>
-<li><a href="https://www.foreignaffairs.com/rss.xml" target="_blank" rel="noopener">Foreign Affairs — Table of Contents</a> <span class="note">— rss</span></li>
-<li><a href="https://foreignpolicy.com/feed/" target="_blank" rel="noopener">Foreign Policy</a> <span class="note">— rss</span></li>
-<li><a href="https://www.france24.com/en/rss" target="_blank" rel="noopener">France 24 English</a> <span class="note">— rss</span></li>
-<li><a href="https://rss.nytimes.com/services/xml/rss/nyt/Africa.xml" target="_blank" rel="noopener">New York Times — Africa</a> <span class="note">— rss</span></li>
-<li><a href="https://rss.nytimes.com/services/xml/rss/nyt/MiddleEast.xml" target="_blank" rel="noopener">New York Times — Middle East</a> <span class="note">— rss</span></li>
-<li><a href="https://rss.nytimes.com/services/xml/rss/nyt/World.xml" target="_blank" rel="noopener">New York Times — World</a> <span class="note">— rss</span></li>
-<li><a href="https://www.scmp.com/rss/91/feed" target="_blank" rel="noopener">South China Morning Post — Africa</a> <span class="note">— rss</span></li>
-<li><a href="http://feeds.washingtonpost.com/rss/world" target="_blank" rel="noopener">Washington Post — World</a> <span class="note">— rss</span></li>
-</ul></div>
-<div class="source-block"><strong>Humanitarian-specialist</strong><ul>
-<li><a href="https://www.internal-displacement.org/rss.xml" target="_blank" rel="noopener">IDMC — Internal Displacement Monitoring Centre</a> <span class="note">— rss</span></li>
-<li>OCHA Financial Tracking Service <span class="note">— fts</span></li>
-</ul></div>
-<div class="source-block"><strong>Real-time event detection</strong><ul>
-<li>ACLED — armed conflict events <span class="note">— acled</span></li>
-<li>GDELT 2.0 Events <span class="note">— gdelt</span></li>
-</ul></div>
-<div class="source-block"><strong>Aid-activity data</strong><ul>
-<li>IATI Datastore — UAE-related activities <span class="note">— iati</span></li>
-</ul></div>
-<h2 id="subscribe">Subscribe</h2>
-<p>1. Open Telegram and search for <a href="https://t.me/dalila_development_digest_bot">@dalila_development_digest_bot</a>.<br>2. Tap <strong>Start</strong> (or send <code>/start</code>).<br>3. The morning digest will arrive around 06:30 GST each day.</p>
-<p>To unsubscribe, send <code>/stop</code> in the same chat.</p>
-<h2>Suggestions</h2>
-<p>Feedback, source suggestions, bug reports, or requests for new features: <a href="mailto:dalila.dev.digest@gmail.com">dalila.dev.digest@gmail.com</a>.</p>
+
+<div class="ticker">
+  <span>TUESDAY 6 JANUARY 2026</span>
+  <span><b>18</b> ITEMS</span>
+  <span><b>18</b> REVIEWED 24H</span>
+  <span>COMPOSED 04:00 +04</span>
 </div>
+
+<section class="top"><div class="top-head"><span class="label">▌ Top stories</span><span class="count">03 of 03</span></div><ol><li><a href="https://www.wam.ae/en/article/by2pvhw-strategic-vision-mohammed-bin-rashid-propels-uae">by2pvhw strategic vision mohammed bin rashid propels uae</a><span class="ref">#1</span></li>
+<li><a href="https://www.wam.ae/en/article/by2pvf3-uae-türkiye-presidents-discuss-bilateral-relations">by2pvf3 uae türkiye presidents discuss bilateral relations</a><span class="ref">#2</span></li>
+<li><a href="https://www.wam.ae/en/article/by2pvhy-marking-years-prime-minister-mohammed-bin-rashid">by2pvhy marking years prime minister mohammed bin rashid</a><span class="ref">#3</span></li></ol></section>
+<section class="section"><div class="section-head"><span class="label">▌ HUMANITARIAN</span><span class="count">04 ITEMS</span></div><article class="item" id="item-4"><span class="item-n">#04</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by2pv0s-operation-chivalrous-knight-launches-warmth-and" target="_blank" rel="noopener">by2pv0s operation chivalrous knight launches warmth and</a></h3><p class="summary">Operation Chivalrous Knight launches warm clothing aid.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.40</span> · <span>PS · AE</span> · <span>HUMANITARIAN</span></div></div></article><article class="item" id="item-5"><span class="item-n">#05</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by2pv6i-operation-chivalrous-knight-sends-first-shipment" target="_blank" rel="noopener">by2pv6i operation chivalrous knight sends first shipment</a></h3><p class="summary">Operation Chivalrous Knight sends first shipment.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.40</span> · <span>PS · AE</span> · <span>HUMANITARIAN</span></div></div></article><article class="item" id="item-7"><span class="item-n">#07</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by2pvnl-uaes-international-charity-organisation-sends" target="_blank" rel="noopener">by2pvnl uaes international charity organisation sends</a></h3><p class="summary">International Charity Organisation sends aid shipment.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.30</span> · <span>AE</span> · <span>HUMANITARIAN</span></div></div></article><article class="item" id="item-9"><span class="item-n">#09</span><div class="item-body"><h3 class="title"><a href="https://www.keysnews.com/news/national/new-clashes-in-iran-as-protests-enter-second-week-rights-groups/article_041e9fb6-d113-530e-b199-a71f0c38f503.html" target="_blank" rel="noopener">Article 041e9fb6 D113 530e B199</a></h3><p class="summary">Clashes and protests continue in Iran for second week.</p><div class="meta"><span class="src">GDELT 2.0 Events</span> · <span class="rel">REL 0.40</span> · <span class="sev">SEV 0.60</span> · <span>IR</span> · <span>HUMANITARIAN</span></div></div></article></section>
+<section class="section"><div class="section-head"><span class="label">▌ CONFERENCES &amp; EVENTS</span><span class="count">05 ITEMS</span></div><article class="item" id="item-10"><span class="item-n">#10</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/1709sai-dubai-world-trade-centre-unveils-2026-calendar" target="_blank" rel="noopener">1709sai dubai world trade centre unveils 2026 calendar</a></h3><p class="summary">Dubai World Trade Centre unveils 2026 events calendar.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.80</span></div></div></article><article class="item" id="item-15"><span class="item-n">#15</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by2pv0t-dubai-host-proptech-connect-middle-east-february" target="_blank" rel="noopener">by2pv0t dubai host proptech connect middle east february</a></h3><p class="summary">Dubai to host Proptech Connect Middle East in February.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.50</span> · <span>AE</span> · <span>BIZ-ENABLEMENT</span></div></div></article><article class="item" id="item-16"><span class="item-n">#16</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by2pv3m-unprecedented-demand-sees-billion-followers-summit" target="_blank" rel="noopener">by2pv3m unprecedented demand sees billion followers summit</a></h3><p class="summary">Billion Followers Summit sees high demand.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.50</span> · <span>AE</span></div></div></article><article class="item" id="item-17"><span class="item-n">#17</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by2pvca-dubai-world-stamp-exhibition-2026-take-place-4th" target="_blank" rel="noopener">by2pvca dubai world stamp exhibition 2026 take place 4th</a></h3><p class="summary">Dubai World Stamp Exhibition 2026 announced.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.40</span> · <span>AE</span></div></div></article><article class="item" id="item-18"><span class="item-n">#18</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by2pvnk-sfal-2026-host-africa’s-top-literary-voices" target="_blank" rel="noopener">by2pvnk sfal 2026 host africa’s top literary voices</a></h3><p class="summary">SFAL 2026 to host top African literary voices.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.50</span> · <span>AE</span></div></div></article></section>
+<section class="section"><div class="section-head"><span class="label">▌ UAE FOREIGN-POLICY SIGNALS</span><span class="count">03 ITEMS</span></div><article class="item" id="item-2"><span class="item-n">#02</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by2pvf3-uae-türkiye-presidents-discuss-bilateral-relations" target="_blank" rel="noopener">by2pvf3 uae türkiye presidents discuss bilateral relations</a></h3><p class="summary">UAE and Turkey presidents discuss bilateral ties.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.50</span> · <span>AE · TR</span></div></div></article><article class="item" id="item-6"><span class="item-n">#06</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by2pv6h-abdullah-bin-zayed-receives-omani-foreign-minister" target="_blank" rel="noopener">by2pv6h abdullah bin zayed receives omani foreign minister</a></h3><p class="summary">Abdullah bin Zayed meets Omani foreign minister.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.30</span> · <span>AE · OM</span></div></div></article><article class="item" id="item-8"><span class="item-n">#08</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/1709s98-uae-assumes-menafatf-presidency-for-2026" target="_blank" rel="noopener">1709s98 uae assumes menafatf presidency for 2026</a></h3><p class="summary">UAE assumes MENAFATF presidency for 2026.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.20</span></div></div></article></section>
+<section class="section"><div class="section-head"><span class="label">▌ UAE DOCTRINE</span><span class="count">02 ITEMS</span></div><article class="item" id="item-1"><span class="item-n">#01</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by2pvhw-strategic-vision-mohammed-bin-rashid-propels-uae" target="_blank" rel="noopener">by2pvhw strategic vision mohammed bin rashid propels uae</a></h3><p class="summary">Article highlights Mohammed bin Rashid&#x27;s strategic vision.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.60</span> · <span>AE</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article><article class="item" id="item-3"><span class="item-n">#03</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by2pvhy-marking-years-prime-minister-mohammed-bin-rashid" target="_blank" rel="noopener">by2pvhy marking years prime minister mohammed bin rashid</a></h3><p class="summary">Article marks years of Mohammed bin Rashid as PM.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.50</span> · <span>AE</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article></section>
+<section class="section"><div class="section-head"><span class="label">▌ UAE ECOSYSTEM</span><span class="count">04 ITEMS</span></div><article class="item" id="item-11"><span class="item-n">#11</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by2puv2-adjd-adopts-ai-driven-projects-enhance" target="_blank" rel="noopener">by2puv2 adjd adopts ai driven projects enhance</a></h3><p class="summary">ADJD adopts AI-driven projects to enhance judicial efficiency.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.80</span></div></div></article><article class="item" id="item-12"><span class="item-n">#12</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by2puv3-technology-innovation-institute-announces-release" target="_blank" rel="noopener">by2puv3 technology innovation institute announces release</a></h3><p class="summary">Technology Innovation Institute announces release of new research outcome.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.90</span></div></div></article><article class="item" id="item-13"><span class="item-n">#13</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by2puv4-dubai-posts-45-water-network-losses-lowest" target="_blank" rel="noopener">by2puv4 dubai posts 45 water network losses lowest</a></h3><p class="summary">Dubai posts 4.5% water network losses, lowest rate.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.80</span></div></div></article><article class="item" id="item-14"><span class="item-n">#14</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by2puxx-zayed-authority-for-people-determination-hct" target="_blank" rel="noopener">by2puxx zayed authority for people determination hct</a></h3><p class="summary">Zayed Higher Organization announces new initiative.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.80</span> · <span>AE</span></div></div></article></section>
 <footer class="foot"><span>© 2026 Dalila — daily intelligence brief</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Submit a suggestion</a></span></footer>
 </div>
 </body>
