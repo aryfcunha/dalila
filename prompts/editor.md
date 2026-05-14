@@ -22,6 +22,9 @@ Output a Telegram-friendly Markdown message of **800–1,500 words**. Use these 
 
 — — — — —
 
+📈 *Market signals — risk deltas*
+• {market_question} — {current_prob}% ({delta} from 24h ago)
+
 🔭 *Foresight — risk movements*
 • {emoji} {country} {metric_label} {value} ({direction} from {prev}) (#N)
 

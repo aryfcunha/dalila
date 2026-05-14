@@ -163,6 +163,63 @@ def _refresh_kalshi_prob(ticker: str) -> tuple[float | None, float | None]:
     return None, None
 
 
+# ── Polymarket API ─────────────────────────────────────────────────────────────
+POLYMARKET_GAMMA = "https://gamma-api.polymarket.com/events"
+
+def _search_polymarket(query: str, limit: int = 5) -> list[dict]:
+    """Search for Polymarket events via Gamma API."""
+    try:
+        url = f"{POLYMARKET_GAMMA}?active=true&q={urllib.parse.quote(query)}&limit={limit}"
+        data = _http_get(url, timeout=10)
+        results = []
+        for event in (data if isinstance(data, list) else []):
+            markets = event.get("markets", [])
+            if not markets: continue
+            
+            # Polymarket events can have multiple markets; we take the first binary one
+            m = markets[0]
+            if m.get("marketType") != "normal": continue # only binary for now
+            
+            # outcomePrices is often a string of a JSON list like '["0.50", "0.50"]'
+            prices = m.get("outcomePrices")
+            if isinstance(prices, str):
+                try:
+                    prices = json.loads(prices)
+                except Exception:
+                    continue
+            
+            if not isinstance(prices, list) or len(prices) < 1:
+                continue
+
+            prob = float(prices[0]) # Assuming first is 'Yes'
+            results.append({
+                "source":      "polymarket",
+                "market_id":   m["id"],
+                "question":    m.get("question") or event.get("title"),
+                "probability": prob,
+                "volume":      float(m.get("volumeNum") or 0),
+                "url":         f"https://polymarket.com/event/{event['slug']}",
+            })
+        return results
+    except Exception as exc:
+        log.debug("polymarket search failed for %r: %s", query, exc)
+        return []
+
+def _refresh_polymarket_prob(market_id: str) -> tuple[float | None, float | None]:
+    """Refresh probability for a Polymarket market by ID."""
+    try:
+        url = f"https://gamma-api.polymarket.com/markets/{market_id}"
+        m = _http_get(url, timeout=8)
+        prices = m.get("outcomePrices")
+        if isinstance(prices, str):
+            prices = json.loads(prices)
+        if isinstance(prices, list) and len(prices) >= 1:
+            return float(prices[0]), float(m.get("volumeNum") or 0)
+    except Exception:
+        pass
+    return None, None
+
+
 # ── Metaforecast API (Metaculus Fallback) ──────────────────────────────────────
 METAFORECAST_API = "https://metaforecast.org/api/graphql"
 
@@ -344,7 +401,14 @@ def discover_markets(conn: sqlite3.Connection) -> list[dict]:
                 seen[mid] = m
         
         # 2. Metaculus (via Metaforecast)
-        for m in _search_metaforecast(seed, limit=3):
+        for m in _search_metaforecast(seed, limit=2):
+            mid = m["market_id"]
+            if mid not in seen:
+                m["_relevance_score"] = 2.0
+                seen[mid] = m
+
+        # 3. Polymarket
+        for m in _search_polymarket(seed, limit=2):
             mid = m["market_id"]
             if mid not in seen:
                 m["_relevance_score"] = 2.0
@@ -418,6 +482,8 @@ def poll_markets(conn: sqlite3.Connection) -> list[dict]:
                 prob, volume = _refresh_kalshi_prob(mid)
             elif src == "metaculus":
                 prob, volume = _refresh_metaforecast_prob(mid)
+            elif src == "polymarket":
+                prob, volume = _refresh_polymarket_prob(mid)
 
         if prob is None:
             continue

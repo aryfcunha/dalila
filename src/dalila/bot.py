@@ -40,14 +40,14 @@ def _help_text() -> str:
         "• `/stop` — unsubscribe\n"
         "• `/digest` — show the latest daily digest (read-only). `/digest fresh` to recompose now.\n"
         "• `/more <topic>` — deep-dive synthesis on a topic from the last 30 days\n"
-        "• `/doctrine` — list tracked UAE doctrine positions, or `/doctrine <topic>` for evolution log\n"
-        "• `/commitments` — recent UAE financial commitments (pledges, MoUs, disbursements)\n"
-        "• `/meetings` — recent UAE bilateral meetings, calls, and visits\n"
-        "• `/region [name]` — items aggregated by region (per policy Ch 5)\n"
-        "• `/country <name>` — recent news mentioning a specific country (e.g. `/country Sudan`)\n"
-        "• `link N` — get the source URL for item #N from the latest digest\n"
+        "• `/doctrine` — list tracked UAE doctrine positions\n"
+        "• `/commitments` — recent UAE financial commitments\n"
+        "• `/meetings` — recent UAE bilateral meetings\n"
+        "• `/region [name]` — items aggregated by region\n"
+        "• `/country <name>` — recent news mentioning a specific country\n"
+        "• `link N` — get the source URL for item #N\n"
         "• `/help` — show this help\n\n"
-        "Daily digest arrives ~06:30 GST. Multi-user: every chat that runs `/start` gets its own copy."
+        "Daily digest arrives ~06:30 GST. Powered by Strategic Foresight Engine (Log-Odds Volatility)."
     )
 
 

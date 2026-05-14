@@ -1,6 +1,10 @@
 # Dalila
 
-Dalila (دليلة — Arabic for *guide*) is a personal AI agent that delivers a daily morning brief on the **global humanitarian, development, and philanthropy ecosystem**, with sharp focus on the **United Arab Emirates' role within it**. It replaces 30–60 minutes of fragmented morning newsletter reading with a single 800–1,500 word digest, delivered to your phone over Telegram every morning at 06:30 GST, with an accompanying public website that hosts the archive, an interactive country-mention map, and a published methodology.
+Dalila is an autonomous **strategic foresight agent** that transforms global development and humanitarian data into actionable intelligence for UAE policy principals.
+
+Unlike traditional news aggregators, Dalila uses **Log-Odds Volatility Scoring** to identify tail-risk signals across prediction markets (Manifold, Polymarket, Metaculus) and correlates them with real-time events from 2,000+ sources.
+
+It replaces 30–60 minutes of fragmented morning newsletter reading with a single 800–1,500 word digest, delivered to your phone over Telegram every morning at 06:30 GST, with an accompanying public website that hosts the archive, an interactive country-mention map, and a published methodology.
 
 It's designed for a single user (originally built for a principal at the UAE Presidential Court's Office for Development Affairs) but the code is general — anyone working on a regional humanitarian/development beat can fork it, swap the entity watchlist for their context, and have a working brief in under an hour.
 
@@ -111,13 +115,16 @@ See [`METHODOLOGY.md`](METHODOLOGY.md) for the public-facing description of how 
 | `/start` | Subscribe to the daily digest |
 | `/digest` | Show the latest daily digest (read-only). `/digest fresh` to recompose. |
 | `/more <topic>` | Deep-dive synthesis on a topic over the last 30 days |
-| `/doctrine` | List tracked UAE doctrine positions; `/doctrine <topic>` for one topic's evolution log |
+| `/doctrine` | List tracked UAE doctrine positions |
 | `/commitments` | Recent UAE financial commitments and pledges, structured |
 | `/meetings` | Recent UAE bilateral meetings, structured |
+| `/region [name]` | Items aggregated by region |
 | `/country <name>` | Recent news mentioning a specific country |
 | `/help` | Command list |
 | `/stop` | Unsubscribe |
 | *(hidden)* `/status` | Operator diagnostic — pipeline queue, classifier latency, etc. |
+
+Daily digest arrives ~06:30 GST. Powered by Strategic Foresight Engine (Log-Odds Volatility).
 
 ## Web companion
 
