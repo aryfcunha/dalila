@@ -23,6 +23,7 @@ outlets:
   - apnews.com
   - ap.org
   - afp.com
+  - forbes.com               # US business publication
   - bbc.com
   - bbc.co.uk
   - aljazeera.com
@@ -116,6 +117,7 @@ outlets:
   - timesofindia.com
   - indiatimes.com
   - hindustantimes.com
+  - livemint.com             # Mint (HT Media — India's largest business daily)
   - thehindu.com
   - indianexpress.com
   - thewire.in
@@ -223,3 +225,4 @@ outlets:
   - ecfr.eu
   - csis.org
   - rusi.org
+  - globalsecurity.org       # Defence + policy archive
