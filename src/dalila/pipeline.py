@@ -686,7 +686,7 @@ def run_publish_site(out_dir: "Path") -> dict:
     from dalila.config import load_countries, load_sources
     from dalila.html_digest import (
         render_about, render_archive, render_countries, render_digest, render_index,
-        render_methodology,
+        render_methodology, render_markets,
     )
 
     out_dir = Path(out_dir)
@@ -821,8 +821,15 @@ def run_publish_site(out_dir: "Path") -> dict:
             timeline=timeline,
         )
         (out_dir / "countries.html").write_text(countries_html, encoding="utf-8")
+    # 5. Prediction Markets page
+    try:
+        from dalila.ingestors.prediction_markets import get_market_signals
+        with db.connect() as conn:
+            markets_data = get_market_signals(conn)
+        markets_html = render_markets(markets_data)
+        (out_dir / "markets.html").write_text(markets_html, encoding="utf-8")
     except Exception:
-        log.exception("publish-site: countries page generation failed")
+        log.exception("publish-site: markets page generation failed")
 
     return {
         "out_dir": str(out_dir),
@@ -831,6 +838,7 @@ def run_publish_site(out_dir: "Path") -> dict:
             str(out_dir / "index.html"),
             str(out_dir / "archive.html"),
             str(out_dir / "countries.html"),
+            str(out_dir / "markets.html"),
             str(out_dir / "methodology.html"),
             str(out_dir / "about.html"),
         ] + [str(digests_dir / f"{d['slug']}.html") for d in written],
