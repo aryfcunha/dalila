@@ -34,7 +34,8 @@ from dalila import db
 from dalila.config import get_config, load_countries
 from dalila.ingestors.acled import _auth_headers
 from dalila.ingestors.forecast import (
-    format_title, is_baseline_run, record_observation,
+    format_title, is_baseline_run, name_to_iso2_lookup, record_observation,
+    resolve_iso2,
 )
 from dalila.models import RawItem
 
@@ -166,7 +167,7 @@ def fetch(src: dict) -> list[RawItem]:
                  list(payload.keys()) if isinstance(payload, dict) else type(payload))
         return []
 
-    name_lookup = _name_to_iso2()
+    name_lookup = name_to_iso2_lookup()
     items: list[RawItem] = []
     surfaced = 0
     stable = 0
@@ -178,7 +179,7 @@ def fetch(src: dict) -> list[RawItem]:
                      "silently; no items emitted. Next monthly run will surface "
                      "deltas ≥ %.1f only.", CAST_DELTA_THRESHOLD)
         for row in rows:
-            iso = _resolve_iso2(row, name_lookup)
+            iso = resolve_iso2(row, name_lookup)
             if not iso:
                 continue
             score_raw = (

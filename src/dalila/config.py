@@ -29,6 +29,10 @@ class Config:
     acled_username: str | None
     acled_password: str | None
     acled_api_key: str | None  # legacy, ignored — kept so existing .env files don't error
+    # ACAPS INFORM Severity Index (free public registration at api.acaps.org).
+    # Unset → INFORM ingestor silently returns []. HungerMap and GDACS need
+    # no creds; ACLED CAST reuses the ACLED OAuth pair.
+    acaps_api_key: str | None
     iati_api_key: str | None
     daily_classifier_call_cap: int
     sources_path: Path
@@ -55,6 +59,7 @@ def get_config() -> Config:
         acled_username=(os.getenv("ACLED_USERNAME") or os.getenv("ACLED_EMAIL")) or None,
         acled_password=os.getenv("ACLED_PASSWORD") or None,
         acled_api_key=os.getenv("ACLED_API_KEY") or None,  # legacy, ignored
+        acaps_api_key=os.getenv("ACAPS_API_KEY") or None,
         iati_api_key=os.getenv("IATI_API_KEY") or None,
         daily_classifier_call_cap=int(os.getenv("DALILA_DAILY_CLASSIFIER_CALL_CAP", "2000")),
         sources_path=ROOT / "sources.yaml",

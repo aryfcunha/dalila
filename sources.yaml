@@ -230,12 +230,46 @@ sources:
     name: ACLED CAST — conflict escalation forecast
     # Monthly forecast (0–10 risk score per country, 1–3 month horizon).
     # Same OAuth creds as ACLED. Ingestor only surfaces countries whose
-    # score moved ≥0.5 since last observation (see forecast_snapshots).
+    # score moved ≥1.0 since last observation (see forecast_snapshots).
     # Mark as high-signal so the prefilter auto-passes the deltas.
     kind: cast
     url: ""
     quality: 5
     tags: [forecast, conflict, entity]          # 'entity' tag → auto-pass prefilter
+    enabled: true
+
+  - id: inform
+    name: ACAPS INFORM — humanitarian crisis severity
+    # Monthly 0–5 crisis-severity score per country. Tier-crossing
+    # threshold (Δ ≥ 0.5). Requires ACAPS_API_KEY (free registration
+    # at api.acaps.org). Silently skipped if no key.
+    kind: inform
+    url: ""
+    quality: 5
+    tags: [forecast, humanitarian, entity]
+    enabled: true
+
+  - id: hungermap
+    name: WFP HungerMap LIVE — food insecurity counts
+    # Daily-updated estimates of people with insufficient food consumption.
+    # Compound threshold: (≥10% rel AND ≥100k abs) OR ≥500k abs. Public
+    # API, no auth required.
+    kind: hungermap
+    url: ""
+    quality: 5
+    tags: [forecast, food-security, entity]
+    enabled: true
+
+  - id: gdacs
+    name: GDACS — real-time disaster alerts
+    # Public RSS of currently active natural-disaster alerts with a
+    # Green / Orange / Red / Extreme tier. Any tier change (or new /
+    # cleared alert) surfaces. No auth required. Polled every 30m on
+    # the live ingest pulse.
+    kind: gdacs
+    url: ""
+    quality: 5
+    tags: [forecast, disaster, breaking-candidate, entity]
     enabled: true
 
   - id: idmc

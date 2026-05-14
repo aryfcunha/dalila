@@ -63,6 +63,71 @@ class ForecastChange:
         return "🟡"
 
 
+_A3_TO_A2 = {
+    "AFG":"AF","ALB":"AL","DZA":"DZ","AGO":"AO","ARG":"AR","ARM":"AM","AUS":"AU",
+    "AUT":"AT","AZE":"AZ","BGD":"BD","BLR":"BY","BEL":"BE","BEN":"BJ","BTN":"BT",
+    "BOL":"BO","BIH":"BA","BWA":"BW","BRA":"BR","BGR":"BG","BFA":"BF","BDI":"BI",
+    "KHM":"KH","CMR":"CM","CAN":"CA","CAF":"CF","TCD":"TD","CHL":"CL","CHN":"CN",
+    "COL":"CO","COM":"KM","COG":"CG","COD":"CD","CRI":"CR","CIV":"CI","HRV":"HR",
+    "CUB":"CU","CYP":"CY","CZE":"CZ","DNK":"DK","DJI":"DJ","DOM":"DO","ECU":"EC",
+    "EGY":"EG","SLV":"SV","GNQ":"GQ","ERI":"ER","EST":"EE","ETH":"ET","FJI":"FJ",
+    "FIN":"FI","FRA":"FR","GAB":"GA","GMB":"GM","GEO":"GE","DEU":"DE","GHA":"GH",
+    "GRC":"GR","GTM":"GT","GIN":"GN","GNB":"GW","GUY":"GY","HTI":"HT","HND":"HN",
+    "HUN":"HU","ISL":"IS","IND":"IN","IDN":"ID","IRN":"IR","IRQ":"IQ","IRL":"IE",
+    "ISR":"IL","ITA":"IT","JAM":"JM","JPN":"JP","JOR":"JO","KAZ":"KZ","KEN":"KE",
+    "PRK":"KP","KOR":"KR","KWT":"KW","KGZ":"KG","LAO":"LA","LVA":"LV","LBN":"LB",
+    "LSO":"LS","LBR":"LR","LBY":"LY","LTU":"LT","LUX":"LU","MDG":"MG","MWI":"MW",
+    "MYS":"MY","MDV":"MV","MLI":"ML","MLT":"MT","MRT":"MR","MUS":"MU","MEX":"MX",
+    "MDA":"MD","MNG":"MN","MNE":"ME","MAR":"MA","MOZ":"MZ","MMR":"MM","NAM":"NA",
+    "NPL":"NP","NLD":"NL","NZL":"NZ","NIC":"NI","NER":"NE","NGA":"NG","MKD":"MK",
+    "NOR":"NO","OMN":"OM","PAK":"PK","PSE":"PS","PAN":"PA","PNG":"PG","PRY":"PY",
+    "PER":"PE","PHL":"PH","POL":"PL","PRT":"PT","QAT":"QA","ROU":"RO","RUS":"RU",
+    "RWA":"RW","SAU":"SA","SEN":"SN","SRB":"RS","SLE":"SL","SGP":"SG","SVK":"SK",
+    "SVN":"SI","SOM":"SO","ZAF":"ZA","SSD":"SS","ESP":"ES","LKA":"LK","SDN":"SD",
+    "SWE":"SE","CHE":"CH","SYR":"SY","TWN":"TW","TJK":"TJ","TZA":"TZ","THA":"TH",
+    "TLS":"TL","TGO":"TG","TUN":"TN","TUR":"TR","TKM":"TM","UGA":"UG","UKR":"UA",
+    "ARE":"AE","GBR":"GB","USA":"US","URY":"UY","UZB":"UZ","VEN":"VE","VNM":"VN",
+    "YEM":"YE","ZMB":"ZM","ZWE":"ZW",
+}
+
+
+def resolve_iso2(row: dict, name_lookup: dict[str, str]) -> str | None:
+    """Try the canonical ID fields a forecast API might use, in order:
+    alpha-3 → alpha-2 (rare) → country name lookup.
+    Returns None for territories / disputed entities not in our maps."""
+    for key in ("iso3", "country_iso3", "iso_alpha3", "ISO3", "alpha3"):
+        a3 = (row.get(key) or "").strip().upper()
+        if len(a3) == 3 and a3 in _A3_TO_A2:
+            return _A3_TO_A2[a3]
+    for key in ("iso2", "country_iso", "ISO2", "alpha2"):
+        a2 = (row.get(key) or "").strip().upper()
+        if len(a2) == 2 and a2.isalpha():
+            return a2
+    for key in ("country", "country_name", "name", "adm0_name"):
+        name = (row.get(key) or "").strip().lower()
+        if name in name_lookup:
+            return name_lookup[name]
+    return None
+
+
+def name_to_iso2_lookup() -> dict[str, str]:
+    """Build a lowercase-name → ISO-2 lookup from countries.yaml + aliases.
+    Shared by every forecast ingestor that gets country names rather than
+    ISO codes from its upstream API."""
+    from dalila.config import load_countries
+    out: dict[str, str] = {}
+    cat = load_countries()
+    for iso, spec in cat.get("countries", {}).items():
+        if not isinstance(spec, dict):
+            continue
+        name = (spec.get("name") or "").strip().lower()
+        if name:
+            out[name] = iso
+        for alias in (spec.get("aliases") or []):
+            out[str(alias).strip().lower()] = iso
+    return out
+
+
 def is_baseline_run(conn: sqlite3.Connection, source_id: str) -> bool:
     """True if forecast_snapshots has zero rows for this source — i.e. we've
     never seen this forecast feed before. In that state the ingestor should
@@ -88,6 +153,7 @@ def record_observation(
     observed_at: datetime,
     threshold_abs: float | None = None,
     threshold_rel: float | None = None,
+    threshold_min_abs_for_rel: float | None = None,
     threshold_text_change: bool = False,
     notes: str | None = None,
     seed_baseline: bool = False,
@@ -155,10 +221,19 @@ def record_observation(
         else:
             delta = value_to_change - (prev_num or 0)
             abs_ok = threshold_abs is not None and abs(delta) >= threshold_abs
+            # Relative-threshold gate: passes if (% move ≥ threshold_rel) AND
+            # (if a floor is set) absolute move ≥ threshold_min_abs_for_rel.
+            # The floor lets us write rules like "10% week-over-week, but only
+            # if at least 100k people are affected" — protects against
+            # spurious headlines from very small base populations.
             rel_ok = (
                 threshold_rel is not None
                 and prev_num
                 and abs(delta) / max(abs(prev_num), 1e-9) >= threshold_rel
+                and (
+                    threshold_min_abs_for_rel is None
+                    or abs(delta) >= threshold_min_abs_for_rel
+                )
             )
             if abs_ok or rel_ok:
                 direction = "up" if delta > 0 else "down"

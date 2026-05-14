@@ -44,5 +44,14 @@ def ingest_source(src: dict) -> list[RawItem]:
     if kind == "cast":
         from dalila.ingestors import cast
         return cast.fetch(src)
+    if kind == "inform":
+        from dalila.ingestors import inform
+        return inform.fetch(src)
+    if kind == "hungermap":
+        from dalila.ingestors import hungermap
+        return hungermap.fetch(src)
+    if kind == "gdacs":
+        from dalila.ingestors import gdacs
+        return gdacs.fetch(src)
     log.warning("unknown source kind=%r for source %s; skipping", kind, src.get("id"))
     return []
