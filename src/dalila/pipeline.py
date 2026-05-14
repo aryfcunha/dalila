@@ -757,6 +757,37 @@ def run_publish_site(out_dir: "Path") -> dict:
                 latest_items = items
                 latest_when = composed
 
+        # ---- Supplement: scan the digests dir for pre-existing HTML files ----
+        # Historical briefs composed on the VM exist as HTML but their items
+        # are not in this local DB, so the loop above couldn't re-render them.
+        # We include them in the archive list (linking to the existing file)
+        # WITHOUT overwriting the files — they are canonical and correct.
+        written_slugs = {d["slug"] for d in written}
+        for html_path in sorted(digests_dir.glob("*.html"), reverse=True):
+            slug = html_path.stem  # e.g. "2026-01-02"
+            if slug in written_slugs:
+                continue  # already handled by DB render above
+            # Derive a human-readable date_label from the slug
+            try:
+                dt = datetime.strptime(slug, "%Y-%m-%d")
+                date_label = dt.strftime("%A %d %B %Y")
+            except Exception:
+                date_label = slug
+            written.append({
+                "slug": slug,
+                "date_label": date_label,
+                "preview": "",  # no items in local DB → no preview
+            })
+            written_slugs.add(slug)
+
+        # Sort newest-first for the archive page
+        def _slug_sort_key(d):
+            try:
+                return datetime.strptime(d["slug"], "%Y-%m-%d")
+            except Exception:
+                return datetime.min
+        written.sort(key=_slug_sort_key, reverse=True)
+
         # 1. Home page = latest brief inline
         if latest_items:
             total = db.count_reviewed_24h(conn, as_of=latest_when) or len(latest_items)
