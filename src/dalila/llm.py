@@ -115,7 +115,9 @@ def _call_deepseek(model: str, system_prompt: str, user_prompt: str, purpose: st
     }
     start = time.monotonic()
     resp = requests.post(url, json=payload, timeout=timeout)
-    resp.raise_for_status()
+    if resp.status_code != 200:
+        log.warning("DeepSeek API failed (%d): %s", resp.status_code, resp.text)
+        resp.raise_for_status()
     data = resp.json()
     text = data["choices"][0]["message"]["content"]
     return LLMResponse(text=text, duration_ms=int((time.monotonic() - start) * 1000))
