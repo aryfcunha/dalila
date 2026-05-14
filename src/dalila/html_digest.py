@@ -2612,6 +2612,7 @@ def render_about(
             continue
         grouped.setdefault(_classify(set(s.get("tags") or [])), []).append(s)
     bucket_labels = dict(bucket_order)
+    sorted_buckets = [k for k, v in bucket_order]
 
     body: list[str] = []
     # about.html sits at the site root → no path prefix needed
