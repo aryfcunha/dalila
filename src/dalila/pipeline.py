@@ -647,15 +647,26 @@ def run_render_html_digest(
     from dalila.html_digest import render_digest
     with db.connect() as conn:
         items = db.items_for_digest(conn, since_hours=since_hours, min_relevance=min_relevance)
-        
-        # Calculate true total ingested in the window, rather than just the filtered items
+
+        # Calculate true total ingested in the window
         cutoff = (datetime.now(timezone.utc) - timedelta(hours=since_hours)).isoformat()
         total = conn.execute("SELECT COUNT(*) FROM items WHERE ingested_at >= ?", (cutoff,)).fetchone()[0]
-        
+
         items = _dedupe_by_simhash(items)
         items = items[:max_items]
-    html_str = render_digest(items, when=when, total_ingested=total)
+
+        # Fetch prediction market signals scored against today's items
+        market_signals: list[dict] = []
+        try:
+            from dalila.ingestors.prediction_markets import get_market_signals
+            market_signals = get_market_signals(conn, digest_items=items)
+        except Exception as exc:
+            log.debug("market signals unavailable: %s", exc)
+
+    html_str = render_digest(items, when=when, total_ingested=total,
+                             market_signals=market_signals)
     return html_str, items
+
 
 
 def run_publish_site(out_dir: "Path") -> dict:

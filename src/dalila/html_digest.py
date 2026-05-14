@@ -249,6 +249,55 @@ a:hover {{
   letter-spacing: 0.14em;
 }}
 
+/* ---------- market signals ---------- */
+.markets-section h2.section-head {{
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--type);
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}}
+.mkt-note {{
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 10px;
+}}
+.mkt-table {{ display: flex; flex-direction: column; gap: 4px; }}
+.mkt-row {{
+  display: grid;
+  grid-template-columns: 52px 1fr 72px 72px;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule);
+}}
+.mkt-row:last-child {{ border-bottom: 0; }}
+.mkt-header {{
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--rule-strong) !important;
+}}
+.mkt-prob {{
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--type);
+  text-align: right;
+}}
+.mkt-q {{ color: var(--type); }}
+.mkt-delta {{ text-align: right; font-weight: 600; }}
+.mkt-src {{ color: var(--muted); font-size: 10px; text-align: right; }}
+.delta-up {{ color: #2d9e5d; }}
+.delta-dn {{ color: #c94a3a; }}
+.delta-neu {{ color: var(--muted); }}
+
+
 /* ---------- items ---------- */
 .item {{
   padding: 14px 0 16px;
@@ -704,6 +753,55 @@ def _footer(*, contact_email: str, telegram_bot: str | None) -> str:
 # Digest page
 # ===========================================================================
 
+def _market_signals_block(signals: list[dict]) -> str:
+    """Render the prediction markets section of the digest."""
+    if not signals:
+        return ""
+
+    rows_html = []
+    for s in signals:
+        prob = s.get("probability")
+        d24h = s.get("delta_24h")
+        question = html.escape(s.get("question") or s.get("market_id") or "")
+        src = s.get("source", "")
+
+        prob_pct = f"{prob:.0%}" if prob is not None else "—"
+
+        if d24h is not None:
+            arrow = "▲" if d24h > 0 else "▼"
+            delta_cls = "delta-up" if d24h > 0 else "delta-dn"
+            delta_html = f'<span class="{delta_cls}">{arrow} {abs(d24h):.1%}</span>'
+        else:
+            delta_html = '<span class="delta-neu">—</span>'
+
+        src_label = "Manifold" if src == "manifold" else "Kalshi" if src == "kalshi" else src.title()
+
+        rows_html.append(f"""
+<div class="mkt-row">
+  <span class="mkt-prob">{prob_pct}</span>
+  <span class="mkt-q">{question}</span>
+  <span class="mkt-delta">{delta_html}</span>
+  <span class="mkt-src">{html.escape(src_label)}</span>
+</div>""")
+
+    rows = "\n".join(rows_html)
+    return f"""
+<section class="section markets-section">
+  <h2 class="section-head">📊 MARKET SIGNALS</h2>
+  <p class="mkt-note">Prediction market probabilities for topics relevant to today's brief.
+     24h delta shown. Source: Manifold / Kalshi.</p>
+  <div class="mkt-table">
+    <div class="mkt-row mkt-header">
+      <span class="mkt-prob">PROB</span>
+      <span class="mkt-q">QUESTION</span>
+      <span class="mkt-delta">24H Δ</span>
+      <span class="mkt-src">SOURCE</span>
+    </div>
+    {rows}
+  </div>
+</section>"""
+
+
 def render_digest(
     items: list[dict],
     *,
@@ -713,6 +811,7 @@ def render_digest(
     telegram_bot: str | None = "dalila_development_digest_bot",
     on_page: str = "digest",
     link_prefix: str = "../",
+    market_signals: list[dict] | None = None,
 ) -> str:
     cfg = get_config()
     tz = pytz.timezone(cfg.timezone)
@@ -738,6 +837,8 @@ def render_digest(
         rows = by_cat.get(cat_key) or []
         if rows:
             body.append(_section_block(label, rows))
+    if market_signals:
+        body.append(_market_signals_block(market_signals))
     body.append(_footer(contact_email=contact_email, telegram_bot=telegram_bot))
 
     return _doc(f"Dalila — {date_label.title()}", "\n".join(body))
@@ -2292,10 +2393,14 @@ def render_methodology(
     from pathlib import Path as _Path
     if md_path is None:
         # repo root is two levels up from src/dalila/
-        md_path = _Path(__file__).resolve().parents[2] / "METHODOLOGY.md"
+        root = _Path(__file__).resolve().parents[2]
+        md_path = root / "METHODOLOGY_PUBLIC.md"
+        if not md_path.exists():
+            md_path = root / "METHODOLOGY.md"
+
     md_path = _Path(md_path)
     if not md_path.exists():
-        md_text = "# Methodology\n\n_METHODOLOGY.md not found at expected path._"
+        md_text = "# Methodology\n\n_METHODOLOGY_PUBLIC.md not found at expected path._"
     else:
         md_text = md_path.read_text(encoding="utf-8")
 
@@ -2460,7 +2565,6 @@ def render_about(
             continue
         grouped.setdefault(_classify(set(s.get("tags") or [])), []).append(s)
     bucket_labels = dict(bucket_order)
-    sorted_buckets = [k for k, _ in bucket_order if k in grouped]
 
     body: list[str] = []
     # about.html sits at the site root → no path prefix needed
@@ -2472,44 +2576,35 @@ def render_about(
 
     body.append(
         '<p style="font-size:17px;color:var(--type);margin-top:18px;">'
-        'Dalila is a daily intelligence brief on the global humanitarian, '
-        'development, and philanthropy ecosystem &mdash; with a sharp focus '
-        'on the UAE&rsquo;s role within it. It exists both as a website and '
-        f'a <a href="{sub_href}">Telegram bot</a>. Dalila skims through dozens '
-        'of news sources, multilateral feeds, and forecast indices to get '
-        'development practitioners the context they need to make informed '
-        'decisions.</p>'
+        'Dalila is a daily intelligence guide for leaders in the humanitarian, '
+        'development, and philanthropy sectors. It provides a sharp, '
+        'UAE-focused lens on global affairs, delivering the essential context '
+        'needed for strategic decision-making directly to your Telegram or '
+        'via this archive.</p>'
     )
 
     body.append('<h2>How it works</h2>')
     body.append(
-        '<p>Every 30 minutes Dalila ingests new items from the sources below. '
-        'A keyword and entity prefilter drops items unrelated to the '
-        'humanitarian, development, and philanthropy ecosystem remit. '
-        'Surviving items go through a classifier that assigns a category, '
-        'UAE-relevance score, severity, and topical tags. Near-duplicates '
-        'are deduplicated. At 06:30 GST an editor model composes the morning '
-        'digest from the previous 24 hours of classified items above '
-        f'threshold. The digest is shared with <a href="{sub_href}">subscribers '
-        f'on Telegram</a>.</p>'
+        '<p>Dalila monitors dozens of high-authority news sources, multilateral '
+        'feeds, and development databases in real-time. Using advanced '
+        'classification, it identifies the most relevant stories, categorises '
+        'them by sector, and evaluates their significance to the UAE agenda. '
+        'Every morning at 06:30 GST, a curated digest is composed and shared '
+        f'with <a href="{sub_href}">subscribers on Telegram</a>.</p>'
     )
     body.append(
-        '<p>Alongside the news feeds, Dalila ingests forecast and '
-        'early-warning indices (ACLED CAST for conflict-escalation risk '
-        'shipped; ACAPS INFORM for crisis severity, WFP HungerMap for food '
-        'insecurity, and GDACS for real-time disaster alerts in the '
-        'pipeline). These appear in the digest&rsquo;s <em>Foresight</em> '
-        'section, but with a strict rule: only changes are surfaced, '
-        'never states. Sudan being hungry every day produces zero items; '
-        'Sudan getting hungrier produces one, tagged 🔴 (worsening) or 🟢 '
-        '(improving) and showing the delta against the prior observation.</p>'
+        '<p>Beyond news, Dalila tracks early-warning indices and prediction '
+        'markets to capture shifts in global sentiment and conflict risk before '
+        'they hit the headlines. This foresight layer ensures the brief '
+        'is always looking ahead, providing a dynamic view of emerging crises '
+        'and opportunities.</p>'
     )
     body.append(
-        '<p>Every brief is preserved. The <a href="archive.html">archive'
-        '</a> lists every past brief; the <a href="countries.html">country'
-        '</a> view renders an interactive heatmap of country mentions on a '
-        'world map, with co-mention arcs from any selected country to the '
-        'other countries it most frequently appears alongside.</p>'
+        '<p>This platform serves as a permanent record of the UAE&rsquo;s '
+        'contributions to global development. You can explore our '
+        f'<a href="archive.html">complete archive</a> of past briefs or use the '
+        f'<a href="countries.html">interactive world map</a> to visualise '
+        'regional focus and humanitarian clusters over time.</p>'
     )
     body.append(
         '<p>Every numeric threshold, sampling rate, and editorial rule in '

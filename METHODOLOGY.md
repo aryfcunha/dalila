@@ -32,7 +32,7 @@ humanitarian and development databases. The full list lives on the About page.
 
 | Decision | Value | Why |
 |---|---|---|
-| Polling cadence | **Every 30 minutes** | Catches a 24-hour news cycle with high timeliness; polling more aggressively yields diminishing returns and risks being throttled by anti-bot defences on publisher sites. |
+| Polling cadence | **Every 30 minutes** (dynamic) | Catches a 24-hour news cycle with high timeliness. When breaking news or large prediction market moves are detected, polling automatically accelerates to **5-minute intervals** for 4 hours to capture the unfolding situation. |
 | Real-time event feed sample | **300 items per slice** | Global event streams emit several thousand items at a time; sampling the most recent slice keeps coverage broad without overwhelming downstream analysis. |
 | Historical backfill window | **Configurable per source** | Long-form archive pulls walk publisher sitemaps and event-data archives back to a chosen start date. Capped per source so any one publisher cannot dominate the corpus. |
 | Conflict-data priority countries | **16** | A curated list covering all current major armed-conflict zones. Tightening the country filter keeps the structured event feed coherent with the rest of the brief. |
@@ -104,6 +104,21 @@ indicator.
 | 🆕 | A country newly entering this tracking series after the baseline was already established. |
 | 🟡 | A non-directional categorical change. |
 
+## Prediction Markets
+
+To capture high-signal volatility and early sentiment shifts, Dalila monitors prediction markets for key geopolitical and economic variables.
+
+| Decision | Value | Why |
+|---|---|---|
+| Discovery method | **Dynamic Entity Extraction** | To avoid staleness, Dalila extracts top entities from the last 7 days of news digests and searches for active markets. This ensures the "Market Signals" section evolves with the current context. |
+| Discovery Seeds | **UAE-aligned domains** | Fallback seeds (e.g., "Gaza ceasefire", "Iran nuclear", "UAE economy") anchor discovery when digest history is sparse. |
+| Market Platforms | **Manifold and Kalshi** | Manifold provides broad topic coverage and high liquidity for qualitative geopolitical questions; Kalshi offers regulated, binary markets for high-liquidity economic indicators. |
+| Alert threshold (1h) | **5 percentage points** | An absolute probability shift of 5pp in an hour is statistically significant and often precedes breaking news. |
+| Alert threshold (24h) | **8 percentage points** | Captures slower but persistent sentiment shifts that reflect maturing crises or diplomatic breakthroughs. |
+
+When a large delta is detected, it triggers the same high-frequency ingest loop as breaking news.
+
+
 ## How the morning brief is assembled
 
 Once items are read, classified, and deduplicated, the editor composes the
@@ -118,7 +133,9 @@ section is built only from observations that crossed a change threshold.
 | Items per brief | **Up to 25** | A ceiling, not a target. The editor prunes harder in practice. |
 | Foresight section cap | **Top 5 movers** by magnitude of change | Foresight items earn the spotlight only when their movement is genuinely large; surplus changes are dropped. |
 | Empty-brief fallback | **&lt; 3 items above threshold** | Rather than publish a thin brief, Dalila says: &ldquo;Quiet news cycle. *N* items reviewed, none above threshold.&rdquo; |
-| Target length | **800&ndash;1,500 words** | Long enough to give context, short enough to read with a coffee. |
+| Target length | **800–1,500 words** | Long enough to give context, short enough to read with a coffee. |
+| Market signals cap | **Top 5 most relevant** | Markets are scored based on the magnitude of their 24h move and their topic overlap with today's top stories. |
+
 
 ## A note on what is *not* automated
 

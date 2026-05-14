@@ -4,7 +4,7 @@ Dalila (دليلة — Arabic for *guide*) is a personal AI agent that delivers 
 
 It's designed for a single user (originally built for a principal at the UAE Presidential Court's Office for Development Affairs) but the code is general — anyone working on a regional humanitarian/development beat can fork it, swap the entity watchlist for their context, and have a working brief in under an hour.
 
-> **Status**: running daily in production on a free-tier Google Cloud VM, with a companion website at `aryfcunha.github.io/dalila` (replaceable). Spanning months of archived briefs, ~30 active news sources, 1 active forecast index (CAST) with 3 more on the way, and a budget that stays inside a single Claude Pro/Max subscription.
+> **Status**: running daily in production on a free-tier Google Cloud VM, with a companion website at `aryfcunha.github.io/dalila`. Spanning months of archived briefs, ~30 active news sources, 1 active forecast index (CAST), and **real-time prediction market monitoring** (Kalshi + Manifold).
 
 ## What makes Dalila different
 
@@ -12,12 +12,13 @@ It's designed for a single user (originally built for a principal at the UAE Pre
 - **UAE-specific by default, retargetable.** The entity watchlist (`entities.yaml`) and prompts (`prompts/`) encode a particular regional lens. Swap them and Dalila becomes a brief for any other beat (your country, your sector, your portfolio).
 - **Foresight section.** Beyond news, Dalila tracks conflict-escalation and crisis-severity indices (ACLED CAST shipped; ACAPS INFORM, WFP HungerMap LIVE, GDACS in the pipeline). Each surfaces only **changes**, never states — Sudan being hungry every day produces zero items; Sudan getting hungrier produces one, tagged 🔴 (worsening) or 🟢 (improving) with the magnitude of the shift.
 - **Doctrine tracker.** Beyond daily news, Dalila maintains a structured model of UAE foreign-aid doctrine — tracked positions on 35 topics with confidence scoring and an evolution log of every reinforcing/refining/contradicting statement. See [`doctrine_topics.yaml`](doctrine_topics.yaml) for the canonical vocabulary.
-- **Curated news intake.** Around 30 RSS feeds plus structured data feeds (GDELT, ACLED, IATI, OCHA FTS, IDMC) and now an outlet allowlist on GDELT that drops articles from low-circulation regional papers. The allowlist (~185 outlets across global wires, MENA, Africa, Asia, Europe, Americas, Oceania, plus specialist humanitarian publications) sits in [`trusted_outlets.yaml`](trusted_outlets.yaml) and is one-line editable.
+- **Market Signals.** Dalila monitors prediction markets (Kalshi, Manifold) for geopolitical and economic shifts. It uses **dynamic discovery** to find markets relevant to the current news cycle and surfaces "Market Signals" in the daily brief.
+- **Curated news intake.** Around 30 RSS feeds plus structured data feeds (GDELT, ACLED, IATI, OCHA FTS, IDMC) and an outlet allowlist on GDELT that drops articles from low-circulation regional papers. The allowlist sits in [`trusted_outlets.yaml`](trusted_outlets.yaml) and is one-line editable.
 - **Built free.** Ingestion is RSS + GDELT 2.0 + ACLED + sitemap scraping (no paid wire fees). LLM is Claude Code subscription. Hosting on Google Cloud free tier. Total monthly cost above an existing Claude plan: $0.
 
 ## How it works (one paragraph)
 
-A Python pipeline ingests RSS feeds and structured data sources every 30 minutes. A cheap keyword + entity prefilter drops ~80% of items before the classifier sees them. Surviving items go to **Claude Haiku 4.5** (via the `claude` CLI) for categorisation, UAE-relevance scoring, severity, country focus, and entity tagging. At 06:30 GST, **Haiku** also composes the day's digest from items above a relevance threshold and broadcasts it to every subscribed Telegram chat. In parallel, forecast indices (currently ACLED CAST monthly conflict-escalation scores) are compared against last-seen baselines; only metrics that have *changed* beyond a threshold produce an item, which lands in the brief's **Foresight** section. A separate 15-minute doctrine pass extracts UAE-position updates from leadership-flagged items into the `doctrine_facts` table. Daily, the static website regenerates from whatever's persisted in the DB. Storage is SQLite. Scheduling is APScheduler. No Postgres, no vector DB, no message queue — by design.
+A Python pipeline ingests RSS feeds and structured data sources every 30 minutes. A cheap keyword + entity prefilter drops ~80% of items before the classifier sees them. Surviving items go to **Claude Haiku 4.5** (via the `claude` CLI) for categorisation, UAE-relevance scoring, severity, country focus, and entity tagging. At 06:30 GST, **Haiku** also composes the day's digest from items above a relevance threshold and broadcasts it to every subscribed Telegram chat. In parallel, forecast indices (currently ACLED CAST) and **prediction market deltas** (Kalshi/Manifold) are compared against baselines. When a large shift is detected, the pipeline automatically escalates to a **5-minute ingest loop** for 4 hours to capture breaking news. A separate 15-minute doctrine pass extracts UAE-position updates from leadership-flagged items. Daily, the static website regenerates from the SQLite DB.
 
 ```
    ┌─── ingestors ────────┐         ┌─── classifier (Haiku) ──────┐
@@ -139,6 +140,7 @@ sources.yaml          ← source registry (RSS, scrape, GDELT, ACLED, IATI, FTS,
 entities.yaml         ← entity watchlist (UAE focus, fed to the classifier)
 doctrine_topics.yaml  ← 35 canonical doctrine slugs (seeded vocabulary)
 trusted_outlets.yaml  ← GDELT outlet allowlist (~185 reputable publishers)
+prediction_markets.yaml ← settings for dynamic market discovery
 METHODOLOGY.md        ← public methodology — source for the website page
 prompts/
   classifier.md       ← Haiku prompt — per-item categorisation
@@ -154,6 +156,7 @@ migrations/
                                   bilateral_meetings
   005_forecast_snapshots.sql    ← per (source, country, metric) baseline
                                   table for the foresight scaffold
+006_prediction_markets.sql    ← snapshots and history for market deltas
 src/dalila/
   cli.py              ← entry point (`dalila <cmd>`)
   config.py           ← env + YAML loading
@@ -175,6 +178,7 @@ src/dalila/
     sitemap.py        ← historical backfill walker for publisher sitemaps
     forecast.py       ← shared change-detection scaffold for forecast indices
     cast.py           ← ACLED CAST (monthly conflict-escalation forecast)
+    prediction_markets.py ← dynamic Manifold/Kalshi discovery + poll
     base.py           ← ingestor dispatch by `kind`
 tests/
   test_smoke.py       ← pytest smoke tests
@@ -217,14 +221,13 @@ Dalila is structured so you should rarely touch the Python code:
 
 ## Roadmap
 
-Already shipped: classifier, editor, daily digest, Telegram bot, `/more` deep-dive, doctrine tracker with 35-topic seed vocabulary, near-duplicate dedup, rate-limit-aware scheduler, source-verification command, free-tier GCP deployment kit, **historical backfill** (sitemap walkers for WAM/Gulf News/The National, GDELT and ACLED date ranges), **DeepSeek backend** for cost-bounded backfill classify, **forecast scaffold** with the change-only rule, **ACLED CAST** ingestor (Phase 1 of the foresight indices), **static website** (home, archive, country map, methodology, about), **GDELT outlet allowlist**, **policy-aligned classification** (policy_sector, country_focus, capital_signals, financial_commitments, bilateral_meetings).
+Already shipped: classifier, editor, daily digest, Telegram bot, `/more` deep-dive, doctrine tracker with 35-topic seed vocabulary, near-duplicate dedup, rate-limit-aware scheduler, source-verification command, free-tier GCP deployment kit, **historical backfill** (sitemap walkers for WAM/Gulf News/The National, GDELT and ACLED date ranges), **DeepSeek backend** for cost-bounded backfill classify, **forecast scaffold** with the change-only rule, **ACLED CAST** ingestor, **prediction markets** (dynamic discovery + Kalshi/Manifold integration), **Breaking-news alerts** (5m dynamic polling loop), **static website** (home, archive, country map, methodology, about), **GDELT outlet allowlist**, **policy-aligned classification** (policy_sector, country_focus, capital_signals, financial_commitments, bilateral_meetings).
 
 Not yet built (open issues / contributions welcome):
 
 - **Phase 2 of foresight indices**: ACAPS INFORM (crisis severity, monthly), GDACS (real-time disaster alerts), WFP HungerMap LIVE (daily food-insecurity counts). The shared `forecast.py` scaffold is ready; each is a ~100-line ingestor plus one row in `sources.yaml`.
 - **Playwright ingestor**. JS-rendered sources (WAM, MoFA UAE, ERC, UAE Aid Agency, Erth Zayed Philanthropies) currently can't be live-ingested — the static HTML has no article cards. The historical-backfill sitemap walker works for WAM since the sitemap is static XML; live polling still needs a headless browser.
 - **Vector-based dedup**. SimHash works at the title level; cluster-aware deduplication on body text would catch more reposts.
-- **Breaking-news alerts**. Currently the digest is daily. The concept note specs a magnitude/velocity/relevance trigger for push alerts.
 - **Sentiment trajectories**. Once enough weeks of accumulated data, track tone of foreign coverage of UAE over time.
 - **Multi-user with personal entity watchlists**. Right now `/start` subscribes you to the same digest as everyone else. Per-user customisation would let one bot serve multiple beats.
 

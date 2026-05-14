@@ -33,13 +33,31 @@ def _ingest_job() -> None:
     global _last_full_ingest_time
     now = datetime.now(timezone.utc)
     
-    # Check if breaking news in last 4 hours
+    # Check if breaking news in last 4 hours (items OR market alerts)
     is_breaking_active = False
     with db.connect() as conn:
         cutoff = (now - timedelta(hours=4)).isoformat()
-        res = conn.execute("SELECT COUNT(*) FROM items WHERE is_breaking_candidate = 1 AND classified_at >= ?", (cutoff,)).fetchone()[0]
+        res = conn.execute(
+            "SELECT COUNT(*) FROM items WHERE is_breaking_candidate = 1 AND classified_at >= ?",
+            (cutoff,)
+        ).fetchone()[0]
         if res > 0:
             is_breaking_active = True
+        # Also check if any market had a large move recently
+        if not is_breaking_active:
+            try:
+                mres = conn.execute(
+                    """SELECT COUNT(*) FROM prediction_market_history
+                       WHERE recorded_at >= ? AND (
+                           ABS(COALESCE(delta_1h,0)) >= 0.05
+                           OR ABS(COALESCE(delta_24h,0)) >= 0.08
+                       )""",
+                    (cutoff,)
+                ).fetchone()[0]
+                if mres > 0:
+                    is_breaking_active = True
+            except Exception:
+                pass  # table may not exist yet on first run
 
     cfg = get_config()
     interval = 5 if is_breaking_active else cfg.ingest_interval_minutes
@@ -232,14 +250,43 @@ def attach_jobs(scheduler: AsyncIOScheduler, app: Application) -> None:
         id="doctrine",
         replace_existing=True,
     )
+
+    # Prediction markets: poll every 30 minutes for probability deltas.
+    scheduler.add_job(
+        _markets_job,
+        trigger=IntervalTrigger(minutes=30),
+        id="markets",
+        replace_existing=True,
+        next_run_time=None,  # don't fire immediately on start
+    )
+
     log.info(
-        "jobs scheduled: ingest every %dm, classify every 5m, doctrine every 15m, "
-        "digest daily at %s %s",
-        cfg.ingest_interval_minutes, cfg.digest_time, cfg.timezone,
+        "jobs scheduled: ingest every 5m (dynamic), classify every 5m, "
+        "doctrine every 15m, markets every 30m, digest daily at %s %s",
+        cfg.digest_time, cfg.timezone,
     )
 
 
+
 _doctrine_paused_until: datetime | None = None
+
+
+def _markets_job() -> None:
+    """Poll prediction markets for probability deltas. Logs large moves."""
+    log.info("scheduler: markets tick")
+    try:
+        from dalila.ingestors.prediction_markets import poll_markets
+        with db.connect() as conn:
+            alerts = poll_markets(conn)
+        if alerts:
+            log.warning(
+                "market alerts: %d large moves detected: %s",
+                len(alerts),
+                ", ".join(f"{a['question'][:40]} ({(a['delta_24h'] or 0)*100:+.1f}%)" for a in alerts),
+            )
+    except Exception:
+        log.exception("markets job failed")
+
 
 # Tracks event-ids we've already pre-flighted so we don't spam the user
 # with the same heads-up every day in the 7-day window. Cleared on

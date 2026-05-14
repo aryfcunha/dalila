@@ -1,0 +1,43 @@
+# prediction_markets.yaml
+#
+# Settings for the prediction markets polling system.
+# The market watchlist is FULLY DYNAMIC — no static market IDs are maintained here.
+# Markets are discovered automatically by searching Manifold for the top entities
+# and topics from the past 7 days' digest items.
+#
+# These settings control discovery quality, alert sensitivity, and digest display.
+
+discovery:
+  # How many days of digest history to mine for entity extraction
+  digest_lookback_days: 7
+
+  # Top N entity terms to use as Manifold search queries
+  entity_limit: 12
+
+  # Minimum Manifold volume (Mana) for a discovered market to qualify
+  min_volume: 300
+
+  # Maximum number of discovered markets to track at once
+  max_markets: 25
+
+  # Domain seed terms used when digest history is sparse (< 3 recent items).
+  # These anchor discovery to the UAE + humanitarian/development lens.
+  domain_seeds:
+    - UAE foreign policy
+    - humanitarian crisis 2026
+    - Gaza ceasefire
+    - Iran nuclear
+    - Strait of Hormuz
+    - global recession 2026
+    - Sudan famine
+    - GCC economy
+
+alerts:
+  # Minimum absolute probability move (0–1) over 1h to trigger a breaking signal
+  threshold_1h: 0.05
+  # Minimum absolute probability move (0–1) over 24h to trigger a breaking signal
+  threshold_24h: 0.08
+
+digest:
+  # How many market signals to show in the daily brief
+  top_n: 5
