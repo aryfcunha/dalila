@@ -1008,10 +1008,12 @@ def count_reviewed_24h(conn, as_of: datetime | None = None) -> int:
     from datetime import timedelta, timezone
     if as_of is None:
         as_of = datetime.now(timezone.utc)
-    since = as_of - timedelta(hours=24)
+    # Ensure UTC for reliable SQLite string comparison
+    as_of_utc = as_of.astimezone(timezone.utc)
+    since_utc = as_of_utc - timedelta(hours=24)
     # Return count of items ingested in this window.
     row = conn.execute(
         "SELECT COUNT(*) FROM items WHERE ingested_at >= ? AND ingested_at <= ?",
-        (since.isoformat(), as_of.isoformat())
+        (since_utc.isoformat(), as_of_utc.isoformat())
     ).fetchone()
     return row[0] if row else 0
