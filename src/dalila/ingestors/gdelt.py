@@ -232,26 +232,35 @@ def fetch(src: dict) -> list[RawItem]:
             continue
         rows.append(row)
     allowlist = _load_trusted_outlets()
+    # FILTER FIRST, THEN CAP. A 15-min GKG slice has 2,000–5,000 articles
+    # in chronological order. The cap used to apply *before* the allowlist,
+    # which meant we only looked at the most-recent 300 rows and dropped
+    # ~93% of them as regional papers — systematically missing trusted
+    # outlets that happened to appear earlier in the slice. Now we walk
+    # all rows, keep only allowlisted ones, and apply the cap to that
+    # filtered list. The cap exists only to bound runaway volume, not
+    # to act as a sampler.
+    trusted_rows: list[list[str]] = []
     skipped_outlets = 0
-    # Sample most recent (rows are chronological — take last N)
-    for row in rows[-GDELT_MAX_ITEMS_PER_POLL:]:
+    for row in rows:
         if len(row) < 14:
             continue
+        doc_url = row[4].strip()
+        if not doc_url or not doc_url.startswith("http"):
+            continue
+        if not _is_trusted_url(doc_url, allowlist):
+            skipped_outlets += 1
+            continue
+        trusted_rows.append(row)
+    log.info("gdelt live: scanned %d rows, %d on allowlist (dropped %d)",
+             len(rows), len(trusted_rows), skipped_outlets)
+    # Most-recent N from the trusted set
+    for row in trusted_rows[-GDELT_MAX_ITEMS_PER_POLL:]:
         date_str = row[1]
         doc_url = row[4].strip()
         themes = row[7]
         persons = row[11]
         orgs = row[13]
-
-        if not doc_url or not doc_url.startswith("http"):
-            continue
-        # Trusted-outlet filter — drop articles from publishers not on the
-        # curated allowlist (see trusted_outlets.yaml). GDELT indexes the
-        # whole news web including small regional papers; without this we
-        # pollute the items table with low-circulation outlets.
-        if not _is_trusted_url(doc_url, allowlist):
-            skipped_outlets += 1
-            continue
         # GDELT doesn't carry article title in GKG. Fabricate a placeholder
         # from the URL slug. _clean_slug_title strips trailing tracking-hash
         # suffixes (e.g. "...defend-country-ef796d64") and applies readable
@@ -287,9 +296,7 @@ def fetch(src: dict) -> list[RawItem]:
             published_at=published_at,
             extra={"gdelt_themes": themes, "gdelt_orgs": orgs},
         ))
-    if skipped_outlets:
-        log.info("gdelt live: kept %d items, dropped %d from non-allowlisted outlets",
-                 len(items), skipped_outlets)
+    log.info("gdelt live: kept %d items", len(items))
     return items
 
 
@@ -342,21 +349,31 @@ def _parse_slice(zip_bytes: bytes, source_id: str, *, cap: int) -> list[RawItem]
             continue
         rows.append(row)
     allowlist = _load_trusted_outlets()
-    for row in rows[-cap:]:
+    # Filter to allowlisted outlets FIRST across the whole slice, then cap.
+    # (See the parallel comment in fetch() above.)
+    trusted_rows: list[list[str]] = []
+    for row in rows:
         if len(row) < 14:
             continue
+        doc_url = row[4].strip()
+        if not doc_url or not doc_url.startswith("http"):
+            continue
+        if not _is_trusted_url(doc_url, allowlist):
+            continue
+        trusted_rows.append(row)
+    for row in trusted_rows[-cap:]:
         date_str = row[1]
         doc_url = row[4].strip()
         themes = row[7]
         persons = row[11]
         orgs = row[13]
-        if not doc_url or not doc_url.startswith("http"):
-            continue
-        # Trusted-outlet filter (see trusted_outlets.yaml).
-        if not _is_trusted_url(doc_url, allowlist):
-            continue
-        title_seed = doc_url.split("/")[-1] or doc_url
-        title_seed = title_seed.replace("-", " ").replace("_", " ").rstrip(".html").strip()
+        # Title synthesis (mirrors the live fetch() path).
+        slug = doc_url.split("/")[-1] or doc_url
+        for ext in (".html", ".htm", ".php", ".aspx", ".jsp"):
+            if slug.lower().endswith(ext):
+                slug = slug[: -len(ext)]
+        slug = slug.replace("-", " ").replace("_", " ").strip()
+        title_seed = _clean_slug_title(slug)
         if not title_seed:
             continue
         body_parts = []
