@@ -312,6 +312,8 @@ a:hover {{
   flex-direction: column;
   gap: 12px;
   transition: border-color 0.15s ease;
+  height: 100%;
+  box-sizing: border-box;
 }}
 .market-card:hover {{ border-color: var(--amber); }}
 .market-prob {{
@@ -476,7 +478,7 @@ a:hover {{
   font-size: 15px;
   line-height: 1.65;
   color: var(--type-dim);
-  max-width: 600px;
+  max-width: 64ch;
 }}
 .about h2 {{
   font-size: 11px;
@@ -777,21 +779,18 @@ def _masthead(*, on_page: str, tag: str = "DAILY BRIEF", link_prefix: str = "") 
     <a href="{link_prefix}countries.html"{_attr("countries")}>Countries</a>
     <a href="{link_prefix}methodology.html"{_attr("methodology")}>Methodology</a>
     <a href="{link_prefix}about.html"{_attr("about")}>About</a>
-    <a href="{link_prefix}customize.html"{_attr("customize")}>Customize</a>
   </nav>
 </header>
 """
 
 
-def _footer(*, contact_email: str, telegram_bot: str | None, link_prefix: str = "") -> str:
-    home_href = link_prefix or "./"
+def _footer(*, contact_email: str, telegram_bot: str | None) -> str:
     parts = [
         f'<span>© {datetime.now().year} Dalila</span>',
-        f'<span><a href="{home_href}">Home</a></span>',
-        f'<span><a href="{link_prefix}archive.html">Archive</a></span>',
-        f'<span><a href="{link_prefix}markets.html">Markets</a></span>',
-        f'<span><a href="{link_prefix}about.html">About</a></span>',
-        f'<span><a href="{link_prefix}customize.html">Customize</a></span>',
+        f'<span><a href="index.html">Home</a></span>',
+        f'<span><a href="archive.html">Archive</a></span>',
+        f'<span><a href="markets.html">Markets</a></span>',
+        f'<span><a href="about.html">About</a></span>',
     ]
     if telegram_bot:
         parts.append(f'<span><a href="https://t.me/{telegram_bot}">Telegram</a></span>')
@@ -881,8 +880,8 @@ def render_digest(
     for it in scored:
         if len(top3) >= 3:
             break
-        # Stricter diversity check for Top 3 (30 bits)
-        if not any(is_near_duplicate(it.get("title_simhash"), k.get("title_simhash"), 30) for k in top3):
+        # Stricter diversity check for Top 3 (24 bits bits)
+        if not any(is_near_duplicate(it.get("title_simhash"), k.get("title_simhash"), 24) for k in top3):
             top3.append(it)
 
     by_cat: dict[str, list[dict]] = {}
@@ -899,7 +898,7 @@ def render_digest(
             body.append(_section_block(label, rows))
     if market_signals:
         body.append(_market_signals_block(market_signals))
-    body.append(_footer(contact_email=contact_email, telegram_bot=telegram_bot, link_prefix=link_prefix))
+    body.append(_footer(contact_email=contact_email, telegram_bot=telegram_bot))
 
     return _doc(f"Dalila — {date_label.title()}", "\n".join(body))
 
@@ -2588,7 +2587,7 @@ def render_about(
 ) -> str:
     def _classify(tags: set) -> str:
         if "state" in tags:                            return "uae-state"
-        if "entity" in tags:                           return "hum-data"
+        if "entity" in tags:                           return "uae-entity"
         if "uae" in tags and "press" in tags:          return "uae-press"
         if "un" in tags:                               return "un"
         if "multilateral" in tags:                     return "multilateral"
@@ -2597,16 +2596,15 @@ def render_about(
         if "wire" in tags or ("press" in tags and "global" in tags):
                                                        return "wire"
         if "humanitarian" in tags:                     return "humanitarian"
-        if "events" in tags:                           return "hum-data"
-        if "iati" in tags:                             return "hum-data"
-        if "gdelt" in tags:                            return "hum-data"
+        if "events" in tags:                           return "events"
+        if "iati" in tags:                             return "iati"
         if "dev-finance" in tags:                      return "dev-finance"
         if "newsletter" in tags or "email" in tags:    return "newsletter"
         return "other"
 
     bucket_order = [
         ("uae-state",     "UAE state & wire"),
-        ("hum-data",      "Humanitarian Data APIs"),
+        ("uae-entity",    "UAE operating entities"),
         ("uae-press",     "UAE & Gulf press"),
         ("un",            "UN agencies"),
         ("multilateral",  "Multilateral finance"),
@@ -2614,6 +2612,8 @@ def render_about(
         ("specialist",    "Specialist trade press"),
         ("wire",          "Wires & global news"),
         ("humanitarian",  "Humanitarian-specialist"),
+        ("events",        "Real-time event detection"),
+        ("iati",          "Aid-activity data"),
         ("dev-finance",   "Development finance"),
         ("newsletter",    "Email newsletters"),
         ("other",         "Other"),
@@ -2693,16 +2693,11 @@ def render_about(
             name = html.escape(s.get("name") or s.get("id", ""))
             url = s.get("url") or ""
             kind = html.escape(s.get("kind") or "")
-            
-            note_extra = ""
-            if "gdelt" in name.lower() or "gdelt" in (s.get("id") or "").lower():
-                note_extra = " (includes 200+ leading media outlets from 100+ countries)"
-                
             if url and url.startswith("http"):
                 name_html = f'<a href="{html.escape(url)}" target="_blank" rel="noopener">{name}</a>'
             else:
                 name_html = name
-            body.append(f'<li>{name_html} <span class="note">— {kind}{note_extra}</span></li>')
+            body.append(f'<li>{name_html} <span class="note">— {kind}</span></li>')
         body.append('</ul></div>')
 
     body.append('<h2 id="subscribe">Subscribe</h2>')
@@ -2756,6 +2751,7 @@ def render_markets(
     else:
         for m in markets:
             prob_pct = f"{m.get('probability', 0)*100:4.1f}%"
+            d30m = m.get('delta_30m')
             d24 = m.get('delta_24h')
             d7d = m.get('delta_7d')
             
@@ -2769,11 +2765,13 @@ def render_markets(
             url = m.get('url', '#')
             
             body.append(f"""
-            <a href="{url}" target="_blank" rel="noopener" style="text-decoration:none; color:inherit;">
+            <a href="{url}" target="_blank" rel="noopener" 
+               style="text-decoration:none; color:inherit; display:block;">
             <div class="market-card">
                 <div class="market-prob" style="display:flex; justify-content:space-between; align-items:baseline;">
                     <span>{prob_pct}</span>
                     <div style="font-size:12px; font-weight:normal; display:flex; gap:8px; align-items:baseline;">
+                        {fmt_delta(d30m, "30m")}
                         {fmt_delta(d24, "24h")}
                         {fmt_delta(d7d, "1w")}
                     </div>
@@ -2787,10 +2785,25 @@ def render_markets(
             """)
             
     body.append('</div>')
+    
+    body.append('<h2 style="margin-top:60px;">Strategic Foresight Methodology</h2>')
+    body.append(
+        '<p>Dalila uses <strong>Log-Odds Shift</strong> scoring to identify the '
+        'most significant market movements. This mathematical approach prioritises '
+        'events where the crowd is rapidly changing its mind—particularly in '
+        'low-probability "tail risks" where a shift from 1% to 10% reflects a '
+        'massive increase in underlying risk.</p>'
+    )
+    body.append(
+        '<p>Our discovery engine weights different topics by their relevance to the '
+        'current news cycle and its alignment with UAE, humanitarian aid, and development.</p>'
+    )
     body.append('</div>')
     
     body.append(_footer(contact_email=contact_email, telegram_bot=telegram_bot))
     return _doc("Dalila — Market Signals", "\n".join(body))
+
+
 def render_customize(
     *,
     contact_email: str = "dalila.dev.digest@gmail.com",
