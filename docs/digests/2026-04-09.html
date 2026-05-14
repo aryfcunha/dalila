@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dalila — Thursday 9 April 2026</title>
+<style>
+:root {
+  --bg:#0A0A0A;
+  --bg-deep:#000000;
+  --type:#E8E1D3;
+  --type-dim:#9A958A;
+  --muted:#6E6A60;
+  --amber:#FFB454;
+  --amber-deep:#D88E30;
+  --cyan:#7AB9C9;
+  --green:#7CB36E;
+  --red:#D67866;
+  --rule:#1F1B16;
+  --rule-strong:#3A332A;
+}
+html,body {
+  background: var(--bg);
+  color: var(--type);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+body {
+  margin: 0;
+  font-family: "JetBrains Mono", "IBM Plex Mono", "SF Mono", "Source Code Pro", Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.55;
+  letter-spacing: 0.01em;
+}
+.serif {
+  font-family: "Iowan Old Style", "Source Serif Pro", "PT Serif", Georgia, "Times New Roman", serif;
+  font-feature-settings: "kern", "liga", "calt";
+}
+a {
+  color: var(--cyan);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.12s ease, color 0.12s ease;
+}
+a:hover {
+  color: var(--amber);
+  border-bottom-color: var(--amber);
+}
+.wrap { max-width: 880px; margin: 0 auto; padding: 28px 32px 80px; }
+
+/* ---------- masthead ---------- */
+.masthead {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 18px;
+  align-items: baseline;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--amber);
+  margin-bottom: 18px;
+}
+.masthead-title {
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  margin: 0;
+  color: var(--type);
+}
+.masthead-title a { color: var(--type); border: 0; }
+.masthead-title .ar {
+  color: var(--amber);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 0.65em;
+  margin-left: 8px;
+  vertical-align: 3px;
+}
+.masthead-tag {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-left: 1px solid var(--rule-strong);
+  padding-left: 14px;
+  margin-left: 6px;
+}
+.masthead-nav {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: right;
+}
+.masthead-nav a {
+  color: var(--muted);
+  margin-left: 14px;
+  border: 0;
+}
+.masthead-nav a[aria-current=page] { color: var(--amber); }
+.masthead-nav a:hover { color: var(--type); }
+
+/* ---------- ticker strip ---------- */
+.ticker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0 0 18px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 24px;
+}
+.ticker span {
+  padding: 0 14px;
+  border-right: 1px solid var(--rule-strong);
+}
+.ticker span:first-child { padding-left: 0; }
+.ticker span:last-child { border-right: 0; }
+.ticker b { color: var(--amber); font-weight: 700; }
+
+/* ---------- top stories ---------- */
+.top { margin: 0 0 28px; }
+.top-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--amber);
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+}
+.top-head .label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+.top-head .count { color: var(--muted); font-size: 10px; letter-spacing: 0.14em; }
+.top ol { list-style: none; padding: 0; margin: 0; counter-reset: t; }
+.top li {
+  counter-increment: t;
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 14px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--rule);
+  align-items: baseline;
+}
+.top li:last-child { border-bottom: 0; }
+.top li::before {
+  content: counter(t, decimal-leading-zero);
+  color: var(--amber);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+.top a {
+  color: var(--type);
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 16px;
+  line-height: 1.4;
+  border-bottom: 1px solid transparent;
+}
+.top a:hover {
+  color: var(--amber);
+  border-bottom-color: var(--amber);
+}
+.top .ref { color: var(--muted); font-size: 10px; margin-left: 6px; letter-spacing: 0.08em; }
+
+/* ---------- sections ---------- */
+.section { margin: 0 0 30px; }
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+}
+.section-head .label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--type);
+}
+.section-head .count {
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+
+/* ---------- items ---------- */
+.item {
+  padding: 14px 0 16px;
+  border-bottom: 1px solid var(--rule);
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 14px;
+}
+.item:last-child { border-bottom: 0; }
+.item-n {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding-top: 2px;
+}
+.item-body .title {
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 16px;
+  line-height: 1.4;
+  font-weight: 600;
+  color: var(--type);
+  margin: 0 0 6px;
+}
+.item-body .title a {
+  color: var(--type);
+  border-bottom: 1px solid transparent;
+}
+.item-body .title a:hover {
+  color: var(--amber);
+  border-bottom-color: var(--amber);
+}
+.item-body .summary {
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 14px;
+  color: var(--type-dim);
+  margin: 0 0 8px;
+  line-height: 1.55;
+}
+.item-body .meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.item-body .meta .src { color: var(--type-dim); }
+.item-body .meta .rel { color: var(--amber); }
+.item-body .meta .sev { color: var(--muted); }
+.item-body .meta a { color: var(--cyan); border: 0; }
+.item-body .meta a:hover { color: var(--amber); }
+.doctrine-tag {
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  padding: 1px 6px;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  font-weight: 700;
+}
+
+/* ---------- footer ---------- */
+.foot {
+  margin-top: 56px;
+  padding-top: 14px;
+  border-top: 1px solid var(--amber);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.foot a { color: var(--muted); border: 0; }
+.foot a:hover { color: var(--amber); }
+
+/* ---------- archive ---------- */
+.archive-row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 18px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--rule);
+  align-items: baseline;
+}
+.archive-date {
+  color: var(--amber);
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.archive-title a {
+  color: var(--type);
+  font-family: "Iowan Old Style", Georgia, serif;
+  font-size: 16px;
+  line-height: 1.4;
+  border-bottom: 1px solid transparent;
+}
+.archive-title a:hover { color: var(--amber); border-bottom-color: var(--amber); }
+.archive-preview { color: var(--muted); font-size: 12px; margin-top: 6px; line-height: 1.5; }
+.archive-row.hidden { display: none; }
+.archive-count {
+  color: var(--type-dim);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  margin: 14px 0 18px;
+}
+.archive-count #archive-count-shown, .archive-count #archive-count-total {
+  color: var(--amber); font-weight: 700;
+}
+.archive-more { margin: 28px 0 0; text-align: center; }
+.archive-more button {
+  background: transparent;
+  color: var(--amber);
+  border: 1px solid var(--amber);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 12px 28px;
+  cursor: pointer;
+  transition: background .14s ease, color .14s ease;
+}
+.archive-more button:hover {
+  background: var(--amber);
+  color: var(--bg);
+}
+
+/* ---------- about ---------- */
+.about p, .about ul, .about li {
+  font-family: "Iowan Old Style", Georgia, serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--type-dim);
+  max-width: 64ch;
+}
+.about h2 {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--amber);
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 6px;
+  margin: 34px 0 14px;
+}
+.about strong { color: var(--type); }
+.about code {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 0.9em;
+  color: var(--amber);
+  background: var(--bg-deep);
+  padding: 1px 5px;
+  border: 1px solid var(--rule-strong);
+}
+.source-block {
+  margin: 0 0 22px;
+  padding: 8px 0 0 16px;
+  border-left: 1px solid var(--rule-strong);
+}
+.source-block strong {
+  display: block;
+  color: var(--amber);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.source-block ul { list-style: none; padding: 0; margin: 0; }
+.source-block li {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  color: var(--type-dim);
+  padding: 3px 0;
+}
+.source-block li .note { color: var(--muted); margin-left: 4px; }
+
+/* Methodology page */
+.methodology {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 12px 0 32px;
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--type);
+}
+.methodology h1 { display: none; }  /* MASTHEAD already shows title */
+.methodology h2 {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--amber);
+  border-top: 1px solid var(--rule-strong);
+  padding-top: 18px;
+  margin: 28px 0 12px;
+}
+.methodology h3 {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--type);
+  margin: 18px 0 8px;
+}
+.methodology p { margin: 0 0 12px; }
+.methodology ul { margin: 0 0 14px; padding-left: 22px; }
+.methodology li { margin: 4px 0; }
+.methodology hr { border: none; border-top: 1px dashed var(--rule); margin: 24px 0; }
+.methodology code {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 0.88em; color: var(--amber); background: var(--bg-deep);
+  padding: 1px 5px; border: 1px solid var(--rule-strong);
+}
+.method-table-wrap { overflow-x: auto; margin: 8px 0 18px; }
+.method-table {
+  width: 100%; border-collapse: collapse;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+}
+.method-table th, .method-table td {
+  border: 1px solid var(--rule-strong);
+  padding: 8px 10px; text-align: left; vertical-align: top;
+}
+.method-table thead th {
+  background: var(--bg-deep);
+  color: var(--amber);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.method-table td:first-child { color: var(--type); font-weight: 600; }
+.method-table td strong { color: var(--amber); }
+
+/* ---------- countries view ---------- */
+.country-controls {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin: 6px 0 22px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.country-controls label { color: var(--muted); margin-right: 4px; }
+.region-pill {
+  display: inline-block;
+  padding: 3px 8px;
+  border: 1px solid var(--rule-strong);
+  color: var(--type-dim);
+  cursor: pointer;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.region-pill:hover { color: var(--amber); border-color: var(--amber-deep); }
+.region-pill.active { color: var(--bg); background: var(--amber); border-color: var(--amber); }
+
+.region-block { margin: 0 0 22px; }
+.region-head {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  justify-content: space-between;
+}
+.region-head .count { color: var(--muted); }
+.tile-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.tile {
+  width: 44px; height: 44px;
+  background: var(--bg-deep);
+  border: 1px solid var(--rule-strong);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--type-dim);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.12s ease, color 0.12s ease;
+  position: relative;
+}
+.tile:hover { border-color: var(--amber); color: var(--type); z-index: 2; }
+.tile .num {
+  font-size: 9px;
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+  margin-top: 1px;
+}
+.tile.selected {
+  border-color: var(--amber);
+  color: var(--bg);
+  background: var(--amber);
+}
+.tile.selected .num { color: rgba(10,10,10,0.6); }
+.tile.dim { opacity: 0.28; }
+.tile.empty { color: var(--muted); }
+/* Heatmap shades (data-h attribute set by JS) */
+.tile[data-h="1"] { background: #1a1409; border-color: #2a1f12; color: var(--type-dim); }
+.tile[data-h="2"] { background: #2c1f0a; border-color: #3d2912; color: var(--type-dim); }
+.tile[data-h="3"] { background: #4a3110; border-color: #5d3e14; color: var(--type); }
+.tile[data-h="4"] { background: #75501a; border-color: #8a611f; color: var(--type); }
+.tile[data-h="5"] { background: #a47424; border-color: #b88229; color: var(--bg); }
+.tile[data-h="6"] { background: var(--amber-deep); border-color: var(--amber); color: var(--bg); }
+
+#country-detail {
+  margin: 28px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule-strong);
+}
+.country-detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.country-detail-head h2 {
+  margin: 0;
+  font-family: "Iowan Old Style", Georgia, serif;
+  font-size: 22px;
+  color: var(--amber);
+  font-weight: 700;
+}
+.country-detail-head .meta {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.country-cofreq {
+  font-size: 11px;
+  color: var(--type-dim);
+  margin: 0 0 14px;
+  letter-spacing: 0.04em;
+}
+.country-cofreq .pair {
+  display: inline-block;
+  margin-right: 12px;
+  margin-bottom: 4px;
+  padding: 2px 6px;
+  border: 1px solid var(--rule-strong);
+  color: var(--type-dim);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+.country-cofreq .pair b { color: var(--amber); font-weight: 700; margin-left: 4px; }
+.country-news-empty {
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+  padding: 28px 0;
+  text-align: center;
+}
+
+/* ---------- print + mobile ---------- */
+@media print {
+  html,body { background: white; color: black; }
+  a { color: black; text-decoration: underline; }
+  .masthead-nav, .foot { display: none; }
+}
+@media (max-width: 640px) {
+  .wrap { padding: 22px 18px 60px; }
+  .masthead { grid-template-columns: 1fr; gap: 8px; }
+  .masthead-tag { border-left: 0; padding-left: 0; margin-left: 0; }
+  .masthead-nav { text-align: left; }
+  .ticker { font-size: 9px; }
+  .ticker span { padding: 0 8px; }
+  .archive-row { grid-template-columns: 1fr; gap: 4px; }
+  .item { grid-template-columns: 1fr; gap: 6px; }
+  .item-n { font-size: 10px; padding: 0; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <h1 class="masthead-title"><a href="../">Dalila<span class="ar">دليلة</span></a></h1>
+  <div class="masthead-tag">DAILY BRIEF</div>
+  <nav class="masthead-nav">
+    <a href="../">Home</a>
+    <a href="../archive.html">Archive</a>
+    <a href="../countries.html">Countries</a>
+    <a href="../methodology.html">Methodology</a>
+    <a href="../about.html">About</a>
+  </nav>
+</header>
+
+
+<div class="ticker">
+  <span>THURSDAY 9 APRIL 2026</span>
+  <span><b>25</b> ITEMS</span>
+  <span><b>25</b> REVIEWED 24H</span>
+  <span>COMPOSED 04:00 +04</span>
+</div>
+
+<section class="top"><div class="top-head"><span class="label">▌ Top stories</span><span class="count">03 of 03</span></div><ol><li><a href="https://gulfnews.com/uae/government/uae-air-defences-intercept-17-ballistic-missiles-and-35-uavs-1.500500178">uae air defences intercept 17 ballistic missiles and 35 uavs 1.500500178</a><span class="ref">#4</span></li>
+<li><a href="https://www.thenationalnews.com/news/uae/2026/04/08/uae-intercepts-17-ballistic-missiles-and-35-drones-in-wednesdays-figures/">uae intercepts 17 ballistic missiles and 35 drones in wednesdays figures</a><span class="ref">#1</span></li>
+<li><a href="https://gulfnews.com/uae/uae-residents-get-emergency-alert-over-missile-threat-4-1.500499595">uae residents get emergency alert over missile threat 4 1.500499595</a><span class="ref">#5</span></li></ol></section>
+<section class="section"><div class="section-head"><span class="label">▌ HUMANITARIAN</span><span class="count">03 ITEMS</span></div><article class="item" id="item-11"><span class="item-n">#11</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/three-injured-in-abu-dhabi-as-debris-from-interception-hits-habshan-gas-facility-1.500499955" target="_blank" rel="noopener">three injured in abu dhabi as debris from interception hits habshan gas facility 1.500499955</a></h3><p class="summary">Debris from interception injures three in Abu Dhabi gas facility.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.70</span></div></div></article><article class="item" id="item-14"><span class="item-n">#14</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/04/08/dozens-killed-in-beirut-massacre-as-israel-drops-100-bombs-in-10-minutes/" target="_blank" rel="noopener">dozens killed in beirut massacre as israel drops 100 bombs in 10 minutes</a></h3><p class="summary">Dozens killed in Beirut massacre by Israeli bombs.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.40</span> · <span class="sev">SEV 1.00</span> · <span>LB</span> · <span>HUMANITARIAN</span></div></div></article><article class="item" id="item-18"><span class="item-n">#18</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/04/08/ceasefire-provides-opening-for-houthis-to-use-tehran-tollbooth-formula-to-choke-shipping/" target="_blank" rel="noopener">ceasefire provides opening for houthis to use tehran tollbooth formula to choke shipping</a></h3><p class="summary">Houthis may use ceasefire to impose tolls on shipping.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.50</span> · <span class="sev">SEV 0.70</span> · <span>YE · IR</span></div></div></article></section>
+<section class="section"><div class="section-head"><span class="label">▌ REPORTS &amp; EVIDENCE</span><span class="count">01 ITEM</span></div><article class="item" id="item-25"><span class="item-n">#25</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/economy/2026/04/08/world-bank-expects-middle-east-economic-growth-to-slow-to-18-and-warns-of-scarring-from-iran-war/" target="_blank" rel="noopener">world bank expects middle east economic growth to slow to 18 and warns of scarring from iran war</a></h3><p class="summary">World Bank warns of Middle East economic scarring from Iran war.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.50</span> · <span class="sev">SEV 0.40</span> · <span>FINANCING</span></div></div></article></section>
+<section class="section"><div class="section-head"><span class="label">▌ UAE FOREIGN-POLICY SIGNALS</span><span class="count">18 ITEMS</span></div><article class="item" id="item-1"><span class="item-n">#01</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/04/08/uae-intercepts-17-ballistic-missiles-and-35-drones-in-wednesdays-figures/" target="_blank" rel="noopener">uae intercepts 17 ballistic missiles and 35 drones in wednesdays figures</a></h3><p class="summary">UAE intercepts 17 missiles and 35 drones in Iranian attack.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.90</span> · <span>AE · IR</span></div></div></article><article class="item" id="item-3"><span class="item-n">#03</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/04/08/uae-residents-injured-in-iranian-attacks-visited-by-abu-dhabi-officials/" target="_blank" rel="noopener">uae residents injured in iranian attacks visited by abu dhabi officials</a></h3><p class="summary">Abu Dhabi officials visit UAE residents injured in Iranian attacks.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.70</span> · <span>AE · IR</span></div></div></article><article class="item" id="item-4"><span class="item-n">#04</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/government/uae-air-defences-intercept-17-ballistic-missiles-and-35-uavs-1.500500178" target="_blank" rel="noopener">uae air defences intercept 17 ballistic missiles and 35 uavs 1.500500178</a></h3><p class="summary">UAE air defences intercept 17 ballistic missiles and 35 UAVs.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.95</span> · <span>AE · IR</span></div></div></article><article class="item" id="item-5"><span class="item-n">#05</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/uae-residents-get-emergency-alert-over-missile-threat-4-1.500499595" target="_blank" rel="noopener">uae residents get emergency alert over missile threat 4 1.500499595</a></h3><p class="summary">UAE residents receive emergency alert over missile threat.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.90</span></div></div></article><article class="item" id="item-6"><span class="item-n">#06</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/emergencies/uae-responds-to-iranian-missiles-and-drones-residents-receive-emergency-alerts-7-1.500500083" target="_blank" rel="noopener">uae responds to iranian missiles and drones residents receive emergency alerts 7 1.500500083</a></h3><p class="summary">UAE responds to Iranian missiles and drones; emergency alerts sent.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.90</span> · <span>AE · IR</span></div></div></article><article class="item" id="item-7"><span class="item-n">#07</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/world/mena/iran-warns-ships-in-hormuz-seek-permission-or-face-destruction-1.500500448" target="_blank" rel="noopener">iran warns ships in hormuz seek permission or face destruction 1.500500448</a></h3><p class="summary">Iran warns ships in Hormuz to seek permission or face destruction.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.90</span> · <span>IR · AE</span></div></div></article><article class="item" id="item-8"><span class="item-n">#08</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/world/mena/israel-joins-usiran-twoweek-ceasefire-pause-white-house-says-1.500499586" target="_blank" rel="noopener">israel joins usiran twoweek ceasefire pause white house says 1.500499586</a></h3><p class="summary">Israel joins US-Iran two-week ceasefire, White House confirms.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.80</span></div></div></article><article class="item" id="item-10"><span class="item-n">#10</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/usisrael-war-with-iran-day-40-what-uae-residents-need-to-know-on-april-8-1.500499663" target="_blank" rel="noopener">usisrael war with iran day 40 what uae residents need to know on april 8 1.500499663</a></h3><p class="summary">Day 40 of US-Israel war with Iran: what UAE residents need to know.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.70</span></div></div></article><article class="item" id="item-12"><span class="item-n">#12</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/health/abu-dhabi-officials-visit-hospital-treating-victims-of-iranian-attacks-1.500500126" target="_blank" rel="noopener">abu dhabi officials visit hospital treating victims of iranian attacks 1.500500126</a></h3><p class="summary">Abu Dhabi officials visit hospital treating Iranian attack victims.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.70</span> · <span>AE · IR</span></div></div></article><article class="item" id="item-13"><span class="item-n">#13</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/uae-disappointed-as-security-council-fails-to-act-on-strait-of-hormuz-crisis-1.500500270" target="_blank" rel="noopener">uae disappointed as security council fails to act on strait of hormuz crisis 1.500500270</a></h3><p class="summary">UAE disappointed as Security Council fails on Hormuz crisis.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.70</span> · <span>AE · IR</span></div></div></article><article class="item" id="item-15"><span class="item-n">#15</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/world/mena/israel-backs-us-iran-temporary-two-week-ceasefire-1.500499675" target="_blank" rel="noopener">israel backs us iran temporary two week ceasefire 1.500499675</a></h3><p class="summary">Israel backs US-Iran temporary two-week ceasefire.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.70</span></div></div></article><article class="item" id="item-17"><span class="item-n">#17</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/government/uae-condemns-attack-on-kuwait-consulate-in-iraqs-basra-1.500500131" target="_blank" rel="noopener">uae condemns attack on kuwait consulate in iraqs basra 1.500500131</a></h3><p class="summary">UAE condemns attack on Kuwait consulate in Basra.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.60</span> · <span>AE · KW · IQ</span></div></div></article><article class="item" id="item-19"><span class="item-n">#19</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/banking/2026/04/08/uae-and-bahrain-strike-dh20bn-currency-swap-deal-to-boost-financial-stability/" target="_blank" rel="noopener">uae and bahrain strike dh20bn currency swap deal to boost financial stability</a></h3><p class="summary">UAE and Bahrain sign Dh20bn currency swap deal.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.30</span> · <span>AE · BH</span> · <span>FINANCING</span></div></div></article><article class="item" id="item-20"><span class="item-n">#20</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/world/mena/iran-strait-of-hormuz-will-remain-open-under-military-oversight-during-twoweek-ceasefire-what-araghchi-said-1.500499593" target="_blank" rel="noopener">iran strait of hormuz will remain open under military oversight during twoweek ceasefire what araghchi said 1.500499593</a></h3><p class="summary">Iran says Strait of Hormuz open under military oversight during ceasefire.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.60</span></div></div></article><article class="item" id="item-21"><span class="item-n">#21</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/arab-parliament-condemns-continued-blatant-iranian-attacks-against-arab-gulf-states-despite-ceasefire-1.500500383" target="_blank" rel="noopener">arab parliament condemns continued blatant iranian attacks against arab gulf states despite ceasefire 1.500500383</a></h3><p class="summary">Arab Parliament condemns Iranian attacks on Gulf states despite ceasefire.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.60</span> · <span>AE · IR · SA</span></div></div></article><article class="item" id="item-22"><span class="item-n">#22</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/uae-affirms-importance-of-irans-adherence-to-cessation-of-attacks-1.500500701" target="_blank" rel="noopener">uae affirms importance of irans adherence to cessation of attacks 1.500500701</a></h3><p class="summary">UAE affirms importance of Iran&#x27;s adherence to cessation of attacks.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.40</span></div></div></article><article class="item" id="item-23"><span class="item-n">#23</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/world/gulf/kuwait/uae-embassy-urges-citizens-to-follow-kuwaiti-authorities-instructions-1.500499575" target="_blank" rel="noopener">uae embassy urges citizens to follow kuwaiti authorities instructions 1.500499575</a></h3><p class="summary">UAE embassy urges citizens to follow Kuwaiti authorities instructions.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.50</span> · <span>AE · KW</span></div></div></article><article class="item" id="item-24"><span class="item-n">#24</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/business/energy/oil-prices-tumble-sharply-on-two-week-us-israel-iran-ceasefire-1.500499598" target="_blank" rel="noopener">oil prices tumble sharply on two week us israel iran ceasefire 1.500499598</a></h3><p class="summary">Oil prices tumble on US-Israel-Iran ceasefire deal.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.50</span></div></div></article></section>
+<section class="section"><div class="section-head"><span class="label">▌ UAE DOCTRINE</span><span class="count">02 ITEMS</span></div><article class="item" id="item-2"><span class="item-n">#02</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/04/08/dr-gargash-says-uae-has-triumphed-in-war-it-sought-to-avoid-as-ceasefire-agreed/" target="_blank" rel="noopener">dr gargash says uae has triumphed in war it sought to avoid as ceasefire agreed</a></h3><p class="summary">Gargash says UAE triumphed in war it sought to avoid after ceasefire.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.70</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article><article class="item" id="item-16"><span class="item-n">#16</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/government/anwar-gargash-uae-prevailed-in-war-it-sought-to-avoid-1.500499867" target="_blank" rel="noopener">anwar gargash uae prevailed in war it sought to avoid 1.500499867</a></h3><p class="summary">Anwar Gargash says UAE prevailed in war it sought to avoid.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.60</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article></section>
+<section class="section"><div class="section-head"><span class="label">▌ UAE ECOSYSTEM</span><span class="count">01 ITEM</span></div><article class="item" id="item-9"><span class="item-n">#09</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/abu-dhabi-authorities-respond-to-fire-at-habshan-gas-facility-1.500499613" target="_blank" rel="noopener">abu dhabi authorities respond to fire at habshan gas facility 1.500499613</a></h3><p class="summary">Abu Dhabi authorities respond to fire at Habshan gas facility.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.70</span></div></div></article></section>
+<footer class="foot"><span>© 2026 Dalila — daily intelligence brief</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Submit a suggestion</a></span></footer>
+</div>
+</body>
+</html>

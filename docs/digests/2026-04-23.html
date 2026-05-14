@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dalila — Thursday 23 April 2026</title>
+<style>
+:root {
+  --bg:#0A0A0A;
+  --bg-deep:#000000;
+  --type:#E8E1D3;
+  --type-dim:#9A958A;
+  --muted:#6E6A60;
+  --amber:#FFB454;
+  --amber-deep:#D88E30;
+  --cyan:#7AB9C9;
+  --green:#7CB36E;
+  --red:#D67866;
+  --rule:#1F1B16;
+  --rule-strong:#3A332A;
+}
+html,body {
+  background: var(--bg);
+  color: var(--type);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+body {
+  margin: 0;
+  font-family: "JetBrains Mono", "IBM Plex Mono", "SF Mono", "Source Code Pro", Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.55;
+  letter-spacing: 0.01em;
+}
+.serif {
+  font-family: "Iowan Old Style", "Source Serif Pro", "PT Serif", Georgia, "Times New Roman", serif;
+  font-feature-settings: "kern", "liga", "calt";
+}
+a {
+  color: var(--cyan);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.12s ease, color 0.12s ease;
+}
+a:hover {
+  color: var(--amber);
+  border-bottom-color: var(--amber);
+}
+.wrap { max-width: 880px; margin: 0 auto; padding: 28px 32px 80px; }
+
+/* ---------- masthead ---------- */
+.masthead {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 18px;
+  align-items: baseline;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--amber);
+  margin-bottom: 18px;
+}
+.masthead-title {
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  margin: 0;
+  color: var(--type);
+}
+.masthead-title a { color: var(--type); border: 0; }
+.masthead-title .ar {
+  color: var(--amber);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 0.65em;
+  margin-left: 8px;
+  vertical-align: 3px;
+}
+.masthead-tag {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-left: 1px solid var(--rule-strong);
+  padding-left: 14px;
+  margin-left: 6px;
+}
+.masthead-nav {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: right;
+}
+.masthead-nav a {
+  color: var(--muted);
+  margin-left: 14px;
+  border: 0;
+}
+.masthead-nav a[aria-current=page] { color: var(--amber); }
+.masthead-nav a:hover { color: var(--type); }
+
+/* ---------- ticker strip ---------- */
+.ticker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0 0 18px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 24px;
+}
+.ticker span {
+  padding: 0 14px;
+  border-right: 1px solid var(--rule-strong);
+}
+.ticker span:first-child { padding-left: 0; }
+.ticker span:last-child { border-right: 0; }
+.ticker b { color: var(--amber); font-weight: 700; }
+
+/* ---------- top stories ---------- */
+.top { margin: 0 0 28px; }
+.top-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--amber);
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+}
+.top-head .label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+.top-head .count { color: var(--muted); font-size: 10px; letter-spacing: 0.14em; }
+.top ol { list-style: none; padding: 0; margin: 0; counter-reset: t; }
+.top li {
+  counter-increment: t;
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 14px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--rule);
+  align-items: baseline;
+}
+.top li:last-child { border-bottom: 0; }
+.top li::before {
+  content: counter(t, decimal-leading-zero);
+  color: var(--amber);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+.top a {
+  color: var(--type);
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 16px;
+  line-height: 1.4;
+  border-bottom: 1px solid transparent;
+}
+.top a:hover {
+  color: var(--amber);
+  border-bottom-color: var(--amber);
+}
+.top .ref { color: var(--muted); font-size: 10px; margin-left: 6px; letter-spacing: 0.08em; }
+
+/* ---------- sections ---------- */
+.section { margin: 0 0 30px; }
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+}
+.section-head .label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--type);
+}
+.section-head .count {
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+
+/* ---------- items ---------- */
+.item {
+  padding: 14px 0 16px;
+  border-bottom: 1px solid var(--rule);
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 14px;
+}
+.item:last-child { border-bottom: 0; }
+.item-n {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding-top: 2px;
+}
+.item-body .title {
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 16px;
+  line-height: 1.4;
+  font-weight: 600;
+  color: var(--type);
+  margin: 0 0 6px;
+}
+.item-body .title a {
+  color: var(--type);
+  border-bottom: 1px solid transparent;
+}
+.item-body .title a:hover {
+  color: var(--amber);
+  border-bottom-color: var(--amber);
+}
+.item-body .summary {
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 14px;
+  color: var(--type-dim);
+  margin: 0 0 8px;
+  line-height: 1.55;
+}
+.item-body .meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.item-body .meta .src { color: var(--type-dim); }
+.item-body .meta .rel { color: var(--amber); }
+.item-body .meta .sev { color: var(--muted); }
+.item-body .meta a { color: var(--cyan); border: 0; }
+.item-body .meta a:hover { color: var(--amber); }
+.doctrine-tag {
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  padding: 1px 6px;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  font-weight: 700;
+}
+
+/* ---------- footer ---------- */
+.foot {
+  margin-top: 56px;
+  padding-top: 14px;
+  border-top: 1px solid var(--amber);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.foot a { color: var(--muted); border: 0; }
+.foot a:hover { color: var(--amber); }
+
+/* ---------- archive ---------- */
+.archive-row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 18px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--rule);
+  align-items: baseline;
+}
+.archive-date {
+  color: var(--amber);
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.archive-title a {
+  color: var(--type);
+  font-family: "Iowan Old Style", Georgia, serif;
+  font-size: 16px;
+  line-height: 1.4;
+  border-bottom: 1px solid transparent;
+}
+.archive-title a:hover { color: var(--amber); border-bottom-color: var(--amber); }
+.archive-preview { color: var(--muted); font-size: 12px; margin-top: 6px; line-height: 1.5; }
+.archive-row.hidden { display: none; }
+.archive-count {
+  color: var(--type-dim);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  margin: 14px 0 18px;
+}
+.archive-count #archive-count-shown, .archive-count #archive-count-total {
+  color: var(--amber); font-weight: 700;
+}
+.archive-more { margin: 28px 0 0; text-align: center; }
+.archive-more button {
+  background: transparent;
+  color: var(--amber);
+  border: 1px solid var(--amber);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 12px 28px;
+  cursor: pointer;
+  transition: background .14s ease, color .14s ease;
+}
+.archive-more button:hover {
+  background: var(--amber);
+  color: var(--bg);
+}
+
+/* ---------- about ---------- */
+.about p, .about ul, .about li {
+  font-family: "Iowan Old Style", Georgia, serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--type-dim);
+  max-width: 64ch;
+}
+.about h2 {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--amber);
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 6px;
+  margin: 34px 0 14px;
+}
+.about strong { color: var(--type); }
+.about code {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 0.9em;
+  color: var(--amber);
+  background: var(--bg-deep);
+  padding: 1px 5px;
+  border: 1px solid var(--rule-strong);
+}
+.source-block {
+  margin: 0 0 22px;
+  padding: 8px 0 0 16px;
+  border-left: 1px solid var(--rule-strong);
+}
+.source-block strong {
+  display: block;
+  color: var(--amber);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.source-block ul { list-style: none; padding: 0; margin: 0; }
+.source-block li {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  color: var(--type-dim);
+  padding: 3px 0;
+}
+.source-block li .note { color: var(--muted); margin-left: 4px; }
+
+/* Methodology page */
+.methodology {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 12px 0 32px;
+  font-family: "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--type);
+}
+.methodology h1 { display: none; }  /* MASTHEAD already shows title */
+.methodology h2 {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--amber);
+  border-top: 1px solid var(--rule-strong);
+  padding-top: 18px;
+  margin: 28px 0 12px;
+}
+.methodology h3 {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--type);
+  margin: 18px 0 8px;
+}
+.methodology p { margin: 0 0 12px; }
+.methodology ul { margin: 0 0 14px; padding-left: 22px; }
+.methodology li { margin: 4px 0; }
+.methodology hr { border: none; border-top: 1px dashed var(--rule); margin: 24px 0; }
+.methodology code {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 0.88em; color: var(--amber); background: var(--bg-deep);
+  padding: 1px 5px; border: 1px solid var(--rule-strong);
+}
+.method-table-wrap { overflow-x: auto; margin: 8px 0 18px; }
+.method-table {
+  width: 100%; border-collapse: collapse;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+}
+.method-table th, .method-table td {
+  border: 1px solid var(--rule-strong);
+  padding: 8px 10px; text-align: left; vertical-align: top;
+}
+.method-table thead th {
+  background: var(--bg-deep);
+  color: var(--amber);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.method-table td:first-child { color: var(--type); font-weight: 600; }
+.method-table td strong { color: var(--amber); }
+
+/* ---------- countries view ---------- */
+.country-controls {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin: 6px 0 22px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.country-controls label { color: var(--muted); margin-right: 4px; }
+.region-pill {
+  display: inline-block;
+  padding: 3px 8px;
+  border: 1px solid var(--rule-strong);
+  color: var(--type-dim);
+  cursor: pointer;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.region-pill:hover { color: var(--amber); border-color: var(--amber-deep); }
+.region-pill.active { color: var(--bg); background: var(--amber); border-color: var(--amber); }
+
+.region-block { margin: 0 0 22px; }
+.region-head {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  justify-content: space-between;
+}
+.region-head .count { color: var(--muted); }
+.tile-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.tile {
+  width: 44px; height: 44px;
+  background: var(--bg-deep);
+  border: 1px solid var(--rule-strong);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--type-dim);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.12s ease, color 0.12s ease;
+  position: relative;
+}
+.tile:hover { border-color: var(--amber); color: var(--type); z-index: 2; }
+.tile .num {
+  font-size: 9px;
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+  margin-top: 1px;
+}
+.tile.selected {
+  border-color: var(--amber);
+  color: var(--bg);
+  background: var(--amber);
+}
+.tile.selected .num { color: rgba(10,10,10,0.6); }
+.tile.dim { opacity: 0.28; }
+.tile.empty { color: var(--muted); }
+/* Heatmap shades (data-h attribute set by JS) */
+.tile[data-h="1"] { background: #1a1409; border-color: #2a1f12; color: var(--type-dim); }
+.tile[data-h="2"] { background: #2c1f0a; border-color: #3d2912; color: var(--type-dim); }
+.tile[data-h="3"] { background: #4a3110; border-color: #5d3e14; color: var(--type); }
+.tile[data-h="4"] { background: #75501a; border-color: #8a611f; color: var(--type); }
+.tile[data-h="5"] { background: #a47424; border-color: #b88229; color: var(--bg); }
+.tile[data-h="6"] { background: var(--amber-deep); border-color: var(--amber); color: var(--bg); }
+
+#country-detail {
+  margin: 28px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule-strong);
+}
+.country-detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.country-detail-head h2 {
+  margin: 0;
+  font-family: "Iowan Old Style", Georgia, serif;
+  font-size: 22px;
+  color: var(--amber);
+  font-weight: 700;
+}
+.country-detail-head .meta {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.country-cofreq {
+  font-size: 11px;
+  color: var(--type-dim);
+  margin: 0 0 14px;
+  letter-spacing: 0.04em;
+}
+.country-cofreq .pair {
+  display: inline-block;
+  margin-right: 12px;
+  margin-bottom: 4px;
+  padding: 2px 6px;
+  border: 1px solid var(--rule-strong);
+  color: var(--type-dim);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+.country-cofreq .pair b { color: var(--amber); font-weight: 700; margin-left: 4px; }
+.country-news-empty {
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+  padding: 28px 0;
+  text-align: center;
+}
+
+/* ---------- print + mobile ---------- */
+@media print {
+  html,body { background: white; color: black; }
+  a { color: black; text-decoration: underline; }
+  .masthead-nav, .foot { display: none; }
+}
+@media (max-width: 640px) {
+  .wrap { padding: 22px 18px 60px; }
+  .masthead { grid-template-columns: 1fr; gap: 8px; }
+  .masthead-tag { border-left: 0; padding-left: 0; margin-left: 0; }
+  .masthead-nav { text-align: left; }
+  .ticker { font-size: 9px; }
+  .ticker span { padding: 0 8px; }
+  .archive-row { grid-template-columns: 1fr; gap: 4px; }
+  .item { grid-template-columns: 1fr; gap: 6px; }
+  .item-n { font-size: 10px; padding: 0; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <h1 class="masthead-title"><a href="../">Dalila<span class="ar">دليلة</span></a></h1>
+  <div class="masthead-tag">DAILY BRIEF</div>
+  <nav class="masthead-nav">
+    <a href="../">Home</a>
+    <a href="../archive.html">Archive</a>
+    <a href="../countries.html">Countries</a>
+    <a href="../methodology.html">Methodology</a>
+    <a href="../about.html">About</a>
+  </nav>
+</header>
+
+
+<div class="ticker">
+  <span>THURSDAY 23 APRIL 2026</span>
+  <span><b>25</b> ITEMS</span>
+  <span><b>25</b> REVIEWED 24H</span>
+  <span>COMPOSED 04:00 +04</span>
+</div>
+
+<section class="top"><div class="top-head"><span class="label">▌ Top stories</span><span class="count">03 of 03</span></div><ol><li><a href="https://www.thenationalnews.com/news/2026/04/21/gulf-jet-fuel-exports-plunge-80-as-iran-war-triggers-historic-oil-supply-shock/">gulf jet fuel exports plunge 80 as iran war triggers historic oil supply shock</a><span class="ref">#1</span></li>
+<li><a href="https://gulfnews.com/uae/government/uae-to-confront-extremism-in-all-forms-vows-sheikh-abdullah-after-terrorist-plot-foiled-1.500514407">uae to confront extremism in all forms vows sheikh abdullah after terrorist plot foiled 1.500514407</a><span class="ref">#5</span></li>
+<li><a href="https://www.thenationalnews.com/business/economy/2026/04/21/iran-us-war/">iran us war</a><span class="ref">#2</span></li></ol></section>
+<section class="section"><div class="section-head"><span class="label">▌ HUMANITARIAN</span><span class="count">03 ITEMS</span></div><article class="item" id="item-1"><span class="item-n">#01</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/2026/04/21/gulf-jet-fuel-exports-plunge-80-as-iran-war-triggers-historic-oil-supply-shock/" target="_blank" rel="noopener">gulf jet fuel exports plunge 80 as iran war triggers historic oil supply shock</a></h3><p class="summary">Gulf jet fuel exports plunge 80% due to Iran war oil supply shock.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.90</span> · <span>AE · IR</span> · <span>ENERGY</span></div></div></article><article class="item" id="item-2"><span class="item-n">#02</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/economy/2026/04/21/iran-us-war/" target="_blank" rel="noopener">iran us war</a></h3><p class="summary">Article discusses Iran-US war.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.90</span> · <span>IR · US</span></div></div></article><article class="item" id="item-14"><span class="item-n">#14</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/04/22/a-nocturnal-threat-rodents-and-disease-spread-through-gazas-displacement-camps/" target="_blank" rel="noopener">a nocturnal threat rodents and disease spread through gazas displacement camps</a></h3><p class="summary">Rodents and disease spread through Gaza displacement camps, posing health threat.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.40</span> · <span class="sev">SEV 0.60</span> · <span>PS</span> · <span>HEALTH</span></div></div></article></section>
+<section class="section"><div class="section-head"><span class="label">▌ REPORTS &amp; EVIDENCE</span><span class="count">02 ITEMS</span></div><article class="item" id="item-7"><span class="item-n">#07</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/04/23/impunity-drives-rising-sexual-violence-against-palestinians-by-israeli-settlers-rights-group-says/" target="_blank" rel="noopener">impunity drives rising sexual violence against palestinians by israeli settlers rights group says</a></h3><p class="summary">Rights group report details sexual violence against Palestinians by Israeli settlers due to impunity.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.40</span> · <span class="sev">SEV 0.80</span> · <span>PS</span> · <span>HUMANITARIAN</span></div></div></article><article class="item" id="item-23"><span class="item-n">#23</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/energy/2026/04/22/energy-crisis-exposes-cost-of-delaying-renewable-energy/" target="_blank" rel="noopener">energy crisis exposes cost of delaying renewable energy</a></h3><p class="summary">Energy crisis highlights cost of delaying renewable energy transition.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.40</span> · <span class="sev">SEV 0.40</span> · <span>ENERGY</span></div></div></article></section>
+<section class="section"><div class="section-head"><span class="label">▌ UAE FOREIGN-POLICY SIGNALS</span><span class="count">10 ITEMS</span></div><article class="item" id="item-3"><span class="item-n">#03</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/europe/2026/04/22/middle-east-leaders-head-for-war-summit-in-cyprus-with-european-counterparts/" target="_blank" rel="noopener">middle east leaders head for war summit in cyprus with european counterparts</a></h3><p class="summary">UAE and other Middle East leaders travel to Cyprus for war summit with European counterparts.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.70</span> · <span>CY · AE</span></div></div></article><article class="item" id="item-4"><span class="item-n">#04</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/04/22/president-sheikh-mohamed-holds-talks-with-italys-minister-of-defence/" target="_blank" rel="noopener">president sheikh mohamed holds talks with italys minister of defence</a></h3><p class="summary">President Sheikh Mohamed meets Italy&#x27;s defence minister.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.50</span> · <span>AE · IT</span></div></div></article><article class="item" id="item-8"><span class="item-n">#08</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/04/22/syrian-president-al-shara-arrives-in-abu-dhabi-to-strengthen-uae-ties/" target="_blank" rel="noopener">syrian president al shara arrives in abu dhabi to strengthen uae ties</a></h3><p class="summary">Syrian President al-Shara visits Abu Dhabi to strengthen bilateral ties with UAE.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.30</span> · <span>AE · SY</span> · <span>CONVENING</span></div></div></article><article class="item" id="item-9"><span class="item-n">#09</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/176n4dh-oic-strongly-condemns-plot-targeting-security-1.500514828" target="_blank" rel="noopener">176n4dh oic strongly condemns plot targeting security 1.500514828</a></h3><p class="summary">OIC strongly condemns plot targeting security; UAE involved.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.50</span> · <span>AE · SA</span></div></div></article><article class="item" id="item-10"><span class="item-n">#10</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/uae-president-receives-italian-defence-minister-2-1.500515831" target="_blank" rel="noopener">uae president receives italian defence minister 2 1.500515831</a></h3><p class="summary">UAE President MBZ receives Italian Defence Minister for talks.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.40</span> · <span>AE · IT</span></div></div></article><article class="item" id="item-11"><span class="item-n">#11</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/04/22/un-envoy-holds-yemen-talks-with-saudi-and-houthi-representatives/" target="_blank" rel="noopener">un envoy holds yemen talks with saudi and houthi representatives</a></h3><p class="summary">UN envoy holds Yemen talks with Saudi and Houthi representatives.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.60</span> · <span class="sev">SEV 0.40</span> · <span>YE · SA</span></div></div></article><article class="item" id="item-12"><span class="item-n">#12</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/2026/04/22/iran-gunboat-attacks-container-ship-off-oman-coast-as-trump-announces-ceasefire-extension/" target="_blank" rel="noopener">iran gunboat attacks container ship off oman coast as trump announces ceasefire extension</a></h3><p class="summary">Iranian gunboat attacks container ship off Oman coast; Trump extends ceasefire.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.40</span> · <span class="sev">SEV 0.60</span> · <span>IR · OM · US</span></div></div></article><article class="item" id="item-13"><span class="item-n">#13</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/04/22/iran-tankers-us-blockade/" target="_blank" rel="noopener">iran tankers us blockade</a></h3><p class="summary">Report on US blockade of Iranian oil tankers from UAE-based outlet.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.40</span> · <span class="sev">SEV 0.60</span> · <span>IR · US</span></div></div></article><article class="item" id="item-16"><span class="item-n">#16</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/bztttnc-uae-affirms-importance-ensuring-freedom-navigation-1.500514693" target="_blank" rel="noopener">bztttnc uae affirms importance ensuring freedom navigation 1.500514693</a></h3><p class="summary">UAE affirms importance of ensuring freedom of navigation.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.30</span> · <span>AE</span></div></div></article><article class="item" id="item-24"><span class="item-n">#24</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/us/2026/04/22/us-treasury-secretary-says-gulf-and-asian-allies-have-requested-swap-lines/" target="_blank" rel="noopener">us treasury secretary says gulf and asian allies have requested swap lines</a></h3><p class="summary">US Treasury says Gulf allies, including UAE, have requested currency swap lines.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.20</span> · <span>AE · US</span> · <span>FINANCING</span></div></div></article></section>
+<section class="section"><div class="section-head"><span class="label">▌ UAE DOCTRINE</span><span class="count">02 ITEMS</span></div><article class="item" id="item-5"><span class="item-n">#05</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/government/uae-to-confront-extremism-in-all-forms-vows-sheikh-abdullah-after-terrorist-plot-foiled-1.500514407" target="_blank" rel="noopener">uae to confront extremism in all forms vows sheikh abdullah after terrorist plot foiled 1.500514407</a></h3><p class="summary">UAE vows to confront all extremism after foiling terrorist plot.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.70</span> · <span>AE</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article><article class="item" id="item-15"><span class="item-n">#15</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/04/22/president-sheikh-mohamed-receives-leader-of-sierra-leone/" target="_blank" rel="noopener">president sheikh mohamed receives leader of sierra leone</a></h3><p class="summary">President Sheikh Mohamed receives Sierra Leone leader.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.20</span> · <span>AE · SL</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article></section>
+<section class="section"><div class="section-head"><span class="label">▌ UAE ECOSYSTEM</span><span class="count">08 ITEMS</span></div><article class="item" id="item-6"><span class="item-n">#06</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/04/23/abu-dhabis-mental-health-helpline-offers-crucial-support-during-iran-war/" target="_blank" rel="noopener">abu dhabis mental health helpline offers crucial support during iran war</a></h3><p class="summary">Abu Dhabi launches mental health helpline to support those affected by Iran war.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.40</span> · <span>AE</span> · <span>HEALTH</span></div></div></article><article class="item" id="item-17"><span class="item-n">#17</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/business/energy/bzttter-doe-planned-energy-investments-reach-aed-160-over-1.500514504" target="_blank" rel="noopener">bzttter doe planned energy investments reach aed 160 over 1.500514504</a></h3><p class="summary">DOE planned energy investments reach AED 160 billion.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.30</span> · <span>AE</span> · <span>ENERGY</span></div></div></article><article class="item" id="item-18"><span class="item-n">#18</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/environment/new-uae-farming-tech-cuts-energy-by-60-and-saves-water-1.500515546" target="_blank" rel="noopener">new uae farming tech cuts energy by 60 and saves water 1.500515546</a></h3><p class="summary">UAE develops farming technology reducing energy by 60% and saving water.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.30</span> · <span>AE</span> · <span>FOOD</span></div></div></article><article class="item" id="item-19"><span class="item-n">#19</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/watch-dubai-unveils-gold-line-metro-expansion-plan-connecting-15-areas-1.500515607" target="_blank" rel="noopener">watch dubai unveils gold line metro expansion plan connecting 15 areas 1.500515607</a></h3><p class="summary">Dubai unveils Gold Line metro expansion connecting 15 areas.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.30</span> · <span>AE</span></div></div></article><article class="item" id="item-20"><span class="item-n">#20</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/business/aviation/dnata-to-invest-a32m-in-western-sydney-airport-cargo-terminal-1.500515600" target="_blank" rel="noopener">dnata to invest a32m in western sydney airport cargo terminal 1.500515600</a></h3><p class="summary">dnata invests A$32 million in Western Sydney airport cargo terminal.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.30</span> · <span>AU · AE</span> · <span>TRADE</span></div></div></article><article class="item" id="item-21"><span class="item-n">#21</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/living-in-uae/transport/dubai-metro-gold-line-1.500515658" target="_blank" rel="noopener">dubai metro gold line 1.500515658</a></h3><p class="summary">Details of Dubai Metro Gold Line expansion.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.30</span> · <span>AE</span></div></div></article><article class="item" id="item-22"><span class="item-n">#22</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/sharjah-ruler-launches-al-qawasim-digital-application-platform-1.500515683" target="_blank" rel="noopener">sharjah ruler launches al qawasim digital application platform 1.500515683</a></h3><p class="summary">Sharjah Ruler launches Al Qawasim digital platform.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.30</span> · <span>AE</span> · <span>BIZ-ENABLEMENT</span></div></div></article><article class="item" id="item-25"><span class="item-n">#25</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/kalba-initiative-aids-residents-in-rental-court-rulings-1.500515606" target="_blank" rel="noopener">kalba initiative aids residents in rental court rulings 1.500515606</a></h3><p class="summary">Kalba initiative helps residents with rental court rulings.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.20</span> · <span>AE</span></div></div></article></section>
+<footer class="foot"><span>© 2026 Dalila — daily intelligence brief</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Submit a suggestion</a></span></footer>
+</div>
+</body>
+</html>
