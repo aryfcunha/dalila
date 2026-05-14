@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import re
 import sqlite3
 import urllib.parse
@@ -92,14 +93,22 @@ def _search_manifold(query: str, limit: int = 5) -> list[dict]:
         results = []
         min_vol = float(_s("discovery.min_volume", 300))
         for m in (data if isinstance(data, list) else []):
+            question = m.get("question", "")
             prob = m.get("probability")
             vol  = float(m.get("volume", 0))
+            
             if prob is None or vol < min_vol:
                 continue
+            
+            # Filter out very long-term markets (e.g., 2035, 2050)
+            years = re.findall(r"\b20[3-9][0-9]\b", question)
+            if years:
+                continue
+
             results.append({
                 "source":      "manifold",
                 "market_id":   m.get("slug") or m["id"],
-                "question":    m.get("question", ""),
+                "question":    question,
                 "probability": float(prob),
                 "volume":      vol,
                 "url":         m.get("url", ""),
@@ -340,21 +349,51 @@ def poll_markets(conn: sqlite3.Connection) -> list[dict]:
     return alerts
 
 
-# ── Digest accessor ───────────────────────────────────────────────────────────
+# ── Scoring Helpers ────────────────────────────────────────────────────────────
+def _logit(p: float) -> float:
+    """Log-odds of p. Clamped to [0.001, 0.999] to avoid infinity."""
+    p = max(0.001, min(0.999, p))
+    return math.log(p / (1 - p))
+
+
 def _topic_overlap(market: dict, digest_items: list[dict]) -> float:
     """Fraction of market question words found in today's digest content."""
     mq = (market.get("question") or "").lower()
     market_words = set(re.findall(r"\b[a-z]{5,}\b", mq)) - {
-        "which", "could", "would", "their", "there", "after", "before",
+        "which", "could", "would", "their", "there", "after", "before", "will", "does"
     }
-    if not market_words or not digest_items:
+    if not market_words:
         return 0.0
+    
+    # Priority boosts for specific regional beats
+    boost = 0.0
+    beats = ["sudan", "opec", "hormuz", "drone", "uae", "saudi", "afghanistan", "sahel", "yemen"]
+    for beat in beats:
+        if beat in mq:
+            boost += 0.3
+
+    if not digest_items:
+        return boost
+
     digest_text = " ".join(
         (it.get("title") or "") + " " + (it.get("summary") or "")
         for it in digest_items
     ).lower()
     digest_words = set(re.findall(r"\b[a-z]{5,}\b", digest_text))
-    return len(market_words & digest_words) / len(market_words)
+    return (len(market_words & digest_words) / len(market_words)) + boost
+
+
+def _is_duplicate_topic(m1: dict, m2: dict) -> bool:
+    """True if two markets seem to cover the same question."""
+    def _sig_words(q: str) -> set[str]:
+        return set(re.findall(r"\b[a-z]{5,}\b", q.lower())) - {"manifold", "kalshi", "will", "does"}
+    
+    w1 = _sig_words(m1["question"])
+    w2 = _sig_words(m2["question"])
+    if not w1 or not w2: return False
+    
+    overlap = len(w1 & w2) / min(len(w1), len(w2))
+    return overlap > 0.6
 
 
 def get_market_signals(conn: sqlite3.Connection,
@@ -364,28 +403,50 @@ def get_market_signals(conn: sqlite3.Connection,
 
     rows = conn.execute(
         """SELECT s.market_id, s.source, s.question, s.probability, s.volume,
-                  h.delta_1h, h.delta_24h
+                  h.delta_24h, h.probability as p_old
            FROM prediction_market_snapshots s
            LEFT JOIN (
-               SELECT market_id, source, delta_1h, delta_24h
+               SELECT market_id, source, probability, delta_24h
                FROM prediction_market_history
+               WHERE recorded_at <= datetime('now', '-23 hours')
                GROUP BY market_id, source
                HAVING recorded_at = MAX(recorded_at)
            ) h ON h.market_id = s.market_id AND h.source = s.source"""
     ).fetchall()
 
-    results = []
+    scored = []
     for row in rows:
         m = {
             "market_id":   row[0], "source":      row[1],
             "question":    row[2], "probability": row[3],
-            "volume":      row[4], "delta_1h":    row[5],
-            "delta_24h":   row[6],
+            "volume":      row[4], "delta_24h":   row[5],
         }
-        move  = abs(m["delta_24h"] or 0.0)
+        p_new = m["probability"]
+        p_old = row[6]
+        
+        # Scoring: Log-odds shift captures 1% -> 10% movements better than absolute p.p.
+        if p_old is not None:
+            # Shift = |logit(new) - logit(old)|
+            shift = abs(_logit(p_new) - _logit(p_old))
+        else:
+            shift = 0.0
+            
         overlap = _topic_overlap(m, digest_items or [])
-        m["_score"] = move * 2.0 + overlap
-        results.append(m)
+        
+        # Composite score: Weight shift (volatility) and overlap (relevance)
+        # We give a base score to overlap so even stable relevant markets can appear,
+        # but shifts amplify them significantly.
+        m["_score"] = (overlap * 2.0) + (shift * 1.5)
+        scored.append(m)
 
-    results.sort(key=lambda x: x["_score"], reverse=True)
-    return results[:top_n]
+    # Topic Deduplication: Keep only the highest scored market per topic cluster
+    scored.sort(key=lambda x: x["_score"], reverse=True)
+    final = []
+    for m in scored:
+        if any(_is_duplicate_topic(m, existing) for existing in final):
+            continue
+        final.append(m)
+        if len(final) >= top_n:
+            break
+
+    return final

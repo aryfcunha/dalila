@@ -23,14 +23,18 @@ discovery:
   # Domain seed terms used when digest history is sparse (< 3 recent items).
   # These anchor discovery to the UAE + humanitarian/development lens.
   domain_seeds:
-    - UAE foreign policy
-    - humanitarian crisis 2026
-    - Gaza ceasefire
-    - Iran nuclear
-    - Strait of Hormuz
-    - global recession 2026
-    - Sudan famine
-    - GCC economy
+    - "Sudan conflict ceasefire"
+    - "OPEC UAE membership"
+    - "Saudi-UAE relations"
+    - "Iran drone attack UAE"
+    - "Pakistan Afghanistan border conflict"
+    - "Sahel region stability"
+    - "Hormuz Strait closure"
+    - "UAE GDP growth 2026"
+    - "Gaza humanitarian ceasefire"
+    - "OPEC+ production cuts"
+    - "Yemen peace deal"
+    - "Syria normalization"
 
 alerts:
   # Minimum absolute probability move (0–1) over 1h to trigger a breaking signal
