@@ -117,7 +117,7 @@ def _call_deepseek(model: str, system_prompt: str, user_prompt: str, purpose: st
         "messages": [
             {
                 "role": "user", 
-                "content": f"SYSTEM INSTRUCTIONS:\n{system_prompt}\n\nUSER INPUT:\n{user_prompt}"
+                "content": f"SYSTEM INSTRUCTIONS:\n{system_prompt}\n\nUSER INPUT:\n{user_prompt}"[:10000]
             }
         ],
         "temperature": 0.0
