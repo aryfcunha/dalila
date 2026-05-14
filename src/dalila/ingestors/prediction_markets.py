@@ -163,6 +163,93 @@ def _refresh_kalshi_prob(ticker: str) -> tuple[float | None, float | None]:
     return None, None
 
 
+# ── Metaforecast API (Metaculus Fallback) ──────────────────────────────────────
+METAFORECAST_API = "https://metaforecast.org/api/graphql"
+
+def _search_metaforecast(query: str, platforms: list[str] = ["metaculus"], limit: int = 5) -> list[dict]:
+    """Search for forecasts across multiple platforms via Metaforecast GraphQL."""
+    gql = """
+    query Search($input: SearchInput!) {
+      searchQuestions(input: $input) {
+        id
+        title
+        url
+        platform { id label }
+        options { name probability }
+      }
+    }
+    """
+    variables = {
+        "input": {
+            "query": query,
+            "forecastingPlatforms": platforms,
+            "limit": limit
+        }
+    }
+    try:
+        body = json.dumps({"query": gql, "variables": variables}).encode("utf-8")
+        req = urllib.request.Request(METAFORECAST_API, data=body, headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read())
+            results = []
+            for q in data.get("data", {}).get("searchQuestions", []):
+                # We prioritize binary questions; take the probability of 'Yes' if available
+                prob = None
+                options = q.get("options") or []
+                if len(options) == 2:
+                    # Look for 'Yes' or similar
+                    for opt in options:
+                        if opt.get("name") in ["Yes", "True"]:
+                            prob = opt.get("probability")
+                    if prob is None: prob = options[0].get("probability") # Fallback
+                elif len(options) == 1:
+                    prob = options[0].get("probability")
+
+                if prob is None: continue
+
+                results.append({
+                    "source":      q["platform"]["id"],
+                    "market_id":   q["id"],
+                    "question":    q["title"],
+                    "probability": float(prob),
+                    "volume":      1000.0, # Metaforecast doesn't always expose volume clearly
+                    "url":         q["url"],
+                })
+            return results
+    except Exception as exc:
+        log.debug("metaforecast search failed for %r: %s", query, exc)
+        return []
+
+
+def _refresh_metaforecast_prob(market_id: str) -> tuple[float | None, float | None]:
+    """Refresh a specific forecast's probability via ID."""
+    gql = """
+    query GetQuestion($id: ID!) {
+      question(id: $id) {
+        options { name probability }
+      }
+    }
+    """
+    try:
+        body = json.dumps({"query": gql, "variables": {"id": market_id}}).encode("utf-8")
+        req = urllib.request.Request(METAFORECAST_API, data=body, headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read())
+            q = data.get("data", {}).get("question")
+            if not q: return None, None
+            options = q.get("options") or []
+            prob = None
+            for opt in options:
+                if opt.get("name") in ["Yes", "True"]:
+                    prob = float(opt.get("probability"))
+                    break
+            if prob is None and options:
+                prob = float(options[0].get("probability"))
+            return prob, 1000.0
+    except Exception:
+        return None, None
+
+
 # ── Entity extraction from digests ─────────────────────────────────────────────
 def _recent_digest_entities(conn: sqlite3.Connection) -> list[str]:
     """Extract top entities/topics from items in the last N days' digests.
@@ -249,10 +336,18 @@ def discover_markets(conn: sqlite3.Connection) -> list[dict]:
 
     # Search for priority seeds with a LOWER volume threshold (100) to catch niche signal
     for seed in seeds:
+        # 1. Manifold
         for m in _search_manifold(seed, limit=3, min_vol=100.0):
             mid = m["market_id"]
             if mid not in seen:
                 m["_relevance_score"] = 2.0 # Artificial boost for domain seeds
+                seen[mid] = m
+        
+        # 2. Metaculus (via Metaforecast)
+        for m in _search_metaforecast(seed, limit=3):
+            mid = m["market_id"]
+            if mid not in seen:
+                m["_relevance_score"] = 2.0
                 seen[mid] = m
 
     # Rank: relevance_score first, then volume
@@ -321,6 +416,8 @@ def poll_markets(conn: sqlite3.Connection) -> list[dict]:
                 prob, volume = _refresh_manifold_prob(mid)
             elif src == "kalshi":
                 prob, volume = _refresh_kalshi_prob(mid)
+            elif src == "metaculus":
+                prob, volume = _refresh_metaforecast_prob(mid)
 
         if prob is None:
             continue
