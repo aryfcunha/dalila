@@ -821,6 +821,9 @@ def run_publish_site(out_dir: "Path") -> dict:
             timeline=timeline,
         )
         (out_dir / "countries.html").write_text(countries_html, encoding="utf-8")
+    except Exception:
+        log.exception("publish-site: countries page generation failed")
+
     # 5. Prediction Markets page
     try:
         from dalila.ingestors.prediction_markets import get_market_signals
