@@ -1006,16 +1006,22 @@ def status_snapshot(conn: sqlite3.Connection, hours: int = 24) -> dict:
 def count_reviewed_24h(conn, as_of: datetime | None = None) -> int:
     """Total items processed (ingested) in the 24h window before `as_of`."""
     from datetime import timedelta, timezone
+    import logging
+    log = logging.getLogger("dalila.db")
     if as_of is None:
         as_of = datetime.now(timezone.utc)
     # Ensure UTC for reliable SQLite string comparison
     as_of_utc = as_of.astimezone(timezone.utc)
     since_utc = as_of_utc - timedelta(hours=24)
+    
+    q_params = (since_utc.isoformat(), as_of_utc.isoformat())
     # Return count of items ingested in this window.
     row = conn.execute(
         """SELECT COUNT(*) FROM items 
            WHERE datetime(ingested_at) >= datetime(?) 
              AND datetime(ingested_at) <= datetime(?)""",
-        (since_utc.isoformat(), as_of_utc.isoformat())
+        q_params
     ).fetchone()
-    return row[0] if row else 0
+    count = row[0] if row else 0
+    log.info("count_reviewed_24h: window %s to %s -> %d", q_params[0], q_params[1], count)
+    return count
