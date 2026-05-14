@@ -81,7 +81,7 @@ def _http_get(url: str, timeout: int = 10) -> dict | list:
 
 
 # ── Manifold API ───────────────────────────────────────────────────────────────
-def _search_manifold(query: str, limit: int = 5) -> list[dict]:
+def _search_manifold(query: str, limit: int = 5, min_vol: float | None = None) -> list[dict]:
     """Search Manifold for active binary markets. Returns list of market dicts."""
     try:
         url = (
@@ -91,7 +91,8 @@ def _search_manifold(query: str, limit: int = 5) -> list[dict]:
         )
         data = _http_get(url, timeout=8)
         results = []
-        min_vol = float(_s("discovery.min_volume", 300))
+        if min_vol is None:
+            min_vol = float(_s("discovery.min_volume", 300))
         for m in (data if isinstance(data, list) else []):
             question = m.get("question", "")
             prob = m.get("probability")
@@ -244,8 +245,15 @@ def discover_markets(conn: sqlite3.Connection) -> list[dict]:
             if mid not in seen:
                 seen[mid] = m
             else:
-                # A market appearing for multiple search terms is more relevant
                 seen[mid]["_relevance_score"] = seen[mid].get("_relevance_score", 1) + 1
+
+    # Search for priority seeds with a LOWER volume threshold (100) to catch niche signal
+    for seed in seeds:
+        for m in _search_manifold(seed, limit=3, min_vol=100.0):
+            mid = m["market_id"]
+            if mid not in seen:
+                m["_relevance_score"] = 2.0 # Artificial boost for domain seeds
+                seen[mid] = m
 
     # Rank: relevance_score first, then volume
     ranked = sorted(
@@ -364,7 +372,7 @@ def _topic_overlap(market: dict, digest_items: list[dict]) -> float:
     beats = ["sudan", "opec", "hormuz", "drone", "uae", "saudi", "afghanistan", "sahel", "yemen"]
     for beat in beats:
         if beat in mq:
-            boost += 0.3
+            boost += 1.5
 
     if not digest_items:
         return boost
