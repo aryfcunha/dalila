@@ -43,6 +43,8 @@ class Config:
 
 @lru_cache(maxsize=1)
 def get_config() -> Config:
+    from dotenv import load_dotenv
+    load_dotenv(ROOT / ".env")
     load_dotenv(ROOT / ".env", override=False)
 
     db_path = Path(os.getenv("DALILA_DB_PATH", str(ROOT / "dalila.db"))).resolve()
