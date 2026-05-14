@@ -93,6 +93,9 @@ def fetch(src: dict) -> list[RawItem]:
             params={"_format": "json", "limit": 500},
             headers={"Authorization": f"Token {api_key}"},
             timeout=60,
+            # ACAPS redirects /inform-severity-index/ to the latest monthly
+            # snapshot (e.g. /inform-severity-index/May2026/). Follow it.
+            follow_redirects=True,
         )
         resp.raise_for_status()
         payload = resp.json()

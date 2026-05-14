@@ -50,8 +50,22 @@ SOURCE_ID = "hungermap"
 
 
 def _extract_rows(payload) -> list[dict]:
+    """Unwrap HungerMap's response. They serve responses behind an AWS
+    Lambda proxy that wraps everything in {"statusCode": …, "body": "<json>"},
+    where `body` is itself a JSON string. Unwrap that first, then look
+    for the country list in the inner payload."""
+    import json as _json
+    if isinstance(payload, dict) and "body" in payload and "statusCode" in payload:
+        body = payload["body"]
+        if isinstance(body, str):
+            try:
+                payload = _json.loads(body)
+            except Exception as exc:
+                log.debug("HungerMap: failed to parse body string: %s", exc)
+        elif isinstance(body, (dict, list)):
+            payload = body
     if isinstance(payload, dict):
-        for key in ("body", "data", "countries", "results"):
+        for key in ("countries", "data", "results", "body"):
             v = payload.get(key)
             if isinstance(v, list):
                 return v
@@ -101,7 +115,7 @@ def _fmt_count(n: float) -> str:
 
 def fetch(src: dict) -> list[RawItem]:
     try:
-        resp = httpx.get(HUNGERMAP_URL, timeout=60)
+        resp = httpx.get(HUNGERMAP_URL, timeout=60, follow_redirects=True)
         resp.raise_for_status()
         payload = resp.json()
     except Exception as exc:

@@ -154,6 +154,7 @@ def fetch(src: dict) -> list[RawItem]:
             params={"_format": "json", "limit": 500},
             headers=headers,
             timeout=60,
+            follow_redirects=True,
         )
         resp.raise_for_status()
         payload = resp.json()
