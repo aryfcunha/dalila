@@ -323,55 +323,68 @@ sources:
 
   - id: ocha_news
     name: OCHA — Office for the Coordination of Humanitarian Affairs
+    # unocha.org/rss returns HTTP 404 (verified 2026-05-14). OCHA situation
+    # reports + press releases flow through ReliefWeb (already ingested via
+    # the relief_web source), so disabling this avoids double-counting and
+    # the parse failures.
     kind: rss
-    # OCHA news lives on ReliefWeb / unocha.org; try the latter first.
     url: https://www.unocha.org/rss
     quality: 5
     tags: [un, humanitarian, ocha]
-    enabled: true
+    enabled: false
 
   - id: unhcr
     name: UNHCR — UN Refugee Agency
+    # unhcr.org/news/rss.xml is blocked by Cloudflare with HTTP 403 even
+    # with a browser User-Agent (verified 2026-05-14). UNHCR press releases
+    # are syndicated to ReliefWeb, so coverage stays via relief_web.
     kind: rss
     url: https://www.unhcr.org/news/rss.xml
     quality: 5
     tags: [un, humanitarian, refugees]
-    enabled: true
+    enabled: false
 
   - id: wfp_news
     name: World Food Programme — News
+    # wfp.org/news/news-releases.xml retired (HTTP 404, verified 2026-05-14).
+    # WFP press releases reach Dalila via ReliefWeb syndication.
     kind: rss
     url: https://www.wfp.org/news/news-releases.xml
     quality: 5
     tags: [un, food-security, humanitarian]
-    enabled: true
+    enabled: false
 
   - id: unicef
     name: UNICEF — Press releases
+    # unicef.org/press-releases/rss.xml retired (HTTP 404, verified 2026-05-14).
+    # UNICEF appeals syndicated through ReliefWeb.
     kind: rss
     url: https://www.unicef.org/press-releases/rss.xml
     quality: 5
     tags: [un, children, humanitarian]
-    enabled: true
+    enabled: false
 
   - id: who_don
     name: WHO Disease Outbreak News
-    # High-signal real-time outbreak alerts (cholera, mpox, novel pathogens).
-    # Per the foresight-tool data-sources doc — directly relevant to breaking
-    # alerts and to humanitarian category.
+    # WHO's old DON feed retired (HTTP 404, verified 2026-05-14).
+    # Outbreak alerts now reach Dalila via ReliefWeb's WHO syndication.
+    # For dedicated outbreak alerts in v0.3, look at GDACS biological-hazard
+    # entries and ECDC's communicable-disease threats report.
     kind: rss
     url: https://www.who.int/feeds/entity/csr/don/en/rss.xml
     quality: 5
     tags: [un, health, outbreak, breaking-candidate]
-    enabled: true
+    enabled: false
 
   - id: iom
     name: IOM — International Organization for Migration
+    # iom.int/news/rss.xml retired (HTTP 404, verified 2026-05-14).
+    # IOM displacement updates syndicated through ReliefWeb.
     kind: rss
     url: https://www.iom.int/news/rss.xml
     quality: 4
     tags: [un, migration]
-    enabled: true
+    enabled: false
 
   - id: ohchr
     name: OHCHR — UN Human Rights Office
@@ -386,11 +399,15 @@ sources:
   # =====================================================================
   - id: world_bank
     name: World Bank — News
+    # worldbank.org/en/news/all.rss returns 404 (verified 2026-05-14) after
+    # the 2025 site re-platform. Their RSS plumbing is unreliable; press
+    # releases also appear via ReliefWeb's World Bank syndication. Disabled
+    # until a stable URL is confirmed.
     kind: rss
     url: https://www.worldbank.org/en/news/all.rss
     quality: 5
     tags: [multilateral, dev-finance]
-    enabled: true
+    enabled: false
 
   - id: imf
     name: IMF — News
@@ -402,22 +419,29 @@ sources:
 
   - id: afdb
     name: African Development Bank — News
+    # afdb.org/en/rss-feeds/all.rss blocked by Cloudflare with HTTP 403
+    # even with a browser UA (verified 2026-05-14). AfDB press releases
+    # reach Dalila via Africanews / Daily Maverick / GDELT-allowlisted
+    # African outlets. Disabled until an alternative entry point exists.
     kind: rss
     url: https://www.afdb.org/en/rss-feeds/all.rss
     quality: 4
     tags: [multilateral, dev-finance, africa]
-    enabled: true
+    enabled: false
 
   # =====================================================================
   # Donor peer agencies (Western)
   # =====================================================================
   - id: usaid
     name: USAID — Press releases
+    # USAID was restructured in 2025; legacy press-release feed returns
+    # HTTP 404 (verified 2026-05-14). USAID-equivalent announcements now
+    # flow from State (state.gov) and from ReliefWeb syndication. Disabled.
     kind: rss
     url: https://www.usaid.gov/news-information/press-releases/feed
     quality: 5
     tags: [donor, usa]
-    enabled: true
+    enabled: false
 
   - id: fcdo
     name: FCDO — UK Foreign, Commonwealth & Development Office
@@ -430,11 +454,14 @@ sources:
 
   - id: bmz
     name: BMZ — German Federal Ministry for Economic Cooperation
+    # bmz.de/en/feed-news-7320 returns HTTP 404 (verified 2026-05-14)
+    # post BMZ website rebuild. German development announcements reach
+    # Dalila via Deutsche Welle and Spiegel (both allowlisted). Disabled.
     kind: rss
     url: https://www.bmz.de/en/feed-news-7320
     quality: 4
     tags: [donor, germany]
-    enabled: true
+    enabled: false
 
   - id: afd
     name: AFD — Agence Française de Développement
@@ -446,27 +473,37 @@ sources:
 
   - id: sida
     name: Sida — Swedish International Development Cooperation Agency
+    # sida.se/en/news/feed retired (HTTP 404, verified 2026-05-14).
+    # Swedish development announcements are low daily volume; reach Dalila
+    # via NRC's Stockholm syndication and via Climate Home for climate
+    # finance items. Disabled.
     kind: rss
     url: https://www.sida.se/en/news/feed
     quality: 3
     tags: [donor, sweden]
-    enabled: true
+    enabled: false
 
   - id: norad
     name: Norad — Norwegian Agency for Development Cooperation
+    # norad.no/en/front/feed/ retired (HTTP 404, verified 2026-05-14).
+    # Norwegian development announcements reach Dalila via Aftenposten
+    # (allowlisted) and Climate Home. Disabled.
     kind: rss
     url: https://www.norad.no/en/front/feed/
     quality: 3
     tags: [donor, norway]
-    enabled: true
+    enabled: false
 
   - id: jica
     name: JICA — Japan International Cooperation Agency
+    # jica.go.jp/english/news/press/rss.xml retired (HTTP 404,
+    # verified 2026-05-14). Japanese development announcements reach
+    # Dalila via Japan Times / Asahi / Nikkei (allowlisted). Disabled.
     kind: rss
     url: https://www.jica.go.jp/english/news/press/rss.xml
     quality: 3
     tags: [donor, japan, asia]
-    enabled: true
+    enabled: false
 
   # =====================================================================
   # Specialist trade press (where deals are announced first)
@@ -489,19 +526,25 @@ sources:
 
   - id: odi_insights
     name: ODI — Insights
+    # odi.org/en/insights/rss/ blocked by Cloudflare with HTTP 403 even
+    # with a browser UA (verified 2026-05-14). ODI's work is referenced
+    # via Foreign Policy and Foreign Affairs (allowlisted). Disabled.
     kind: rss
     url: https://odi.org/en/insights/rss/
     quality: 5
     tags: [specialist, dev, think-tank]
-    enabled: true
+    enabled: false
 
   - id: cgd_blog
     name: Center for Global Development — Blog
+    # cgdev.org/rss/all blocked by Cloudflare with HTTP 403 even with a
+    # browser UA (verified 2026-05-14). CGD work reaches Dalila via
+    # Foreign Policy, Foreign Affairs, and Devex-syndicated outlets.
     kind: rss
     url: https://www.cgdev.org/rss/all
     quality: 5
     tags: [specialist, dev, think-tank]
-    enabled: true
+    enabled: false
 
   - id: ssir
     name: Stanford Social Innovation Review
@@ -513,19 +556,27 @@ sources:
 
   - id: pnd
     name: Philanthropy News Digest (Candid)
+    # PND's /rss/news.xml now serves the HTML search page rather than RSS
+    # (verified 2026-05-14: the URL returns 200 with a React app shell).
+    # Candid's RSS pipeline has been refactored multiple times. Alliance
+    # Magazine and SSIR cover the same philanthropy news. Disabled.
     kind: rss
     url: https://philanthropynewsdigest.org/rss/news.xml
     quality: 4
     tags: [specialist, philanthropy]
-    enabled: true
+    enabled: false
 
   - id: semafor_africa
     name: Semafor — Africa
+    # semafor.com/feed/africa.xml retired (HTTP 404, verified 2026-05-14).
+    # Semafor moved their feeds; Africa coverage reaches Dalila via
+    # Africanews, Daily Maverick, and East African (all allowlisted).
+    # Disabled.
     kind: rss
     url: https://www.semafor.com/feed/africa.xml
     quality: 5
     tags: [specialist, africa, newsletter]
-    enabled: true
+    enabled: false
 
   # =====================================================================
   # Wires — non-Anglosphere & long-form
