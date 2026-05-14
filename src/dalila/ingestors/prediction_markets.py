@@ -564,43 +564,51 @@ def _is_duplicate_topic(m1: dict, m2: dict) -> bool:
 def get_market_signals(conn: sqlite3.Connection,
                        digest_items: list[dict] | None = None) -> list[dict]:
     """Return top N market signals scored for today's digest content."""
-    top_n = int(_s("digest.top_n", 5))
+    top_n = int(_s("digest.top_n", 6))
 
     rows = conn.execute(
-        """SELECT s.market_id, s.source, s.question, s.probability, s.volume,
-                  h.delta_24h, h.probability as p_old
+        """SELECT s.market_id, s.source, s.question, s.probability, s.volume, s.url,
+                  h24.probability as p_24h,
+                  h7d.probability as p_7d
            FROM prediction_market_snapshots s
            LEFT JOIN (
-               SELECT market_id, source, probability, delta_24h
+               SELECT market_id, source, probability, MAX(recorded_at)
                FROM prediction_market_history
                WHERE recorded_at <= datetime('now', '-23 hours')
                GROUP BY market_id, source
-               HAVING recorded_at = MAX(recorded_at)
-           ) h ON h.market_id = s.market_id AND h.source = s.source"""
+           ) h24 ON h24.market_id = s.market_id AND h24.source = s.source
+           LEFT JOIN (
+               SELECT market_id, source, probability, MAX(recorded_at)
+               FROM prediction_market_history
+               WHERE recorded_at <= datetime('now', '-167 hours')
+               GROUP BY market_id, source
+           ) h7d ON h7d.market_id = s.market_id AND h7d.source = s.source"""
     ).fetchall()
 
     scored = []
     for row in rows:
+        p_new = row[3]
+        p_24h = row[6]
+        p_7d  = row[7]
+        
         m = {
-            "market_id":   row[0], "source":      row[1],
-            "question":    row[2], "probability": row[3],
-            "volume":      row[4], "delta_24h":   row[5],
+            "market_id":   row[0], 
+            "source":      row[1],
+            "question":    row[2], 
+            "probability": p_new,
+            "volume":      row[4],
+            "url":         row[5],
+            "delta_24h":   (p_new - p_24h) if p_24h is not None else None,
+            "delta_7d":    (p_new - p_7d)  if p_7d is not None else None,
         }
-        p_new = m["probability"]
-        p_old = row[6]
         
         # Scoring: Log-odds shift captures 1% -> 10% movements better than absolute p.p.
-        if p_old is not None:
-            # Shift = |logit(new) - logit(old)|
-            shift = abs(_logit(p_new) - _logit(p_old))
+        if p_24h is not None:
+            shift = abs(_logit(p_new) - _logit(p_24h))
         else:
             shift = 0.0
             
         overlap = _topic_overlap(m, digest_items or [])
-        
-        # Composite score: Weight shift (volatility) and overlap (relevance)
-        # We give a base score to overlap so even stable relevant markets can appear,
-        # but shifts amplify them significantly.
         m["_score"] = (overlap * 2.0) + (shift * 1.5)
         scored.append(m)
 

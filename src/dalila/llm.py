@@ -155,8 +155,45 @@ def _run_claude(
         error = f"timeout after {timeout}s"
         raise LLMError(error) from None
     except FileNotFoundError:
+        import os
+        # Fallback to DeepSeek if configured
+        if os.getenv("DEEPSEEK_API_KEY"):
+            return _call_deepseek(model=model, system_prompt=system_prompt, user_prompt=user_prompt, purpose=purpose, timeout=timeout)
         error = f"`{cfg.claude_bin}` not on PATH"
         raise LLMError(error) from None
+
+def _call_deepseek(model: str, system_prompt: str, user_prompt: str, purpose: str, timeout: int) -> LLMResponse:
+    """Fallback using DeepSeek API when Claude CLI is unavailable."""
+    import requests
+    import os
+    api_key = os.getenv("DEEPSEEK_API_KEY")
+    # Map Claude models to DeepSeek equivalents
+    ds_model = "deepseek-chat" # V3
+    
+    url = "https://api.deepseek.com/v1/chat/completions"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}"
+    }
+    payload = {
+        "model": ds_model,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ],
+        "temperature": 0.0
+    }
+    
+    start = time.monotonic()
+    try:
+        resp = requests.post(url, json=payload, timeout=timeout)
+        resp.raise_for_status()
+        data = resp.json()
+        text = data["choices"][0]["message"]["content"]
+        duration_ms = int((time.monotonic() - start) * 1000)
+        return LLMResponse(text=text, duration_ms=duration_ms)
+    except Exception as exc:
+        raise LLMError(f"DeepSeek fallback failed: {exc}")
     finally:
         duration_ms = int((time.monotonic() - start) * 1000)
         try:

@@ -2739,26 +2739,32 @@ def render_markets(
     else:
         for m in markets:
             prob_pct = f"{m.get('probability', 0)*100:4.1f}%"
-            delta = m.get('delta_24h')
-            delta_class = ""
-            delta_text = ""
-            if delta is not None:
-                delta_class = "up" if delta > 0 else "down"
-                delta_text = f"{delta*100:+.1f}% (24h)"
+            d24 = m.get('delta_24h')
+            d7d = m.get('delta_7d')
             
+            def fmt_delta(d, label):
+                if d is None: return f'<span class="market-delta">-- ({label})</span>'
+                cls = "up" if d > 0 else "down"
+                return f'<span class="market-delta {cls}">{d*100:+.1f}% ({label})</span>'
+
             source = html.escape(m.get('source', 'unknown').upper())
             question = html.escape(m.get('question', ''))
             url = m.get('url', '#')
             
             body.append(f"""
+            <a href="{url}" target="_blank" rel="noopener" style="text-decoration:none; color:inherit;">
             <div class="market-card">
                 <div class="market-prob">{prob_pct}</div>
                 <div class="market-meta">
                     <span class="market-source">{source}</span>
-                    <span class="market-delta {delta_class}">{delta_text}</span>
+                    <div style="display:flex; flex-direction:column; gap:2px;">
+                        {fmt_delta(d24, "24h")}
+                        {fmt_delta(d7d, "1w")}
+                    </div>
                 </div>
-                <div class="market-q"><a href="{url}" target="_blank" rel="noopener">{question}</a></div>
+                <div class="market-q">{question}</div>
             </div>
+            </a>
             """)
             
     body.append('</div>')
@@ -2772,11 +2778,8 @@ def render_markets(
         'massive increase in underlying risk.</p>'
     )
     body.append(
-        '<p>Our discovery engine focuses on regional beats including <strong>Sudan '
-        'conflict dynamics</strong>, <strong>OPEC stability</strong>, <strong>Hormuz '
-        'Strait security</strong>, and <strong>UAE-Saudi relations</strong>. Each '
-        'signal is weighted by its relevance to the current news cycle and its '
-        'alignment with UAE leadership doctrine.</p>'
+        '<p>Our discovery engine weights different topics by their relevance to the '
+        'current news cycle and its alignment with UAE, humanitarian aid, and development.</p>'
     )
     body.append('</div>')
     
