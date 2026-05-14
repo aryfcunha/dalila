@@ -110,7 +110,12 @@ def _call_deepseek(model: str, system_prompt: str, user_prompt: str, purpose: st
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
     payload = {
         "model": "deepseek-chat",
-        "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
+        "messages": [
+            {
+                "role": "user", 
+                "content": f"SYSTEM INSTRUCTIONS:\n{system_prompt}\n\nUSER INPUT:\n{user_prompt}"
+            }
+        ],
         "temperature": 0.0
     }
     start = time.monotonic()
