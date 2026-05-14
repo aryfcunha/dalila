@@ -462,7 +462,7 @@ def run_backfill(
     return stats
 
 
-def _dedupe_by_simhash(items: list[dict], threshold: int = 12) -> list[dict]:
+def _dedupe_by_simhash(items: list[dict], threshold: int = 16) -> list[dict]:
     """Drop near-duplicate titles (cross-outlet reposts of the same story).
 
     Items are already sorted by score in items_for_digest, so the first
@@ -724,13 +724,16 @@ def run_publish_site(out_dir: "Path") -> dict:
             items = _items_by_ids(conn, item_ids)
             if not items:
                 continue
+            
+            # Stricter dedup for historical re-renders (in case threshold was lower before)
+            items = _dedupe_by_simhash(items, threshold=16)
+
             try:
                 composed = datetime.fromisoformat(row["composed_at"].replace("Z", "+00:00"))
             except Exception:
                 composed = datetime.now(timezone.utc)
-            # Slug + display time must reflect the brief's TARGET date (date_label),
-            # not when we composed it. Otherwise three backfilled briefs all
-            # composed today collapse into one 2026-05-13.html file.
+
+            # Target date for the brief
             slug_dt = composed
             label = (row["date_label"] or "").strip()
             if label:
@@ -738,8 +741,12 @@ def run_publish_site(out_dir: "Path") -> dict:
                     slug_dt = datetime.strptime(label, "%A %d %B %Y").replace(tzinfo=timezone.utc)
                 except Exception:
                     pass
+            
+            # Calculate real reviewed count for this day
+            total = db.count_reviewed_24h(conn, as_of=slug_dt) or len(items)
+            
             slug = slug_dt.strftime("%Y-%m-%d")
-            html_str = render_digest(items, when=slug_dt, total_ingested=len(items))
+            html_str = render_digest(items, when=slug_dt, total_ingested=total)
             (digests_dir / f"{slug}.html").write_text(html_str, encoding="utf-8")
             written.append({
                 "slug": slug,

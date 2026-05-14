@@ -1001,3 +1001,17 @@ def status_snapshot(conn: sqlite3.Connection, hours: int = 24) -> dict:
         (cutoff,)
     ).fetchone()["n"]
     return snap
+
+
+def count_reviewed_24h(conn, as_of: datetime | None = None) -> int:
+    """Total items processed (ingested) in the 24h window before `as_of`."""
+    from datetime import timedelta, timezone
+    if as_of is None:
+        as_of = datetime.now(timezone.utc)
+    since = as_of - timedelta(hours=24)
+    # Return count of items ingested in this window.
+    row = conn.execute(
+        "SELECT COUNT(*) FROM items WHERE ingested_at >= ? AND ingested_at <= ?",
+        (since.isoformat(), as_of.isoformat())
+    ).fetchone()
+    return row[0] if row else 0

@@ -870,7 +870,17 @@ def render_digest(
 
     def _score(it: dict) -> float:
         return float(it.get("uae_relevance") or 0) * (float(it.get("severity") or 0.5) or 0.5)
-    top3 = sorted(numbered, key=_score, reverse=True)[:3]
+
+    # Select Top 3 with diversity check
+    scored = sorted(numbered, key=_score, reverse=True)
+    top3: list[dict] = []
+    from dalila.simhash import is_near_duplicate
+    for it in scored:
+        if len(top3) >= 3:
+            break
+        # Stricter diversity check for Top 3 (24 bits bits)
+        if not any(is_near_duplicate(it.get("title_simhash"), k.get("title_simhash"), 24) for k in top3):
+            top3.append(it)
 
     by_cat: dict[str, list[dict]] = {}
     for it in numbered:
