@@ -107,7 +107,11 @@ def _call_deepseek(model: str, system_prompt: str, user_prompt: str, purpose: st
     import requests
     api_key = os.getenv("DEEPSEEK_API_KEY")
     url = "https://api.deepseek.com/v1/chat/completions"
-    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    headers = {
+        "Authorization": f"Bearer {api_key}", 
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
     payload = {
         "model": "deepseek-chat",
         "messages": [
@@ -118,6 +122,10 @@ def _call_deepseek(model: str, system_prompt: str, user_prompt: str, purpose: st
         ],
         "temperature": 0.0
     }
+    # Log payload length for debugging 'governor' rejects
+    content_len = len(payload["messages"][0]["content"])
+    log.info("DeepSeek request: content length %d chars", content_len)
+    
     start = time.monotonic()
     resp = requests.post(url, json=payload, timeout=timeout)
     if resp.status_code != 200:
