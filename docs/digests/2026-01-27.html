@@ -193,7 +193,96 @@ a:hover {
   letter-spacing: 0.14em;
 }
 
-/* ---------- items ---------- */
+/* ---------- market signals ---------- */
+.markets-section h2.section-head {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--type);
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+.mkt-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+.mkt-table { display: flex; flex-direction: column; gap: 4px; }
+.mkt-row {
+  display: grid;
+  grid-template-columns: 52px 1fr 72px 72px;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.mkt-row:last-child { border-bottom: 0; }
+.mkt-header {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--rule-strong) !important;
+}
+.mkt-prob {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--type);
+  text-align: right;
+}
+.mkt-q { color: var(--type); }
+.mkt-delta { text-align: right; font-weight: 600; }
+.mkt-src { color: var(--muted); font-size: 10px; text-align: right; }
+.delta-up { color: #2d9e5d; }
+.delta-dn { color: #c94a3a; }
+.delta-neu { color: var(--muted); }
+
+
+/* ---------- market page grid ---------- */
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+.market-card {
+  background: var(--bg-deep);
+  border: 1px solid var(--rule-strong);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.15s ease;
+}
+.market-card:hover { border-color: var(--amber); }
+.market-prob {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--amber);
+  line-height: 1;
+}
+.market-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.market-source { color: var(--muted); }
+.market-delta.up { color: var(--green); }
+.market-delta.down { color: var(--red); }
+.market-q {
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--type);
+}
+.market-q a { color: var(--type); border: 0; }
+.market-q a:hover { color: var(--amber); }
 .item {
   padding: 14px 0 16px;
   border-bottom: 1px solid var(--rule);
@@ -601,6 +690,7 @@ a:hover {
   <nav class="masthead-nav">
     <a href="../">Home</a>
     <a href="../archive.html">Archive</a>
+    <a href="../markets.html">Markets</a>
     <a href="../countries.html">Countries</a>
     <a href="../methodology.html">Methodology</a>
     <a href="../about.html">About</a>
@@ -623,7 +713,7 @@ a:hover {
 <section class="section"><div class="section-head"><span class="label">▌ UAE FOREIGN-POLICY SIGNALS</span><span class="count">12 ITEMS</span></div><article class="item" id="item-1"><span class="item-n">#01</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byf7yz8-uae-reaffirms-commitment-not-allowing-its-airspace" target="_blank" rel="noopener">byf7yz8 uae reaffirms commitment not allowing its airspace</a></h3><p class="summary">UAE reaffirms commitment not to allow its airspace for hostile actions.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.60</span></div></div></article><article class="item" id="item-2"><span class="item-n">#02</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byf7zdz-joint-statement-eleventh-us-uae-economic-policy" target="_blank" rel="noopener">byf7zdz joint statement eleventh us uae economic policy</a></h3><p class="summary">11th US-UAE Economic Policy Dialogue joint statement.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.40</span> · <span>AE · US</span> · <span>TRADE</span></div></div></article><article class="item" id="item-3"><span class="item-n">#03</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byf7z8b-abdullah-bin-zayed-foreign-secretary-discuss" target="_blank" rel="noopener">byf7z8b abdullah bin zayed foreign secretary discuss</a></h3><p class="summary">Abdullah bin Zayed discusses with foreign secretary.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.30</span> · <span>AE</span></div></div></article><article class="item" id="item-4"><span class="item-n">#04</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byf7z88-uae-expresses-solidarity-with-philippines-conveys" target="_blank" rel="noopener">byf7z88 uae expresses solidarity with philippines conveys</a></h3><p class="summary">UAE expresses solidarity with Philippines over disaster.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.30</span> · <span>AE · PH</span> · <span>HUMANITARIAN</span></div></div></article><article class="item" id="item-8"><span class="item-n">#08</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byf7ytb-saqr-ghobash-receives-president-italian" target="_blank" rel="noopener">byf7ytb saqr ghobash receives president italian</a></h3><p class="summary">Saqr Ghobash receives Italian president, reinforcing bilateral ties.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.60</span> · <span class="sev">SEV 0.30</span></div></div></article><article class="item" id="item-11"><span class="item-n">#11</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byf7ytg-minister-economy-and-tourism-meets-counterparts" target="_blank" rel="noopener">byf7ytg minister economy and tourism meets counterparts</a></h3><p class="summary">Minister of Economy and Tourism meets foreign counterparts.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.20</span></div></div></article><article class="item" id="item-12"><span class="item-n">#12</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byf7ywe-noura-kaabi-concludes-official-visit-trinidad-and" target="_blank" rel="noopener">byf7ywe noura kaabi concludes official visit trinidad and</a></h3><p class="summary">Minister Noura Al Hashimy concludes official visit to Trinidad and Tobago.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.20</span></div></div></article><article class="item" id="item-13"><span class="item-n">#13</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/171isna-italian-president-begin-state-visit-uae-tomorrow" target="_blank" rel="noopener">171isna italian president begin state visit uae tomorrow</a></h3><p class="summary">Italian President begins state visit to UAE tomorrow.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.10</span></div></div></article><article class="item" id="item-14"><span class="item-n">#14</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/171ismw-uae-leaders-congratulate-australias" target="_blank" rel="noopener">171ismw uae leaders congratulate australias</a></h3><p class="summary">UAE leaders congratulate Australia on something.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.60</span> · <span class="sev">SEV 0.10</span> · <span>AE · AU</span></div></div></article><article class="item" id="item-16"><span class="item-n">#16</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byf7z2a-uae-president-vps-congratulate-sultan-brunei" target="_blank" rel="noopener">byf7z2a uae president vps congratulate sultan brunei</a></h3><p class="summary">UAE President and Vice President congratulate Sultan of Brunei.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.40</span> · <span class="sev">SEV 0.10</span></div></div></article><article class="item" id="item-18"><span class="item-n">#18</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/171ismy-uae-leaders-congratulate-president-india-republic" target="_blank" rel="noopener">171ismy uae leaders congratulate president india republic</a></h3><p class="summary">UAE leaders congratulate India on Republic Day.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.80</span></div></div></article><article class="item" id="item-22"><span class="item-n">#22</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byf7ykh-uae-india-partnership-reflects-constructive" target="_blank" rel="noopener">byf7ykh uae india partnership reflects constructive</a></h3><p class="summary">UAE-India partnership reflects constructive bilateral ties.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.90</span></div></div></article></section>
 <section class="section"><div class="section-head"><span class="label">▌ UAE DOCTRINE</span><span class="count">03 ITEMS</span></div><article class="item" id="item-6"><span class="item-n">#06</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byf7ynj-uae-marks-international-day-clean-energy-leading" target="_blank" rel="noopener">byf7ynj uae marks international day clean energy leading</a></h3><p class="summary">UAE marks International Day of Clean Energy, leading globally.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.20</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article><article class="item" id="item-7"><span class="item-n">#07</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byf7z2b-amna-dahak-uae-contributing-advancing-global" target="_blank" rel="noopener">byf7z2b amna dahak uae contributing advancing global</a></h3><p class="summary">UAE official Amna Dahak speaks on advancing global cooperation.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.20</span> · <span>AE</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article><article class="item" id="item-15"><span class="item-n">#15</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byf7yzc-mohammed-bin-rashid-visits-31st-edition-gulfood" target="_blank" rel="noopener">byf7yzc mohammed bin rashid visits 31st edition gulfood</a></h3><p class="summary">Mohammed bin Rashid visits 31st edition of Gulfood exhibition.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.50</span> · <span class="sev">SEV 0.10</span></div></div></article></section>
 <section class="section"><div class="section-head"><span class="label">▌ UAE ECOSYSTEM</span><span class="count">07 ITEMS</span></div><article class="item" id="item-10"><span class="item-n">#10</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byf7ytc-xrg-increase-stake-rio-grande-lng-project" target="_blank" rel="noopener">byf7ytc xrg increase stake rio grande lng project</a></h3><p class="summary">XRG increases stake in Rio Grande LNG project.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.20</span></div></div></article><article class="item" id="item-17"><span class="item-n">#17</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/171ismx-mubadala-sells-its-minority-stake-arcadia-consumer" target="_blank" rel="noopener">171ismx mubadala sells its minority stake arcadia consumer</a></h3><p class="summary">Mubadala sells minority stake in Arcadia Consumer.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span></div></div></article><article class="item" id="item-20"><span class="item-n">#20</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byf7yeu-dae-announces-long-term-lease-boeing-737-8-somon" target="_blank" rel="noopener">byf7yeu dae announces long term lease boeing 737 8 somon</a></h3><p class="summary">DAE leases Boeing 737-8 to Somon Air.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.80</span></div></div></article><article class="item" id="item-21"><span class="item-n">#21</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byf7yho-dana-gas-crescent-petroleum-sign-gas-sales" target="_blank" rel="noopener">byf7yho dana gas crescent petroleum sign gas sales</a></h3><p class="summary">Dana Gas and Crescent Petroleum sign gas sales agreement.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span></div></div></article><article class="item" id="item-23"><span class="item-n">#23</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byf7ynb-masdar-city-free-zone-wins-three-‘business" target="_blank" rel="noopener">byf7ynb masdar city free zone wins three ‘business</a></h3><p class="summary">Masdar City Free Zone wins three business awards.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.90</span></div></div></article><article class="item" id="item-24"><span class="item-n">#24</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byf7ynd-zayed-authority-for-people-determination-sign-mou" target="_blank" rel="noopener">byf7ynd zayed authority for people determination sign mou</a></h3><p class="summary">Zayed Authority for People of Determination signs MoU.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span></div></div></article><article class="item" id="item-25"><span class="item-n">#25</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byf7yne-first-dubai-green-artificial-intelligence" target="_blank" rel="noopener">byf7yne first dubai green artificial intelligence</a></h3><p class="summary">First Dubai Green Artificial Intelligence initiative launched.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span></div></div></article></section>
-<footer class="foot"><span>© 2026 Dalila — daily intelligence brief</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Submit a suggestion</a></span></footer>
+<footer class="foot"><span>© 2026 Dalila</span> · <span><a href="index.html">Home</a></span> · <span><a href="archive.html">Archive</a></span> · <span><a href="markets.html">Markets</a></span> · <span><a href="about.html">About</a></span> · <span><a href="https://t.me/dalila_development_digest_bot">Telegram</a></span> · <span><a href="mailto:dalila.dev.digest@gmail.com">Feedback</a></span></footer>
 </div>
 </body>
 </html>

@@ -193,7 +193,96 @@ a:hover {
   letter-spacing: 0.14em;
 }
 
-/* ---------- items ---------- */
+/* ---------- market signals ---------- */
+.markets-section h2.section-head {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--type);
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+.mkt-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+.mkt-table { display: flex; flex-direction: column; gap: 4px; }
+.mkt-row {
+  display: grid;
+  grid-template-columns: 52px 1fr 72px 72px;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.mkt-row:last-child { border-bottom: 0; }
+.mkt-header {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--rule-strong) !important;
+}
+.mkt-prob {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--type);
+  text-align: right;
+}
+.mkt-q { color: var(--type); }
+.mkt-delta { text-align: right; font-weight: 600; }
+.mkt-src { color: var(--muted); font-size: 10px; text-align: right; }
+.delta-up { color: #2d9e5d; }
+.delta-dn { color: #c94a3a; }
+.delta-neu { color: var(--muted); }
+
+
+/* ---------- market page grid ---------- */
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+.market-card {
+  background: var(--bg-deep);
+  border: 1px solid var(--rule-strong);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.15s ease;
+}
+.market-card:hover { border-color: var(--amber); }
+.market-prob {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--amber);
+  line-height: 1;
+}
+.market-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.market-source { color: var(--muted); }
+.market-delta.up { color: var(--green); }
+.market-delta.down { color: var(--red); }
+.market-q {
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--type);
+}
+.market-q a { color: var(--type); border: 0; }
+.market-q a:hover { color: var(--amber); }
 .item {
   padding: 14px 0 16px;
   border-bottom: 1px solid var(--rule);
@@ -601,6 +690,7 @@ a:hover {
   <nav class="masthead-nav">
     <a href="../">Home</a>
     <a href="../archive.html">Archive</a>
+    <a href="../markets.html">Markets</a>
     <a href="../countries.html">Countries</a>
     <a href="../methodology.html">Methodology</a>
     <a href="../about.html">About</a>
@@ -620,7 +710,7 @@ a:hover {
 <li><a href="https://www.thenationalnews.com/news/uae/2026/02/28/uae-iran-missile-strikes/">uae iran missile strikes</a><span class="ref">#3</span></li></ol></section>
 <section class="section"><div class="section-head"><span class="label">▌ UAE FOREIGN-POLICY SIGNALS</span><span class="count">24 ITEMS</span></div><article class="item" id="item-1"><span class="item-n">#01</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/03/05/iran-strikes-uae-how-to-stay-safe-as-emergency-alerts-issued/" target="_blank" rel="noopener">iran strikes uae how to stay safe as emergency alerts issued</a></h3><p class="summary">Iran launches direct military strikes against UAE; emergency alerts issued</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 1.00</span></div></div></article><article class="item" id="item-2"><span class="item-n">#02</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/us/2026/03/01/ayatollah-ali-khamenei-killed-in-us-israeli-strikes-trump-says/" target="_blank" rel="noopener">ayatollah ali khamenei killed in us israeli strikes trump says</a></h3><p class="summary">Trump announces Ayatollah Khamenei killed in US-Israeli strikes.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.95</span> · <span class="sev">SEV 1.00</span> · <span>IR · AE</span></div></div></article><article class="item" id="item-3"><span class="item-n">#03</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/02/28/uae-iran-missile-strikes/" target="_blank" rel="noopener">uae iran missile strikes</a></h3><p class="summary">Iran missile strikes impact UAE territory and airspace</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.90</span></div></div></article><article class="item" id="item-4"><span class="item-n">#04</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byyv9j2-uae-temporarily-closes-airspace-exceptional" target="_blank" rel="noopener">byyv9j2 uae temporarily closes airspace exceptional</a></h3><p class="summary">UAE temporarily closes airspace due to exceptional circumstances.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.90</span> · <span>AE</span></div></div></article><article class="item" id="item-5"><span class="item-n">#05</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byyv9j5-uae-announces-successful-interception-several" target="_blank" rel="noopener">byyv9j5 uae announces successful interception several</a></h3><p class="summary">UAE announces successful interception of several projectiles.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.90</span> · <span>AE</span></div></div></article><article class="item" id="item-6"><span class="item-n">#06</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byyv9ow-uae-announces-successful-interception-new-wave" target="_blank" rel="noopener">byyv9ow uae announces successful interception new wave</a></h3><p class="summary">UAE announces successful interception of new wave of projectiles.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.90</span> · <span>AE</span></div></div></article><article class="item" id="item-7"><span class="item-n">#07</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byyv9ox-uae-condemns-strongest-terms-iran’s-blatant" target="_blank" rel="noopener">byyv9ox uae condemns strongest terms iran’s blatant</a></h3><p class="summary">UAE condemns in strongest terms Iran&#x27;s blatant attack.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.90</span> · <span>AE</span></div></div></article><article class="item" id="item-8"><span class="item-n">#08</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byyva09-uae-air-defense-systems-successfully-intercepted" target="_blank" rel="noopener">byyva09 uae air defense systems successfully intercepted</a></h3><p class="summary">UAE air defense systems successfully intercepted projectiles.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.90</span> · <span>AE</span></div></div></article><article class="item" id="item-9"><span class="item-n">#09</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/02/28/full-text-of-us-president-donald-trump-declaring-war-on-iran/" target="_blank" rel="noopener">full text of us president donald trump declaring war on iran</a></h3><p class="summary">US President Trump declares war on Iran</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 1.00</span></div></div></article><article class="item" id="item-11"><span class="item-n">#11</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byyv9m3-ncema-authorities-confirm-situation-under-control" target="_blank" rel="noopener">byyv9m3 ncema authorities confirm situation under control</a></h3><p class="summary">NCEMA authorities confirm situation under control.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.80</span> · <span>AE</span></div></div></article><article class="item" id="item-12"><span class="item-n">#12</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/2026/02/28/us-iran-war-heightens-shipping-risks-in-strait-of-hormuz/" target="_blank" rel="noopener">us iran war heightens shipping risks in strait of hormuz</a></h3><p class="summary">Strait of Hormuz shipping threatened by US-Iran military conflict</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.80</span></div></div></article><article class="item" id="item-13"><span class="item-n">#13</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/us/2026/02/28/gulf-states-condemn-irans-cowardly-attacks-at-un-security-council/" target="_blank" rel="noopener">gulf states condemn irans cowardly attacks at un security council</a></h3><p class="summary">Gulf states including UAE condemn Iran attacks at UN Security Council.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.70</span> · <span>AE · IR</span></div></div></article><article class="item" id="item-14"><span class="item-n">#14</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/02/28/us-israeli-strikes-on-iran-what-we-know-so-far/" target="_blank" rel="noopener">us israeli strikes on iran what we know so far</a></h3><p class="summary">Summary of US-Israeli military strikes on Iran</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.90</span></div></div></article><article class="item" id="item-15"><span class="item-n">#15</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/02/28/us-iran-israel-missiles/" target="_blank" rel="noopener">us iran israel missiles</a></h3><p class="summary">Missile exchange amid US-Israel-Iran military escalation</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.90</span></div></div></article><article class="item" id="item-16"><span class="item-n">#16</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byyv9xe-uae-president-and-emir-qatar-discuss-regional" target="_blank" rel="noopener">byyv9xe uae president and emir qatar discuss regional</a></h3><p class="summary">UAE President and Emir of Qatar discuss regional developments.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.60</span> · <span>AE · QA</span></div></div></article><article class="item" id="item-17"><span class="item-n">#17</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/energy/2026/02/28/energy-markets-on-edge-as-israeli-and-us-strikes-on-iran-raise-wider-conflict-fears/" target="_blank" rel="noopener">energy markets on edge as israeli and us strikes on iran raise wider conflict fears</a></h3><p class="summary">Energy markets destabilized by escalating US-Israel-Iran conflict</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.70</span></div></div></article><article class="item" id="item-18"><span class="item-n">#18</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/energy/2026/02/28/us-iran-war-what-will-the-impact-be-on-oil/" target="_blank" rel="noopener">us iran war what will the impact be on oil</a></h3><p class="summary">Analysis of oil market implications from US-Iran military conflict</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.70</span></div></div></article><article class="item" id="item-19"><span class="item-n">#19</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byyv9j3-interior-ministry-affirms-all-precautionary" target="_blank" rel="noopener">byyv9j3 interior ministry affirms all precautionary</a></h3><p class="summary">Interior Ministry affirms all precautionary measures taken.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.80</span> · <span>AE</span></div></div></article><article class="item" id="item-20"><span class="item-n">#20</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/2026/02/28/israel-launches-pre-emptive-strike-against-iran/" target="_blank" rel="noopener">israel launches pre emptive strike against iran</a></h3><p class="summary">Israel launches preemptive military strikes against Iran</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.60</span> · <span class="sev">SEV 0.90</span></div></div></article><article class="item" id="item-21"><span class="item-n">#21</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byyv9uk-uae-president-receives-phone-call-from-saudi-crown" target="_blank" rel="noopener">byyv9uk uae president receives phone call from saudi crown</a></h3><p class="summary">UAE President receives phone call from Saudi Crown Prince.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.50</span> · <span>AE · SA</span></div></div></article><article class="item" id="item-22"><span class="item-n">#22</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byyva0a-uae-president-and-king-jordan-discuss-current" target="_blank" rel="noopener">byyva0a uae president and king jordan discuss current</a></h3><p class="summary">UAE President MBZ and King Abdullah II of Jordan discuss current bilateral and regional issues.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.50</span> · <span>AE · JO</span></div></div></article><article class="item" id="item-23"><span class="item-n">#23</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byyvabv-uae-president-and-king-morocco-discuss-regional" target="_blank" rel="noopener">byyvabv uae president and king morocco discuss regional</a></h3><p class="summary">UAE President and King of Morocco hold talks on regional matters.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.50</span> · <span>AE · MA</span></div></div></article><article class="item" id="item-24"><span class="item-n">#24</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/aviation/2026/02/28/airlines-suspend-flights-amid-us-israel-strikes-on-iran-and-gulf-airspace-closures/" target="_blank" rel="noopener">airlines suspend flights amid us israel strikes on iran and gulf airspace closures</a></h3><p class="summary">Airlines suspend flights as Gulf airspace closes during military escalation</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.60</span></div></div></article><article class="item" id="item-25"><span class="item-n">#25</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byyva8v-arab-league-condemns-iranian-aggressions-against" target="_blank" rel="noopener">byyva8v arab league condemns iranian aggressions against</a></h3><p class="summary">Arab League condemns Iranian aggressions against regional stability.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.60</span> · <span>AE · IR</span></div></div></article></section>
 <section class="section"><div class="section-head"><span class="label">▌ UAE DOCTRINE</span><span class="count">01 ITEM</span></div><article class="item" id="item-10"><span class="item-n">#10</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/02/28/irans-strikes-on-gulf-could-lead-to-long-term-hostility-says-uaes-gargash/" target="_blank" rel="noopener">irans strikes on gulf could lead to long term hostility says uaes gargash</a></h3><p class="summary">Gargash warns Iran strikes could trigger long-term Gulf hostility</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.80</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article></section>
-<footer class="foot"><span>© 2026 Dalila — daily intelligence brief</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Submit a suggestion</a></span></footer>
+<footer class="foot"><span>© 2026 Dalila</span> · <span><a href="index.html">Home</a></span> · <span><a href="archive.html">Archive</a></span> · <span><a href="markets.html">Markets</a></span> · <span><a href="about.html">About</a></span> · <span><a href="https://t.me/dalila_development_digest_bot">Telegram</a></span> · <span><a href="mailto:dalila.dev.digest@gmail.com">Feedback</a></span></footer>
 </div>
 </body>
 </html>

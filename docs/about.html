@@ -193,7 +193,96 @@ a:hover {
   letter-spacing: 0.14em;
 }
 
-/* ---------- items ---------- */
+/* ---------- market signals ---------- */
+.markets-section h2.section-head {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--type);
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+.mkt-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+.mkt-table { display: flex; flex-direction: column; gap: 4px; }
+.mkt-row {
+  display: grid;
+  grid-template-columns: 52px 1fr 72px 72px;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.mkt-row:last-child { border-bottom: 0; }
+.mkt-header {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--rule-strong) !important;
+}
+.mkt-prob {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--type);
+  text-align: right;
+}
+.mkt-q { color: var(--type); }
+.mkt-delta { text-align: right; font-weight: 600; }
+.mkt-src { color: var(--muted); font-size: 10px; text-align: right; }
+.delta-up { color: #2d9e5d; }
+.delta-dn { color: #c94a3a; }
+.delta-neu { color: var(--muted); }
+
+
+/* ---------- market page grid ---------- */
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+.market-card {
+  background: var(--bg-deep);
+  border: 1px solid var(--rule-strong);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.15s ease;
+}
+.market-card:hover { border-color: var(--amber); }
+.market-prob {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--amber);
+  line-height: 1;
+}
+.market-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.market-source { color: var(--muted); }
+.market-delta.up { color: var(--green); }
+.market-delta.down { color: var(--red); }
+.market-q {
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--type);
+}
+.market-q a { color: var(--type); border: 0; }
+.market-q a:hover { color: var(--amber); }
 .item {
   padding: 14px 0 16px;
   border-bottom: 1px solid var(--rule);
@@ -601,6 +690,7 @@ a:hover {
   <nav class="masthead-nav">
     <a href="./">Home</a>
     <a href="archive.html">Archive</a>
+    <a href="markets.html">Markets</a>
     <a href="countries.html">Countries</a>
     <a href="methodology.html">Methodology</a>
     <a href="about.html" aria-current="page">About</a>
@@ -608,11 +698,11 @@ a:hover {
 </header>
 
 <div class="about">
-<p style="font-size:17px;color:var(--type);margin-top:18px;">Dalila is a daily intelligence brief on the global humanitarian, development, and philanthropy ecosystem &mdash; with a sharp focus on the UAE&rsquo;s role within it. It exists both as a website and a <a href="#subscribe">Telegram bot</a>. Dalila skims through dozens of news sources, multilateral feeds, and forecast indices to get development practitioners the context they need to make informed decisions.</p>
+<p style="font-size:17px;color:var(--type);margin-top:18px;">Dalila is a daily intelligence guide for leaders in the humanitarian, development, and philanthropy sectors. It provides a sharp, UAE-focused lens on global affairs, delivering the essential context needed for strategic decision-making directly to your Telegram or via this archive.</p>
 <h2>How it works</h2>
-<p>Every 30 minutes Dalila ingests new items from the sources below. A keyword and entity prefilter drops items unrelated to the humanitarian, development, and philanthropy ecosystem remit. Surviving items go through a classifier that assigns a category, UAE-relevance score, severity, and topical tags. Near-duplicates are deduplicated. At 06:30 GST an editor model composes the morning digest from the previous 24 hours of classified items above threshold. The digest is shared with <a href="#subscribe">subscribers on Telegram</a>.</p>
-<p>Alongside the news feeds, Dalila ingests forecast and early-warning indices (ACLED CAST for conflict-escalation risk shipped; ACAPS INFORM for crisis severity, WFP HungerMap for food insecurity, and GDACS for real-time disaster alerts in the pipeline). These appear in the digest&rsquo;s <em>Foresight</em> section, but with a strict rule: only changes are surfaced, never states. Sudan being hungry every day produces zero items; Sudan getting hungrier produces one, tagged 🔴 (worsening) or 🟢 (improving) and showing the delta against the prior observation.</p>
-<p>Every brief is preserved. The <a href="archive.html">archive</a> lists every past brief; the <a href="countries.html">country</a> view renders an interactive heatmap of country mentions on a world map, with co-mention arcs from any selected country to the other countries it most frequently appears alongside.</p>
+<p>Dalila monitors dozens of high-authority news sources, multilateral feeds, and development databases in real-time. Using advanced classification, it identifies the most relevant stories, categorises them by sector, and evaluates their significance to the UAE agenda. Every morning at 06:30 GST, a curated digest is composed and shared with <a href="#subscribe">subscribers on Telegram</a>.</p>
+<p>Beyond news, Dalila tracks early-warning indices and prediction markets to capture shifts in global sentiment and conflict risk before they hit the headlines. This foresight layer ensures the brief is always looking ahead, providing a dynamic view of emerging crises and opportunities.</p>
+<p>This platform serves as a permanent record of the UAE&rsquo;s contributions to global development. You can explore our <a href="archive.html">complete archive</a> of past briefs or use the <a href="countries.html">interactive world map</a> to visualise regional focus and humanitarian clusters over time.</p>
 <p>Every numeric threshold, sampling rate, and editorial rule in this pipeline is documented in the <a href="methodology.html">methodology page</a>, along with the rationale for each.</p>
 <p>Subscribers can ask for a deeper dive on a topic (<code>/more &lt;topic&gt;</code>), review tracked UAE doctrine positions (<code>/doctrine</code>), pull recent UAE financial commitments and bilateral meetings (<code>/commitments</code>, <code>/meetings</code>), or zoom in on recent news related to a specific country (<code>/country &lt;name&gt;</code>). Items are numbered so a reply with <code>link 3</code> returns the underlying source URL.</p>
 <h2>Sources</h2>
@@ -674,7 +764,7 @@ a:hover {
 <h2>Suggestions</h2>
 <p>Feedback, source suggestions, bug reports, or requests for new features: <a href="mailto:dalila.dev.digest@gmail.com">dalila.dev.digest@gmail.com</a>.</p>
 </div>
-<footer class="foot"><span>© 2026 Dalila — daily intelligence brief</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Submit a suggestion</a></span></footer>
+<footer class="foot"><span>© 2026 Dalila</span> · <span><a href="index.html">Home</a></span> · <span><a href="archive.html">Archive</a></span> · <span><a href="markets.html">Markets</a></span> · <span><a href="about.html">About</a></span> · <span><a href="https://t.me/dalila_development_digest_bot">Telegram</a></span> · <span><a href="mailto:dalila.dev.digest@gmail.com">Feedback</a></span></footer>
 </div>
 </body>
 </html>

@@ -193,7 +193,96 @@ a:hover {
   letter-spacing: 0.14em;
 }
 
-/* ---------- items ---------- */
+/* ---------- market signals ---------- */
+.markets-section h2.section-head {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--type);
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+.mkt-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+.mkt-table { display: flex; flex-direction: column; gap: 4px; }
+.mkt-row {
+  display: grid;
+  grid-template-columns: 52px 1fr 72px 72px;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.mkt-row:last-child { border-bottom: 0; }
+.mkt-header {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--rule-strong) !important;
+}
+.mkt-prob {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--type);
+  text-align: right;
+}
+.mkt-q { color: var(--type); }
+.mkt-delta { text-align: right; font-weight: 600; }
+.mkt-src { color: var(--muted); font-size: 10px; text-align: right; }
+.delta-up { color: #2d9e5d; }
+.delta-dn { color: #c94a3a; }
+.delta-neu { color: var(--muted); }
+
+
+/* ---------- market page grid ---------- */
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+.market-card {
+  background: var(--bg-deep);
+  border: 1px solid var(--rule-strong);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.15s ease;
+}
+.market-card:hover { border-color: var(--amber); }
+.market-prob {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--amber);
+  line-height: 1;
+}
+.market-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.market-source { color: var(--muted); }
+.market-delta.up { color: var(--green); }
+.market-delta.down { color: var(--red); }
+.market-q {
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--type);
+}
+.market-q a { color: var(--type); border: 0; }
+.market-q a:hover { color: var(--amber); }
 .item {
   padding: 14px 0 16px;
   border-bottom: 1px solid var(--rule);
@@ -601,6 +690,7 @@ a:hover {
   <nav class="masthead-nav">
     <a href="../">Home</a>
     <a href="../archive.html">Archive</a>
+    <a href="../markets.html">Markets</a>
     <a href="../countries.html">Countries</a>
     <a href="../methodology.html">Methodology</a>
     <a href="../about.html">About</a>
@@ -623,7 +713,7 @@ a:hover {
 <section class="section"><div class="section-head"><span class="label">▌ UAE FOREIGN-POLICY SIGNALS</span><span class="count">15 ITEMS</span></div><article class="item" id="item-1"><span class="item-n">#01</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/us/2026/04/16/gulf-states-to-reintroduce-un-resolution-on-hormuz-after-security-council-deadlock/" target="_blank" rel="noopener">gulf states to reintroduce un resolution on hormuz after security council deadlock</a></h3><p class="summary">Gulf states plan to reintroduce UN resolution on Strait of Hormuz after Security Council deadlock.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.60</span> · <span>AE</span></div></div></article><article class="item" id="item-2"><span class="item-n">#02</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/opinion/comment/2026/04/16/gulf-shipping-insurance-war-middle-east-iran-us-israel/" target="_blank" rel="noopener">gulf shipping insurance war middle east iran us israel</a></h3><p class="summary">Opinion on Gulf shipping insurance amid Iran war.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.70</span> · <span>AE · IR · US</span></div></div></article><article class="item" id="item-4"><span class="item-n">#04</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/us/2026/04/16/hegseth-iran-strait-of-hormuz-blockade/" target="_blank" rel="noopener">hegseth iran strait of hormuz blockade</a></h3><p class="summary">US Defense Secretary Hegseth addresses potential Strait of Hormuz blockade by Iran.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.85</span> · <span class="sev">SEV 0.60</span> · <span>IR · AE · US</span> · <span>ENERGY</span></div></div></article><article class="item" id="item-6"><span class="item-n">#06</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/economy/2026/04/16/tax-uae-iran-war/" target="_blank" rel="noopener">tax uae iran war</a></h3><p class="summary">Opinion on tax implications of Iran war for UAE.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.60</span> · <span>AE · IR</span></div></div></article><article class="item" id="item-7"><span class="item-n">#07</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/2026/04/17/spoofing-and-double-blockade-what-is-happening-at-strait-of-hormuz/" target="_blank" rel="noopener">spoofing and double blockade what is happening at strait of hormuz</a></h3><p class="summary">Article explains spoofing and double blockade events at Strait of Hormuz, impacting maritime security.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.60</span> · <span>IR · AE</span> · <span>ENERGY</span></div></div></article><article class="item" id="item-9"><span class="item-n">#09</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/opinion/comment/2026/04/16/the-us-israel-war-with-iran-has-neither-derailed-nor-stalled-the-gulfs-progress/" target="_blank" rel="noopener">the us israel war with iran has neither derailed nor stalled the gulfs progress</a></h3><p class="summary">Opinion piece argues Gulf progress continues despite US-Israel-Iran war.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.50</span> · <span>AE · IR</span></div></div></article><article class="item" id="item-12"><span class="item-n">#12</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/04/16/pakistans-army-chief-in-tehran-to-shore-up-us-iran-ceasefire/" target="_blank" rel="noopener">pakistans army chief in tehran to shore up us iran ceasefire</a></h3><p class="summary">Pakistan&#x27;s army chief visits Tehran to support US-Iran ceasefire efforts.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.50</span> · <span class="sev">SEV 0.70</span> · <span>PK · IR</span></div></div></article><article class="item" id="item-13"><span class="item-n">#13</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/world/americas/trump-says-iran-deal-very-close-may-go-to-pakistan-to-sign-1.500509516" target="_blank" rel="noopener">trump says iran deal very close may go to pakistan to sign 1.500509516</a></h3><p class="summary">Trump says Iran deal very close, may go to Pakistan to sign.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.80</span> · <span>IR · PK · US</span></div></div></article><article class="item" id="item-14"><span class="item-n">#14</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/europe/2026/04/16/spains-sanchez-emerges-as-loudest-voice-in-europe-on-iran-war/" target="_blank" rel="noopener">spains sanchez emerges as loudest voice in europe on iran war</a></h3><p class="summary">Spain&#x27;s PM Sanchez becomes most vocal European critic of Iran war.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.50</span> · <span class="sev">SEV 0.60</span> · <span>ES · IR</span></div></div></article><article class="item" id="item-16"><span class="item-n">#16</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/government/uae-welcomes-lebanonisrael-ceasefire-commends-us-diplomatic-efforts-1.500509581" target="_blank" rel="noopener">uae welcomes lebanonisrael ceasefire commends us diplomatic efforts 1.500509581</a></h3><p class="summary">UAE welcomes Lebanon-Israel ceasefire, commends US efforts.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.40</span> · <span>AE · LB · IL</span></div></div></article><article class="item" id="item-17"><span class="item-n">#17</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/world/americas/trump-says-iran-has-agreed-to-hand-over-its-enriched-uranium-supply-1.500507624" target="_blank" rel="noopener">trump says iran has agreed to hand over its enriched uranium supply 1.500507624</a></h3><p class="summary">Trump says Iran agreed to hand over enriched uranium supply.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 0.50</span> · <span class="sev">SEV 0.70</span> · <span>IR · US</span></div></div></article><article class="item" id="item-19"><span class="item-n">#19</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/business/energy/oil-tanker-traffic-explodes-at-panama-canal-as-global-energy-routes-shift-amid-mideast-war-1.500509612" target="_blank" rel="noopener">oil tanker traffic explodes at panama canal as global energy routes shift amid mideast war 1.500509612</a></h3><p class="summary">Oil tanker traffic surges at Panama Canal amid Mideast war shifts.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 0.50</span> · <span class="sev">SEV 0.60</span> · <span>PA · AE</span> · <span>ENERGY</span></div></div></article><article class="item" id="item-21"><span class="item-n">#21</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/business/markets/uae-deepens-global-finance-ties-in-washington-talks-1.500509354" target="_blank" rel="noopener">uae deepens global finance ties in washington talks 1.500509354</a></h3><p class="summary">UAE deepens global finance ties in Washington talks.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.30</span> · <span>AE · US</span> · <span>FINANCING</span></div></div></article><article class="item" id="item-22"><span class="item-n">#22</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/government/uae-showcases-nuclear-safety-progress-at-international-review-meeting-1.500508889" target="_blank" rel="noopener">uae showcases nuclear safety progress at international review meeting 1.500508889</a></h3><p class="summary">UAE presents nuclear safety progress at international meeting.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.20</span></div></div></article><article class="item" id="item-23"><span class="item-n">#23</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/government/uae-elected-to-world-food-programme-executive-board-1.500508834" target="_blank" rel="noopener">uae elected to world food programme executive board 1.500508834</a></h3><p class="summary">UAE elected to WFP executive board.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.20</span></div></div></article></section>
 <section class="section"><div class="section-head"><span class="label">▌ UAE DOCTRINE</span><span class="count">01 ITEM</span></div><article class="item" id="item-3"><span class="item-n">#03</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/government/the-uae-has-right-to-guarantees-compensation-after-iranian-aggression-gargash-1.500509559" target="_blank" rel="noopener">the uae has right to guarantees compensation after iranian aggression gargash 1.500509559</a></h3><p class="summary">Gargash asserts UAE right to guarantees and compensation after Iranian aggression.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.90</span> · <span>AE · IR</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article></section>
 <section class="section"><div class="section-head"><span class="label">▌ UAE ECOSYSTEM</span><span class="count">01 ITEM</span></div><article class="item" id="item-25"><span class="item-n">#25</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/property/2026/04/16/aldar-secures-136bn-in-sustainability-linked-credit-to-fund-expansion/" target="_blank" rel="noopener">aldar secures 136bn in sustainability linked credit to fund expansion</a></h3><p class="summary">Aldar secures AED 13.6bn sustainability-linked credit.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.70</span> · <span>AE</span></div></div></article></section>
-<footer class="foot"><span>© 2026 Dalila — daily intelligence brief</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Submit a suggestion</a></span></footer>
+<footer class="foot"><span>© 2026 Dalila</span> · <span><a href="index.html">Home</a></span> · <span><a href="archive.html">Archive</a></span> · <span><a href="markets.html">Markets</a></span> · <span><a href="about.html">About</a></span> · <span><a href="https://t.me/dalila_development_digest_bot">Telegram</a></span> · <span><a href="mailto:dalila.dev.digest@gmail.com">Feedback</a></span></footer>
 </div>
 </body>
 </html>

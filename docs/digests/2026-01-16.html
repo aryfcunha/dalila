@@ -193,7 +193,96 @@ a:hover {
   letter-spacing: 0.14em;
 }
 
-/* ---------- items ---------- */
+/* ---------- market signals ---------- */
+.markets-section h2.section-head {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--type);
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+.mkt-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+.mkt-table { display: flex; flex-direction: column; gap: 4px; }
+.mkt-row {
+  display: grid;
+  grid-template-columns: 52px 1fr 72px 72px;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.mkt-row:last-child { border-bottom: 0; }
+.mkt-header {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--rule-strong) !important;
+}
+.mkt-prob {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--type);
+  text-align: right;
+}
+.mkt-q { color: var(--type); }
+.mkt-delta { text-align: right; font-weight: 600; }
+.mkt-src { color: var(--muted); font-size: 10px; text-align: right; }
+.delta-up { color: #2d9e5d; }
+.delta-dn { color: #c94a3a; }
+.delta-neu { color: var(--muted); }
+
+
+/* ---------- market page grid ---------- */
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+.market-card {
+  background: var(--bg-deep);
+  border: 1px solid var(--rule-strong);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.15s ease;
+}
+.market-card:hover { border-color: var(--amber); }
+.market-prob {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--amber);
+  line-height: 1;
+}
+.market-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.market-source { color: var(--muted); }
+.market-delta.up { color: var(--green); }
+.market-delta.down { color: var(--red); }
+.market-q {
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--type);
+}
+.market-q a { color: var(--type); border: 0; }
+.market-q a:hover { color: var(--amber); }
 .item {
   padding: 14px 0 16px;
   border-bottom: 1px solid var(--rule);
@@ -601,6 +690,7 @@ a:hover {
   <nav class="masthead-nav">
     <a href="../">Home</a>
     <a href="../archive.html">Archive</a>
+    <a href="../markets.html">Markets</a>
     <a href="../countries.html">Countries</a>
     <a href="../methodology.html">Methodology</a>
     <a href="../about.html">About</a>
@@ -623,7 +713,7 @@ a:hover {
 <section class="section"><div class="section-head"><span class="label">▌ CONFERENCES &amp; EVENTS</span><span class="count">04 ITEMS</span></div><article class="item" id="item-21"><span class="item-n">#21</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by8o6x4-nahyan-bin-mubarak-attends-global-sustainability" target="_blank" rel="noopener">by8o6x4 nahyan bin mubarak attends global sustainability</a></h3><p class="summary">Nahyan bin Mubarak attends global sustainability event.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.60</span> · <span class="sev">SEV 0.10</span></div></div></article><article class="item" id="item-22"><span class="item-n">#22</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by8o730-fnc-host-second-pam-women-parliamentary-forum" target="_blank" rel="noopener">by8o730 fnc host second pam women parliamentary forum</a></h3><p class="summary">FNC hosts second PAM Women Parliamentary Forum.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.60</span> · <span class="sev">SEV 0.10</span></div></div></article><article class="item" id="item-23"><span class="item-n">#23</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by8o75v-bodour-qasimi-inaugurates-sharjah-festival-african" target="_blank" rel="noopener">by8o75v bodour qasimi inaugurates sharjah festival african</a></h3><p class="summary">Bodour Qasimi inaugurates Sharjah Festival of African arts.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.50</span> · <span class="sev">SEV 0.10</span></div></div></article><article class="item" id="item-25"><span class="item-n">#25</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/170v7vf-gulfood-logistics-launched-strengthen-global-food" target="_blank" rel="noopener">170v7vf gulfood logistics launched strengthen global food</a></h3><p class="summary">Gulfood Logistics launched to strengthen global food supply chains.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span>AE</span> · <span>TRADE</span></div></div></article></section>
 <section class="section"><div class="section-head"><span class="label">▌ UAE FOREIGN-POLICY SIGNALS</span><span class="count">12 ITEMS</span></div><article class="item" id="item-2"><span class="item-n">#02</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by8o78v-khaldoon-mubarak-meets-with-president-republic" target="_blank" rel="noopener">by8o78v khaldoon mubarak meets with president republic</a></h3><p class="summary">Khaldoon Mubarak meets with a foreign president.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.50</span> · <span>AE</span></div></div></article><article class="item" id="item-3"><span class="item-n">#03</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by8o7eq-uae-senegal-presidents-discuss-bilateral-ties" target="_blank" rel="noopener">by8o7eq uae senegal presidents discuss bilateral ties</a></h3><p class="summary">UAE and Senegal presidents discuss bilateral ties.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.50</span> · <span>AE · SN</span></div></div></article><article class="item" id="item-4"><span class="item-n">#04</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by8o7kg-uae-china-industrial-collaboration-manufacture" target="_blank" rel="noopener">by8o7kg uae china industrial collaboration manufacture</a></h3><p class="summary">UAE and China collaborate on industrial manufacturing.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.50</span> · <span>AE · CN</span> · <span>TRADE</span></div></div></article><article class="item" id="item-5"><span class="item-n">#05</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by8o7ki-uae-president-receives-written-message-from" target="_blank" rel="noopener">by8o7ki uae president receives written message from</a></h3><p class="summary">UAE President receives written message from foreign leader.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.50</span> · <span>AE</span></div></div></article><article class="item" id="item-6"><span class="item-n">#06</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/170xcy9-abdullah-bin-zayed-kaja-kallas-discuss-regional" target="_blank" rel="noopener">170xcy9 abdullah bin zayed kaja kallas discuss regional</a></h3><p class="summary">Abdullah bin Zayed and Kaja Kallas discuss regional issues.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.50</span></div></div></article><article class="item" id="item-7"><span class="item-n">#07</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by8o7hk-maktoum-bin-mohammed-meets-with-chairman-byd" target="_blank" rel="noopener">by8o7hk maktoum bin mohammed meets with chairman byd</a></h3><p class="summary">Maktoum bin Mohammed meets with BYD chairman.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.40</span> · <span>AE · CN</span> · <span>ENERGY</span></div></div></article><article class="item" id="item-8"><span class="item-n">#08</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by8o7kj-uae-uk-technology-exchange-renewed-investment" target="_blank" rel="noopener">by8o7kj uae uk technology exchange renewed investment</a></h3><p class="summary">UAE-UK technology exchange renewed with investment.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.40</span> · <span>AE · GB</span> · <span>AI-TECH</span></div></div></article><article class="item" id="item-9"><span class="item-n">#09</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by8o78x-fnc-speaker-congratulates-hisham-badawi-election" target="_blank" rel="noopener">by8o78x fnc speaker congratulates hisham badawi election</a></h3><p class="summary">FNC speaker congratulates Hisham Badawi on election.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.40</span> · <span>AE · SD</span></div></div></article><article class="item" id="item-10"><span class="item-n">#10</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by8o78t-fnc-japan-uae-parliamentary-friendship-league" target="_blank" rel="noopener">by8o78t fnc japan uae parliamentary friendship league</a></h3><p class="summary">FNC and Japan parliamentary friendship league established.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.30</span> · <span>AE · JP</span></div></div></article><article class="item" id="item-11"><span class="item-n">#11</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by8o7bt-uae-chairs-49th-session-council-arab-ministers" target="_blank" rel="noopener">by8o7bt uae chairs 49th session council arab ministers</a></h3><p class="summary">UAE chairs 49th session of Council of Arab Ministers.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.30</span> · <span>AE</span></div></div></article><article class="item" id="item-18"><span class="item-n">#18</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by8o7qq-arab-parliament-welcomes-formation-palestinian" target="_blank" rel="noopener">by8o7qq arab parliament welcomes formation palestinian</a></h3><p class="summary">Arab Parliament welcomes formation of Palestinian government.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.60</span> · <span class="sev">SEV 0.20</span> · <span>PS · AE</span></div></div></article><article class="item" id="item-20"><span class="item-n">#20</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by8o7nw-uae-president-prime-minister-slovakia-discuss" target="_blank" rel="noopener">by8o7nw uae president prime minister slovakia discuss</a></h3><p class="summary">UAE President and Slovak Prime Minister hold discussions.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.10</span> · <span>AE · SK</span></div></div></article></section>
 <section class="section"><div class="section-head"><span class="label">▌ UAE ECOSYSTEM</span><span class="count">07 ITEMS</span></div><article class="item" id="item-12"><span class="item-n">#12</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by8o703-altérra-bbva-forge-partnership-backed-250-million" target="_blank" rel="noopener">by8o703 altérra bbva forge partnership backed 250 million</a></h3><p class="summary">ALTÉRRA and BBVA forge partnership backed by $250 million.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.30</span></div></div></article><article class="item" id="item-14"><span class="item-n">#14</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by8o7qs-emirates-drug-establishment-announces-voluntary" target="_blank" rel="noopener">by8o7qs emirates drug establishment announces voluntary</a></h3><p class="summary">Emirates Drug Establishment announces voluntary action.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.20</span></div></div></article><article class="item" id="item-15"><span class="item-n">#15</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by8o6u7-masdar-achieves-financial-close-for-300mw-solar" target="_blank" rel="noopener">by8o6u7 masdar achieves financial close for 300mw solar</a></h3><p class="summary">Masdar achieves financial close for 300MW solar project.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.20</span></div></div></article><article class="item" id="item-16"><span class="item-n">#16</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by8o701-emirati-firms-explore-deploying-solar-powered" target="_blank" rel="noopener">by8o701 emirati firms explore deploying solar powered</a></h3><p class="summary">Emirati firms explore deploying solar-powered solutions.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.20</span></div></div></article><article class="item" id="item-17"><span class="item-n">#17</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by8o75x-national-agriculture-centre-sheraa-launch" target="_blank" rel="noopener">by8o75x national agriculture centre sheraa launch</a></h3><p class="summary">National Agriculture Centre and Sheraa launch partnership.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.20</span></div></div></article><article class="item" id="item-19"><span class="item-n">#19</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by8o6x3-solico-group-invests-aed130-million-new-sofood" target="_blank" rel="noopener">by8o6x3 solico group invests aed130 million new sofood</a></h3><p class="summary">Solico Group invests AED130 million in new sofood venture.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.50</span> · <span class="sev">SEV 0.20</span></div></div></article><article class="item" id="item-24"><span class="item-n">#24</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by82s4j-mbrsc-releases-new-mbz-sat-images-showcasing-uae" target="_blank" rel="noopener">by82s4j mbrsc releases new mbz sat images showcasing uae</a></h3><p class="summary">MBRSC releases new MBZ-Sat images showcasing UAE.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span>AE</span> · <span>AI-TECH</span></div></div></article></section>
-<footer class="foot"><span>© 2026 Dalila — daily intelligence brief</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Submit a suggestion</a></span></footer>
+<footer class="foot"><span>© 2026 Dalila</span> · <span><a href="index.html">Home</a></span> · <span><a href="archive.html">Archive</a></span> · <span><a href="markets.html">Markets</a></span> · <span><a href="about.html">About</a></span> · <span><a href="https://t.me/dalila_development_digest_bot">Telegram</a></span> · <span><a href="mailto:dalila.dev.digest@gmail.com">Feedback</a></span></footer>
 </div>
 </body>
 </html>

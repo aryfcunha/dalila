@@ -193,7 +193,96 @@ a:hover {
   letter-spacing: 0.14em;
 }
 
-/* ---------- items ---------- */
+/* ---------- market signals ---------- */
+.markets-section h2.section-head {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--type);
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+.mkt-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+.mkt-table { display: flex; flex-direction: column; gap: 4px; }
+.mkt-row {
+  display: grid;
+  grid-template-columns: 52px 1fr 72px 72px;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.mkt-row:last-child { border-bottom: 0; }
+.mkt-header {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--rule-strong) !important;
+}
+.mkt-prob {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--type);
+  text-align: right;
+}
+.mkt-q { color: var(--type); }
+.mkt-delta { text-align: right; font-weight: 600; }
+.mkt-src { color: var(--muted); font-size: 10px; text-align: right; }
+.delta-up { color: #2d9e5d; }
+.delta-dn { color: #c94a3a; }
+.delta-neu { color: var(--muted); }
+
+
+/* ---------- market page grid ---------- */
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+.market-card {
+  background: var(--bg-deep);
+  border: 1px solid var(--rule-strong);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.15s ease;
+}
+.market-card:hover { border-color: var(--amber); }
+.market-prob {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--amber);
+  line-height: 1;
+}
+.market-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.market-source { color: var(--muted); }
+.market-delta.up { color: var(--green); }
+.market-delta.down { color: var(--red); }
+.market-q {
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--type);
+}
+.market-q a { color: var(--type); border: 0; }
+.market-q a:hover { color: var(--amber); }
 .item {
   padding: 14px 0 16px;
   border-bottom: 1px solid var(--rule);
@@ -601,6 +690,7 @@ a:hover {
   <nav class="masthead-nav">
     <a href="../">Home</a>
     <a href="../archive.html">Archive</a>
+    <a href="../markets.html">Markets</a>
     <a href="../countries.html">Countries</a>
     <a href="../methodology.html">Methodology</a>
     <a href="../about.html">About</a>
@@ -623,7 +713,7 @@ a:hover {
 <section class="section"><div class="section-head"><span class="label">▌ REPORTS &amp; EVIDENCE</span><span class="count">02 ITEMS</span></div><article class="item" id="item-7"><span class="item-n">#07</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/2026/03/08/mojtaba-khamenei-iran-new-leader/" target="_blank" rel="noopener">mojtaba khamenei iran new leader</a></h3><p class="summary">Mojtaba Khamenei appointed as Iran&#x27;s new Supreme Leader.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.60</span> · <span class="sev">SEV 0.80</span> · <span>IR</span></div></div></article><article class="item" id="item-8"><span class="item-n">#08</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/energy/2026/03/08/war-energy-implications-put-gulf-logistics-to-the-test/" target="_blank" rel="noopener">war energy implications put gulf logistics to the test</a></h3><p class="summary">Iran conflict poses challenges to critical Gulf energy and logistics networks.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.60</span> · <span>AE</span> · <span>ENERGY</span></div></div></article></section>
 <section class="section"><div class="section-head"><span class="label">▌ UAE FOREIGN-POLICY SIGNALS</span><span class="count">04 ITEMS</span></div><article class="item" id="item-1"><span class="item-n">#01</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/03/08/president-sheikh-mohamed-and-uk-prime-minister-keir-starmer-discuss-iran-crisis-in-call/" target="_blank" rel="noopener">president sheikh mohamed and uk prime minister keir starmer discuss iran crisis in call</a></h3><p class="summary">UAE President and UK PM discuss coordinated response to Iran escalation.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.70</span> · <span>AE · GB</span></div></div></article><article class="item" id="item-3"><span class="item-n">#03</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/03/08/arab-foreign-ministers-condemn-irans-attacks-on-neighbours-and-assert-their-right-to-self-defence/" target="_blank" rel="noopener">arab foreign ministers condemn irans attacks on neighbours and assert their right to self defence</a></h3><p class="summary">Arab foreign ministers condemn Iran attacks, affirm collective self-defense rights.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.70</span> · <span>AE · IR</span></div></div></article><article class="item" id="item-6"><span class="item-n">#06</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/energy/2026/03/08/irans-strike-brings-gulf-water-security-into-focus/" target="_blank" rel="noopener">irans strike brings gulf water security into focus</a></h3><p class="summary">Iran strikes escalate focus on critical Gulf water infrastructure security.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.70</span> · <span>AE · IR</span> · <span>WATER</span></div></div></article><article class="item" id="item-13"><span class="item-n">#13</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/us/2026/03/08/irans-foreign-minister-rejects-unconditional-ceasefire-and-vows-to-fight-until-war-ends/" target="_blank" rel="noopener">irans foreign minister rejects unconditional ceasefire and vows to fight until war ends</a></h3><p class="summary">Iran&#x27;s foreign minister rejects unconditional ceasefire, pledges continued conflict.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.40</span> · <span class="sev">SEV 0.70</span> · <span>IR</span></div></div></article></section>
 <section class="section"><div class="section-head"><span class="label">▌ UAE DOCTRINE</span><span class="count">03 ITEMS</span></div><article class="item" id="item-2"><span class="item-n">#02</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/03/08/any-defensive-measures-by-uae-against-iran-will-be-made-public-and-clear-says-senior-official/" target="_blank" rel="noopener">any defensive measures by uae against iran will be made public and clear says senior official</a></h3><p class="summary">Senior UAE official states any defensive measures against Iran will be public.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.60</span> · <span>AE · IR</span></div></div></article><article class="item" id="item-5"><span class="item-n">#05</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/03/08/zayed-humanitarian-day-uae-president-says-sheikh-zayeds-values-guide-nation-in-challenging-times/" target="_blank" rel="noopener">zayed humanitarian day uae president says sheikh zayeds values guide nation in challenging times</a></h3><p class="summary">UAE President reaffirms Sheikh Zayed&#x27;s humanitarian values as guiding doctrine.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.50</span> · <span>AE</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article><article class="item" id="item-10"><span class="item-n">#10</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/03/08/sheikh-khaled-praises-efforts-of-health-workers-during-iran-strikes-on-visit-to-abu-dhabi-medical-care-hub/" target="_blank" rel="noopener">sheikh khaled praises efforts of health workers during iran strikes on visit to abu dhabi medical care hub</a></h3><p class="summary">UAE leader praises healthcare workers&#x27; response to Iranian strikes.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.40</span> · <span>AE</span> · <span>HEALTH</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article></section>
-<footer class="foot"><span>© 2026 Dalila — daily intelligence brief</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Submit a suggestion</a></span></footer>
+<footer class="foot"><span>© 2026 Dalila</span> · <span><a href="index.html">Home</a></span> · <span><a href="archive.html">Archive</a></span> · <span><a href="markets.html">Markets</a></span> · <span><a href="about.html">About</a></span> · <span><a href="https://t.me/dalila_development_digest_bot">Telegram</a></span> · <span><a href="mailto:dalila.dev.digest@gmail.com">Feedback</a></span></footer>
 </div>
 </body>
 </html>

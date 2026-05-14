@@ -193,7 +193,96 @@ a:hover {
   letter-spacing: 0.14em;
 }
 
-/* ---------- items ---------- */
+/* ---------- market signals ---------- */
+.markets-section h2.section-head {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--type);
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+.mkt-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+.mkt-table { display: flex; flex-direction: column; gap: 4px; }
+.mkt-row {
+  display: grid;
+  grid-template-columns: 52px 1fr 72px 72px;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.mkt-row:last-child { border-bottom: 0; }
+.mkt-header {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--rule-strong) !important;
+}
+.mkt-prob {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--type);
+  text-align: right;
+}
+.mkt-q { color: var(--type); }
+.mkt-delta { text-align: right; font-weight: 600; }
+.mkt-src { color: var(--muted); font-size: 10px; text-align: right; }
+.delta-up { color: #2d9e5d; }
+.delta-dn { color: #c94a3a; }
+.delta-neu { color: var(--muted); }
+
+
+/* ---------- market page grid ---------- */
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+.market-card {
+  background: var(--bg-deep);
+  border: 1px solid var(--rule-strong);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.15s ease;
+}
+.market-card:hover { border-color: var(--amber); }
+.market-prob {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--amber);
+  line-height: 1;
+}
+.market-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.market-source { color: var(--muted); }
+.market-delta.up { color: var(--green); }
+.market-delta.down { color: var(--red); }
+.market-q {
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--type);
+}
+.market-q a { color: var(--type); border: 0; }
+.market-q a:hover { color: var(--amber); }
 .item {
   padding: 14px 0 16px;
   border-bottom: 1px solid var(--rule);
@@ -601,6 +690,7 @@ a:hover {
   <nav class="masthead-nav">
     <a href="../">Home</a>
     <a href="../archive.html">Archive</a>
+    <a href="../markets.html">Markets</a>
     <a href="../countries.html">Countries</a>
     <a href="../methodology.html">Methodology</a>
     <a href="../about.html">About</a>
@@ -623,7 +713,7 @@ a:hover {
 <section class="section"><div class="section-head"><span class="label">▌ UAE FOREIGN-POLICY SIGNALS</span><span class="count">07 ITEMS</span></div><article class="item" id="item-1"><span class="item-n">#01</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/04/03/uae-iran-drone-missile-strikes/" target="_blank" rel="noopener">uae iran drone missile strikes</a></h3><p class="summary">Iran launches drone and missile strikes on UAE.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.90</span> · <span>AE · IR</span></div></div></article><article class="item" id="item-3"><span class="item-n">#03</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/energy/2026/04/03/iran-war-uncertainty-to-fuel-higher-oil-prices-for-longer-energy-experts-say/" target="_blank" rel="noopener">iran war uncertainty to fuel higher oil prices for longer energy experts say</a></h3><p class="summary">Experts predict Iran war uncertainty will keep oil prices elevated.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.60</span> · <span>IR · AE</span> · <span>ENERGY</span></div></div></article><article class="item" id="item-4"><span class="item-n">#04</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/europe/2026/04/03/france-pushes-back-on-calls-to-force-reopening-of-hormuz-strait-as-macron-trades-barbs-with-trump/" target="_blank" rel="noopener">france pushes back on calls to force reopening of hormuz strait as macron trades barbs with trump</a></h3><p class="summary">France resists forcing Hormuz reopening; Macron-Trump dispute.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.60</span> · <span class="sev">SEV 0.60</span></div></div></article><article class="item" id="item-5"><span class="item-n">#05</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/04/03/five-key-points-from-un-bahrain-resolution-to-safeguard-shipping-in-strait-of-hormuz/" target="_blank" rel="noopener">five key points from un bahrain resolution to safeguard shipping in strait of hormuz</a></h3><p class="summary">UN resolution led by Bahrain proposes measures to safeguard shipping in Strait of Hormuz.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.50</span> · <span>BH</span></div></div></article><article class="item" id="item-6"><span class="item-n">#06</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/economy/2026/04/03/why-us-still-needs-strait-of-hormuz-for-sake-of-global-economy/" target="_blank" rel="noopener">why us still needs strait of hormuz for sake of global economy</a></h3><p class="summary">The National argues US still depends on Strait of Hormuz for global energy stability.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.50</span> · <span>AE · US</span> · <span>ENERGY</span></div></div></article><article class="item" id="item-8"><span class="item-n">#08</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/opinion/editorial/2026/04/03/artemis-us-nasa-space-middle-east-iran-europe/" target="_blank" rel="noopener">artemis us nasa space middle east iran europe</a></h3><p class="summary">Editorial examines UAE&#x27;s role in the Artemis space program amid regional tensions with Iran.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.40</span> · <span>AE</span> · <span>AI-TECH</span></div></div></article><article class="item" id="item-10"><span class="item-n">#10</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/2026/04/03/italys-meloni-visits-gulf-to-discuss-energy-security-with-saudi-arabia-uae-and-qatar/" target="_blank" rel="noopener">italys meloni visits gulf to discuss energy security with saudi arabia uae and qatar</a></h3><p class="summary">Italian PM Meloni visits Gulf for energy security talks with UAE.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.30</span></div></div></article></section>
 <section class="section"><div class="section-head"><span class="label">▌ UAE DOCTRINE</span><span class="count">01 ITEM</span></div><article class="item" id="item-15"><span class="item-n">#15</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/04/03/sheikh-mohammed-bin-rashid-says-arab-reading-challenge-has-reached-40-million-children/" target="_blank" rel="noopener">sheikh mohammed bin rashid says arab reading challenge has reached 40 million children</a></h3><p class="summary">MBR announces Arab Reading Challenge reaches 40M children.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article></section>
 <section class="section"><div class="section-head"><span class="label">▌ UAE ECOSYSTEM</span><span class="count">04 ITEMS</span></div><article class="item" id="item-2"><span class="item-n">#02</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/2026/04/03/emirates-global-aluminium-says-damage-from-iran-strike-will-take-up-to-a-year-to-fix/" target="_blank" rel="noopener">emirates global aluminium says damage from iran strike will take up to a year to fix</a></h3><p class="summary">Iran strike damage to Emirates Global Aluminium will take year to repair.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.70</span></div></div></article><article class="item" id="item-14"><span class="item-n">#14</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/04/03/inside-abu-dhabis-cutting-edge-biobank-hailed-as-missing-link-in-precision-healthcare-vision/" target="_blank" rel="noopener">inside abu dhabis cutting edge biobank hailed as missing link in precision healthcare vision</a></h3><p class="summary">Abu Dhabi biobank advances precision healthcare vision.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.90</span></div></div></article><article class="item" id="item-16"><span class="item-n">#16</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/04/03/dubai-to-install-electric-vehicle-charging-stations-at-600-parking-spaces-in-dh150m-green-drive/" target="_blank" rel="noopener">dubai to install electric vehicle charging stations at 600 parking spaces in dh150m green drive</a></h3><p class="summary">Dubai invests 150M AED in EV charging stations.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.90</span></div></div></article><article class="item" id="item-17"><span class="item-n">#17</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/04/03/abu-dhabi-researchers-identify-molecule-primed-to-boost-fight-against-parkinsons-disease/" target="_blank" rel="noopener">abu dhabi researchers identify molecule primed to boost fight against parkinsons disease</a></h3><p class="summary">Abu Dhabi researchers find molecule to fight Parkinson&#x27;s.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.90</span></div></div></article></section>
-<footer class="foot"><span>© 2026 Dalila — daily intelligence brief</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Submit a suggestion</a></span></footer>
+<footer class="foot"><span>© 2026 Dalila</span> · <span><a href="index.html">Home</a></span> · <span><a href="archive.html">Archive</a></span> · <span><a href="markets.html">Markets</a></span> · <span><a href="about.html">About</a></span> · <span><a href="https://t.me/dalila_development_digest_bot">Telegram</a></span> · <span><a href="mailto:dalila.dev.digest@gmail.com">Feedback</a></span></footer>
 </div>
 </body>
 </html>

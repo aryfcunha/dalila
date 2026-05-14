@@ -193,7 +193,96 @@ a:hover {
   letter-spacing: 0.14em;
 }
 
-/* ---------- items ---------- */
+/* ---------- market signals ---------- */
+.markets-section h2.section-head {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--type);
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+.mkt-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+.mkt-table { display: flex; flex-direction: column; gap: 4px; }
+.mkt-row {
+  display: grid;
+  grid-template-columns: 52px 1fr 72px 72px;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.mkt-row:last-child { border-bottom: 0; }
+.mkt-header {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--rule-strong) !important;
+}
+.mkt-prob {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--type);
+  text-align: right;
+}
+.mkt-q { color: var(--type); }
+.mkt-delta { text-align: right; font-weight: 600; }
+.mkt-src { color: var(--muted); font-size: 10px; text-align: right; }
+.delta-up { color: #2d9e5d; }
+.delta-dn { color: #c94a3a; }
+.delta-neu { color: var(--muted); }
+
+
+/* ---------- market page grid ---------- */
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+.market-card {
+  background: var(--bg-deep);
+  border: 1px solid var(--rule-strong);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.15s ease;
+}
+.market-card:hover { border-color: var(--amber); }
+.market-prob {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--amber);
+  line-height: 1;
+}
+.market-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.market-source { color: var(--muted); }
+.market-delta.up { color: var(--green); }
+.market-delta.down { color: var(--red); }
+.market-q {
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--type);
+}
+.market-q a { color: var(--type); border: 0; }
+.market-q a:hover { color: var(--amber); }
 .item {
   padding: 14px 0 16px;
   border-bottom: 1px solid var(--rule);
@@ -601,6 +690,7 @@ a:hover {
   <nav class="masthead-nav">
     <a href="../">Home</a>
     <a href="../archive.html">Archive</a>
+    <a href="../markets.html">Markets</a>
     <a href="../countries.html">Countries</a>
     <a href="../methodology.html">Methodology</a>
     <a href="../about.html">About</a>
@@ -623,7 +713,7 @@ a:hover {
 <section class="section"><div class="section-head"><span class="label">▌ UAE FOREIGN-POLICY SIGNALS</span><span class="count">02 ITEMS</span></div><article class="item" id="item-5"><span class="item-n">#05</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/170mn8x-uae-leaders-congratulate-sultan-oman-accession" target="_blank" rel="noopener">170mn8x uae leaders congratulate sultan oman accession</a></h3><p class="summary">UAE leaders congratulate new Sultan of Oman.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.20</span> · <span>AE · OM</span></div></div></article><article class="item" id="item-20"><span class="item-n">#20</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by6agt8-dubai-chambers-receives-philippine-first-lady" target="_blank" rel="noopener">by6agt8 dubai chambers receives philippine first lady</a></h3><p class="summary">Dubai Chambers receives Philippine first lady in bilateral engagement.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.80</span> · <span>AE · PH</span></div></div></article></section>
 <section class="section"><div class="section-head"><span class="label">▌ UAE DOCTRINE</span><span class="count">04 ITEMS</span></div><article class="item" id="item-1"><span class="item-n">#01</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by6agw3-amna-dahak-uae-leads-new-era-renewable-energy" target="_blank" rel="noopener">by6agw3 amna dahak uae leads new era renewable energy</a></h3><p class="summary">UAE official Amna Dahak reinforces UAE leadership in renewable energy transition.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.40</span> · <span>AE</span> · <span>ENERGY</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article><article class="item" id="item-4"><span class="item-n">#04</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by5p1lm-mohammed-bin-rashid-bin-mohammed-bin-rashid" target="_blank" rel="noopener">by5p1lm mohammed bin rashid bin mohammed bin rashid</a></h3><p class="summary">Mohammed bin Rashid bin Mohammed bin Rashid statement.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.20</span> · <span>AE</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article><article class="item" id="item-7"><span class="item-n">#07</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by6agt7-amna-dahak-uae-places-climate-action-top-its" target="_blank" rel="noopener">by6agt7 amna dahak uae places climate action top its</a></h3><p class="summary">UAE reaffirms climate action as top priority in official statement.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.20</span> · <span>AE</span> · <span>ENERGY</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article><article class="item" id="item-9"><span class="item-n">#09</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by6agkn-rulers-emirates-congratulate-sultan-oman-accession" target="_blank" rel="noopener">by6agkn rulers emirates congratulate sultan oman accession</a></h3><p class="summary">UAE rulers congratulate Sultan Haitham of Oman on his accession anniversary.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.10</span> · <span>OM · AE</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article></section>
 <section class="section"><div class="section-head"><span class="label">▌ UAE ECOSYSTEM</span><span class="count">10 ITEMS</span></div><article class="item" id="item-2"><span class="item-n">#02</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by6ah4s-emirates-red-crescent-launches-final-phase-housing" target="_blank" rel="noopener">by6ah4s emirates red crescent launches final phase housing</a></h3><p class="summary">Emirates Red Crescent launches final phase of a housing project.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.40</span></div></div></article><article class="item" id="item-6"><span class="item-n">#06</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by6agkp-uae-cybersecurity-council-underscores-importance" target="_blank" rel="noopener">by6agkp uae cybersecurity council underscores importance</a></h3><p class="summary">UAE Cybersecurity Council stresses importance of cyber resilience.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.20</span> · <span>AE</span></div></div></article><article class="item" id="item-8"><span class="item-n">#08</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by6agqe-irena-director-general-renewable-energy-now" target="_blank" rel="noopener">by6agqe irena director general renewable energy now</a></h3><p class="summary">IRENA Director General calls for accelerated renewable energy deployment.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.50</span> · <span class="sev">SEV 0.30</span> · <span>ENERGY</span></div></div></article><article class="item" id="item-10"><span class="item-n">#10</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by6agta-masdar-signs-landmark-ppa-for-150mw-quipungo-solar" target="_blank" rel="noopener">by6agta masdar signs landmark ppa for 150mw quipungo solar</a></h3><p class="summary">Masdar signs PPA for 150MW solar plant in Quipungo, Angola.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.95</span> · <span class="sev">SEV 0.10</span> · <span>AO</span> · <span>ENERGY</span></div></div></article><article class="item" id="item-12"><span class="item-n">#12</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/170mn89-476-entries-submitted-for-main-categories-sheikh" target="_blank" rel="noopener">170mn89 476 entries submitted for main categories sheikh</a></h3><p class="summary">476 entries submitted for Sheikh-related competition categories.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.40</span> · <span>AE</span></div></div></article><article class="item" id="item-13"><span class="item-n">#13</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/170mn8a-wio-bank-launches-first-account-for-content" target="_blank" rel="noopener">170mn8a wio bank launches first account for content</a></h3><p class="summary">Wio Bank launches first account for content creators.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.70</span> · <span>AE</span> · <span>BIZ-ENABLEMENT</span></div></div></article><article class="item" id="item-14"><span class="item-n">#14</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/170mn8b-‘dubai-cycling-pass’-launched-promote-active" target="_blank" rel="noopener">170mn8b ‘dubai cycling pass’ launched promote active</a></h3><p class="summary">Dubai Cycling Pass launched to promote active lifestyle.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.60</span> · <span>AE</span></div></div></article><article class="item" id="item-17"><span class="item-n">#17</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by6agko-rta-opens-phase-hessa-street-development-project" target="_blank" rel="noopener">by6agko rta opens phase hessa street development project</a></h3><p class="summary">RTA opens first phase of Hessaa Street development project in Dubai.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span>AE</span></div></div></article><article class="item" id="item-18"><span class="item-n">#18</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by6agkq-ajman-chamber-signs-agreements-boost-institutional" target="_blank" rel="noopener">by6agkq ajman chamber signs agreements boost institutional</a></h3><p class="summary">Ajman Chamber signs agreements to boost institutional capacity.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span>AE</span> · <span>BIZ-ENABLEMENT</span></div></div></article><article class="item" id="item-22"><span class="item-n">#22</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/by6agz0-creators-hq-alfan-launch-aed5-million-social" target="_blank" rel="noopener">by6agz0 creators hq alfan launch aed5 million social</a></h3><p class="summary">Creators HQ and Alfan launch AED5 million social fund.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span>AE</span></div></div></article></section>
-<footer class="foot"><span>© 2026 Dalila — daily intelligence brief</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Submit a suggestion</a></span></footer>
+<footer class="foot"><span>© 2026 Dalila</span> · <span><a href="index.html">Home</a></span> · <span><a href="archive.html">Archive</a></span> · <span><a href="markets.html">Markets</a></span> · <span><a href="about.html">About</a></span> · <span><a href="https://t.me/dalila_development_digest_bot">Telegram</a></span> · <span><a href="mailto:dalila.dev.digest@gmail.com">Feedback</a></span></footer>
 </div>
 </body>
 </html>

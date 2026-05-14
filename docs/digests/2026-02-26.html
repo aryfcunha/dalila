@@ -193,7 +193,96 @@ a:hover {
   letter-spacing: 0.14em;
 }
 
-/* ---------- items ---------- */
+/* ---------- market signals ---------- */
+.markets-section h2.section-head {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--type);
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+.mkt-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+.mkt-table { display: flex; flex-direction: column; gap: 4px; }
+.mkt-row {
+  display: grid;
+  grid-template-columns: 52px 1fr 72px 72px;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.mkt-row:last-child { border-bottom: 0; }
+.mkt-header {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--rule-strong) !important;
+}
+.mkt-prob {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--type);
+  text-align: right;
+}
+.mkt-q { color: var(--type); }
+.mkt-delta { text-align: right; font-weight: 600; }
+.mkt-src { color: var(--muted); font-size: 10px; text-align: right; }
+.delta-up { color: #2d9e5d; }
+.delta-dn { color: #c94a3a; }
+.delta-neu { color: var(--muted); }
+
+
+/* ---------- market page grid ---------- */
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+.market-card {
+  background: var(--bg-deep);
+  border: 1px solid var(--rule-strong);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.15s ease;
+}
+.market-card:hover { border-color: var(--amber); }
+.market-prob {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--amber);
+  line-height: 1;
+}
+.market-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.market-source { color: var(--muted); }
+.market-delta.up { color: var(--green); }
+.market-delta.down { color: var(--red); }
+.market-q {
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--type);
+}
+.market-q a { color: var(--type); border: 0; }
+.market-q a:hover { color: var(--amber); }
 .item {
   padding: 14px 0 16px;
   border-bottom: 1px solid var(--rule);
@@ -601,6 +690,7 @@ a:hover {
   <nav class="masthead-nav">
     <a href="../">Home</a>
     <a href="../archive.html">Archive</a>
+    <a href="../markets.html">Markets</a>
     <a href="../countries.html">Countries</a>
     <a href="../methodology.html">Methodology</a>
     <a href="../about.html">About</a>
@@ -621,7 +711,7 @@ a:hover {
 <section class="section"><div class="section-head"><span class="label">▌ HUMANITARIAN</span><span class="count">02 ITEMS</span></div><article class="item" id="item-4"><span class="item-n">#04</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/02/25/israeli-motorway-that-could-sink-palestinian-statehood/" target="_blank" rel="noopener">israeli motorway that could sink palestinian statehood</a></h3><p class="summary">Israeli motorway construction threatens Palestinian territorial integrity and statehood viability.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.60</span> · <span class="sev">SEV 0.70</span> · <span>PS</span> · <span>HUMANITARIAN</span></div></div></article><article class="item" id="item-14"><span class="item-n">#14</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/02/25/isis-launching-daily-attacks-in-north-eastern-syria-as-fears-of-security-vacuum-grow/" target="_blank" rel="noopener">isis launching daily attacks in north eastern syria as fears of security vacuum grow</a></h3><p class="summary">ISIS escalates daily attacks in northeastern Syria amid widening security vacuum.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.40</span> · <span class="sev">SEV 0.70</span> · <span>SY</span> · <span>HUMANITARIAN</span></div></div></article></section>
 <section class="section"><div class="section-head"><span class="label">▌ UAE FOREIGN-POLICY SIGNALS</span><span class="count">19 ITEMS</span></div><article class="item" id="item-1"><span class="item-n">#01</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/02/25/uae-says-control-of-gaza-must-remain-in-palestinian-hands/" target="_blank" rel="noopener">uae says control of gaza must remain in palestinian hands</a></h3><p class="summary">UAE declares Gaza control must remain under Palestinian hands post-conflict.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.60</span> · <span>PS · AE</span> · <span>HUMANITARIAN</span></div></div></article><article class="item" id="item-2"><span class="item-n">#02</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/02/25/us-consular-services-to-be-provided-at-pop-ups-in-illegal-west-bank-settlements/" target="_blank" rel="noopener">us consular services to be provided at pop ups in illegal west bank settlements</a></h3><p class="summary">US to provide consular services in West Bank settlements.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.70</span></div></div></article><article class="item" id="item-3"><span class="item-n">#03</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/opinion/editorial/2026/02/25/gaza-palestine-israel-board-of-peace-middle-east/" target="_blank" rel="noopener">gaza palestine israel board of peace middle east</a></h3><p class="summary">Editorial discusses pathways toward Israeli-Palestinian peace and regional stability.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.60</span> · <span class="sev">SEV 0.80</span></div></div></article><article class="item" id="item-6"><span class="item-n">#06</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/173d8jg-uae-strongly-condemns-terrorist-attacks-pakistan" target="_blank" rel="noopener">173d8jg uae strongly condemns terrorist attacks pakistan</a></h3><p class="summary">UAE strongly condemns terrorist attacks in Pakistan.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.50</span> · <span>AE · PK</span></div></div></article><article class="item" id="item-7"><span class="item-n">#07</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/173d8jf-uae-refutes-false-accusations-made-before-human" target="_blank" rel="noopener">173d8jf uae refutes false accusations made before human</a></h3><p class="summary">UAE refutes false accusations made before Human Rights Council.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.40</span> · <span>AE</span></div></div></article><article class="item" id="item-8"><span class="item-n">#08</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byx2z7c-uae-expresses-solidarity-with-türkiye-conveys" target="_blank" rel="noopener">byx2z7c uae expresses solidarity with türkiye conveys</a></h3><p class="summary">UAE expresses solidarity with Türkiye following incident.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.40</span> · <span>AE · TR</span> · <span>HUMANITARIAN</span></div></div></article><article class="item" id="item-9"><span class="item-n">#09</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/opinion/comment/2026/02/25/hezbollahs-refusal-to-disarm-would-be-a-strategic-blunder/" target="_blank" rel="noopener">hezbollahs refusal to disarm would be a strategic blunder</a></h3><p class="summary">Commentary argues Hezbollah disarmament essential to avoid strategic miscalculation.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.50</span> · <span class="sev">SEV 0.60</span></div></div></article><article class="item" id="item-10"><span class="item-n">#10</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/2026/02/25/iran-denies-trumps-claim-of-long-range-missile-plans-to-threaten-us/" target="_blank" rel="noopener">iran denies trumps claim of long range missile plans to threaten us</a></h3><p class="summary">Iran denies US claims regarding long-range missile development programs.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.50</span> · <span class="sev">SEV 0.60</span> · <span>IR · US</span></div></div></article><article class="item" id="item-11"><span class="item-n">#11</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/us/2026/02/25/us-hits-irans-shadow-fleet-with-new-sanctions-after-trump-targets-iran-in-state-of-the-union/" target="_blank" rel="noopener">us hits irans shadow fleet with new sanctions after trump targets iran in state of the union</a></h3><p class="summary">US escalates Iran sanctions on shadow maritime fleet following State of Union rhetoric.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.50</span> · <span class="sev">SEV 0.60</span> · <span>US · IR</span></div></div></article><article class="item" id="item-12"><span class="item-n">#12</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/us/2026/02/25/sheikh-abdullah-meets-jd-vance-in-washington/" target="_blank" rel="noopener">sheikh abdullah meets jd vance in washington</a></h3><p class="summary">Sheikh Abdullah meets US Vice President Vance in Washington for bilateral engagement.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.30</span> · <span>AE · US</span></div></div></article><article class="item" id="item-13"><span class="item-n">#13</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/173b3g5-abdullah-bin-zayed-meets-secretary-commerce" target="_blank" rel="noopener">173b3g5 abdullah bin zayed meets secretary commerce</a></h3><p class="summary">Abdullah bin Zayed meets Secretary of Commerce.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.30</span> · <span>AE · US</span></div></div></article><article class="item" id="item-15"><span class="item-n">#15</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byx2zcz-uae-republic-korea-review-progress-‘special" target="_blank" rel="noopener">byx2zcz uae republic korea review progress ‘special</a></h3><p class="summary">UAE and South Korea review progress of special strategic partnership.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.30</span> · <span>AE · KR</span></div></div></article><article class="item" id="item-16"><span class="item-n">#16</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/173d8j8-uae-renews-commitment-before-human-rights-council" target="_blank" rel="noopener">173d8j8 uae renews commitment before human rights council</a></h3><p class="summary">UAE renews commitment before Human Rights Council.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.30</span> · <span>AE</span></div></div></article><article class="item" id="item-19"><span class="item-n">#19</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byx2zfs-uae-president-receives-written-message-from" target="_blank" rel="noopener">byx2zfs uae president receives written message from</a></h3><p class="summary">UAE President receives written message from foreign leader.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.20</span> · <span>AE</span></div></div></article><article class="item" id="item-20"><span class="item-n">#20</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/us/2026/02/25/tariffs-state-of-the-union-trump/" target="_blank" rel="noopener">tariffs state of the union trump</a></h3><p class="summary">Trump administration addresses tariff policy in State of the Union address.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.40</span> · <span class="sev">SEV 0.40</span></div></div></article><article class="item" id="item-21"><span class="item-n">#21</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byx2zfw-abdullah-bin-zayed-egyptian-discuss-brotherly-ties" target="_blank" rel="noopener">byx2zfw abdullah bin zayed egyptian discuss brotherly ties</a></h3><p class="summary">Abdullah bin Zayed and Egyptian counterpart discuss brotherly ties.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.20</span> · <span>AE · EG</span></div></div></article><article class="item" id="item-22"><span class="item-n">#22</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byx2zfx-abdullah-bin-zayed-meets-vice-president-discuss" target="_blank" rel="noopener">byx2zfx abdullah bin zayed meets vice president discuss</a></h3><p class="summary">Abdullah bin Zayed meets vice president of another country.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.20</span> · <span>AE</span></div></div></article><article class="item" id="item-24"><span class="item-n">#24</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/uae-expresses-solidarity-with-türkiye-conveys-condolences-over-military-aircraft-crash-1.500455256" target="_blank" rel="noopener">uae expresses solidarity with türkiye conveys condolences over military aircraft crash 1.500455256</a></h3><p class="summary">UAE expresses solidarity with Turkey after military crash.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.30</span> · <span>AE · TR</span></div></div></article><article class="item" id="item-25"><span class="item-n">#25</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byx2z4g-rulers-emirates-congratulate-emir-kuwait-national" target="_blank" rel="noopener">byx2z4g rulers emirates congratulate emir kuwait national</a></h3><p class="summary">UAE rulers congratulate Emir of Kuwait on national day.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.10</span> · <span>AE · KW</span></div></div></article></section>
 <section class="section"><div class="section-head"><span class="label">▌ UAE ECOSYSTEM</span><span class="count">04 ITEMS</span></div><article class="item" id="item-5"><span class="item-n">#05</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/02/25/uae-shuts-down-12-unlicensed-domestic-worker-recruitment-offices/" target="_blank" rel="noopener">uae shuts down 12 unlicensed domestic worker recruitment offices</a></h3><p class="summary">UAE authorities close unlicensed domestic worker recruitment agencies.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.40</span></div></div></article><article class="item" id="item-17"><span class="item-n">#17</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/173d8jh-muslim-council-elders-strongly-condemns-terrorist" target="_blank" rel="noopener">173d8jh muslim council elders strongly condemns terrorist</a></h3><p class="summary">Muslim Council of Elders strongly condemns terrorist attacks.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.60</span> · <span class="sev">SEV 0.40</span> · <span>AE</span></div></div></article><article class="item" id="item-18"><span class="item-n">#18</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/banking/2026/02/25/uae-central-bank-and-core42-to-develop-sovereign-financial-cloud-infrastructure/" target="_blank" rel="noopener">uae central bank and core42 to develop sovereign financial cloud infrastructure</a></h3><p class="summary">UAE central bank and Core42 build sovereign financial cloud infrastructure.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.20</span> · <span>AE</span> · <span>AI-TECH</span></div></div></article><article class="item" id="item-23"><span class="item-n">#23</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byx2zcy-nyu-abu-dhabi-rtw-investments-announce-strategic" target="_blank" rel="noopener">byx2zcy nyu abu dhabi rtw investments announce strategic</a></h3><p class="summary">NYU Abu Dhabi and RTW Investments announce strategic partnership.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.20</span> · <span>AE</span> · <span>EDUCATION</span></div></div></article></section>
-<footer class="foot"><span>© 2026 Dalila — daily intelligence brief</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Submit a suggestion</a></span></footer>
+<footer class="foot"><span>© 2026 Dalila</span> · <span><a href="index.html">Home</a></span> · <span><a href="archive.html">Archive</a></span> · <span><a href="markets.html">Markets</a></span> · <span><a href="about.html">About</a></span> · <span><a href="https://t.me/dalila_development_digest_bot">Telegram</a></span> · <span><a href="mailto:dalila.dev.digest@gmail.com">Feedback</a></span></footer>
 </div>
 </body>
 </html>

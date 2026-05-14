@@ -193,7 +193,96 @@ a:hover {
   letter-spacing: 0.14em;
 }
 
-/* ---------- items ---------- */
+/* ---------- market signals ---------- */
+.markets-section h2.section-head {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--type);
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+.mkt-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+.mkt-table { display: flex; flex-direction: column; gap: 4px; }
+.mkt-row {
+  display: grid;
+  grid-template-columns: 52px 1fr 72px 72px;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.mkt-row:last-child { border-bottom: 0; }
+.mkt-header {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--rule-strong) !important;
+}
+.mkt-prob {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--type);
+  text-align: right;
+}
+.mkt-q { color: var(--type); }
+.mkt-delta { text-align: right; font-weight: 600; }
+.mkt-src { color: var(--muted); font-size: 10px; text-align: right; }
+.delta-up { color: #2d9e5d; }
+.delta-dn { color: #c94a3a; }
+.delta-neu { color: var(--muted); }
+
+
+/* ---------- market page grid ---------- */
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+.market-card {
+  background: var(--bg-deep);
+  border: 1px solid var(--rule-strong);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.15s ease;
+}
+.market-card:hover { border-color: var(--amber); }
+.market-prob {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--amber);
+  line-height: 1;
+}
+.market-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.market-source { color: var(--muted); }
+.market-delta.up { color: var(--green); }
+.market-delta.down { color: var(--red); }
+.market-q {
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--type);
+}
+.market-q a { color: var(--type); border: 0; }
+.market-q a:hover { color: var(--amber); }
 .item {
   padding: 14px 0 16px;
   border-bottom: 1px solid var(--rule);
@@ -601,6 +690,7 @@ a:hover {
   <nav class="masthead-nav">
     <a href="../">Home</a>
     <a href="../archive.html">Archive</a>
+    <a href="../markets.html">Markets</a>
     <a href="../countries.html">Countries</a>
     <a href="../methodology.html">Methodology</a>
     <a href="../about.html">About</a>
@@ -623,7 +713,7 @@ a:hover {
 <section class="section"><div class="section-head"><span class="label">▌ UAE FOREIGN-POLICY SIGNALS</span><span class="count">13 ITEMS</span></div><article class="item" id="item-1"><span class="item-n">#01</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byje0ma-uae-democratic-republic-congo-presidents-discuss" target="_blank" rel="noopener">byje0ma uae democratic republic congo presidents discuss</a></h3><p class="summary">UAE and DRC presidents discuss bilateral relations.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.80</span></div></div></article><article class="item" id="item-5"><span class="item-n">#05</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byje0j9-mohammed-bin-rashid-meets-with-imf-managing" target="_blank" rel="noopener">byje0j9 mohammed bin rashid meets with imf managing</a></h3><p class="summary">Mohammed bin Rashid meets with IMF Managing Director.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.40</span></div></div></article><article class="item" id="item-6"><span class="item-n">#06</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byje0mb-uae-democratic-republic-congo-strengthen-economic" target="_blank" rel="noopener">byje0mb uae democratic republic congo strengthen economic</a></h3><p class="summary">UAE and DRC strengthen economic cooperation.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.40</span></div></div></article><article class="item" id="item-7"><span class="item-n">#07</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byje0ag-uae-president-king-jordan-hold-phone-call-discuss" target="_blank" rel="noopener">byje0ag uae president king jordan hold phone call discuss</a></h3><p class="summary">UAE President and King of Jordan hold phone call.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.30</span></div></div></article><article class="item" id="item-8"><span class="item-n">#08</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byje0j6-mohammed-bin-rashid-meets-with-prime-minister" target="_blank" rel="noopener">byje0j6 mohammed bin rashid meets with prime minister</a></h3><p class="summary">Mohammed bin Rashid meets with a prime minister.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.30</span></div></div></article><article class="item" id="item-10"><span class="item-n">#10</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byje0mg-abdullah-bin-zayed-receives-egyptian-fm-reviews" target="_blank" rel="noopener">byje0mg abdullah bin zayed receives egyptian fm reviews</a></h3><p class="summary">UAE Foreign Minister receives Egyptian counterpart for talks.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.30</span> · <span>AE · EG</span></div></div></article><article class="item" id="item-13"><span class="item-n">#13</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byje04f-uae-president-discusses-bilateral-cooperation-with" target="_blank" rel="noopener">byje04f uae president discusses bilateral cooperation with</a></h3><p class="summary">UAE President discusses bilateral cooperation with foreign counterpart.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.20</span></div></div></article><article class="item" id="item-14"><span class="item-n">#14</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byje0ad-uae-azerbaijan-presidents-discuss-cooperation" target="_blank" rel="noopener">byje0ad uae azerbaijan presidents discuss cooperation</a></h3><p class="summary">UAE and Azerbaijan presidents discuss cooperation.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.20</span></div></div></article><article class="item" id="item-15"><span class="item-n">#15</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byje0g5-chief-staff-uae-armed-forces-meets-first-deputy" target="_blank" rel="noopener">byje0g5 chief staff uae armed forces meets first deputy</a></h3><p class="summary">Chief of Staff of UAE Armed Forces meets first deputy.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.20</span></div></div></article><article class="item" id="item-16"><span class="item-n">#16</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byje0jb-mohammed-bin-rashid-meets-with-kuwaiti-businessmen" target="_blank" rel="noopener">byje0jb mohammed bin rashid meets with kuwaiti businessmen</a></h3><p class="summary">Mohammed bin Rashid meets with Kuwaiti businessmen.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.20</span></div></div></article><article class="item" id="item-18"><span class="item-n">#18</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byje04h-uae-sierra-leone-enhance-economic-relations" target="_blank" rel="noopener">byje04h uae sierra leone enhance economic relations</a></h3><p class="summary">UAE and Sierra Leone enhance economic relations.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.10</span></div></div></article><article class="item" id="item-19"><span class="item-n">#19</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byje0ja-abdullah-bin-zayed-congratulates-kuwaiti-phone" target="_blank" rel="noopener">byje0ja abdullah bin zayed congratulates kuwaiti phone</a></h3><p class="summary">Abdullah bin Zayed congratulates Kuwaiti counterpart by phone.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.10</span></div></div></article><article class="item" id="item-20"><span class="item-n">#20</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byje07e-palau-president-innovation-international" target="_blank" rel="noopener">byje07e palau president innovation international</a></h3><p class="summary">Palau President praises innovation at international event.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.10</span></div></div></article></section>
 <section class="section"><div class="section-head"><span class="label">▌ UAE DOCTRINE</span><span class="count">03 ITEMS</span></div><article class="item" id="item-2"><span class="item-n">#02</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byje01h-reem-hashimy-reaffirms-that-gaza’s-governance" target="_blank" rel="noopener">byje01h reem hashimy reaffirms that gaza’s governance</a></h3><p class="summary">Reem Al Hashimy reaffirms UAE position on Gaza governance.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.70</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article><article class="item" id="item-3"><span class="item-n">#03</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/171zxu9-uae-president-committed-embedding-human-fraternity" target="_blank" rel="noopener">171zxu9 uae president committed embedding human fraternity</a></h3><p class="summary">UAE President reaffirms commitment to human fraternity values.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.50</span> · <span>AE</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article><article class="item" id="item-12"><span class="item-n">#12</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byje0j5-uae-president-mohammed-bin-rashid-welcome-uae’s" target="_blank" rel="noopener">byje0j5 uae president mohammed bin rashid welcome uae’s</a></h3><p class="summary">UAE Vice President Mohammed bin Rashid welcomes UAE&#x27;s new achievements.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.20</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article></section>
 <section class="section"><div class="section-head"><span class="label">▌ UAE ECOSYSTEM</span><span class="count">02 ITEMS</span></div><article class="item" id="item-21"><span class="item-n">#21</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byje0jd-mohammed-bin-rashid-attends-graduation-377" target="_blank" rel="noopener">byje0jd mohammed bin rashid attends graduation 377</a></h3><p class="summary">Mohammed bin Rashid attends graduation of 377 students.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.10</span></div></div></article><article class="item" id="item-25"><span class="item-n">#25</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/byje0me-french-official-highlights-sorbonne-university-abu" target="_blank" rel="noopener">byje0me french official highlights sorbonne university abu</a></h3><p class="summary">French official highlights Sorbonne University Abu Dhabi.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.10</span></div></div></article></section>
-<footer class="foot"><span>© 2026 Dalila — daily intelligence brief</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Submit a suggestion</a></span></footer>
+<footer class="foot"><span>© 2026 Dalila</span> · <span><a href="index.html">Home</a></span> · <span><a href="archive.html">Archive</a></span> · <span><a href="markets.html">Markets</a></span> · <span><a href="about.html">About</a></span> · <span><a href="https://t.me/dalila_development_digest_bot">Telegram</a></span> · <span><a href="mailto:dalila.dev.digest@gmail.com">Feedback</a></span></footer>
 </div>
 </body>
 </html>

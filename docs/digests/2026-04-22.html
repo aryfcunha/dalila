@@ -193,7 +193,96 @@ a:hover {
   letter-spacing: 0.14em;
 }
 
-/* ---------- items ---------- */
+/* ---------- market signals ---------- */
+.markets-section h2.section-head {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--type);
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+.mkt-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+.mkt-table { display: flex; flex-direction: column; gap: 4px; }
+.mkt-row {
+  display: grid;
+  grid-template-columns: 52px 1fr 72px 72px;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.mkt-row:last-child { border-bottom: 0; }
+.mkt-header {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--rule-strong) !important;
+}
+.mkt-prob {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--type);
+  text-align: right;
+}
+.mkt-q { color: var(--type); }
+.mkt-delta { text-align: right; font-weight: 600; }
+.mkt-src { color: var(--muted); font-size: 10px; text-align: right; }
+.delta-up { color: #2d9e5d; }
+.delta-dn { color: #c94a3a; }
+.delta-neu { color: var(--muted); }
+
+
+/* ---------- market page grid ---------- */
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+.market-card {
+  background: var(--bg-deep);
+  border: 1px solid var(--rule-strong);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.15s ease;
+}
+.market-card:hover { border-color: var(--amber); }
+.market-prob {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--amber);
+  line-height: 1;
+}
+.market-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.market-source { color: var(--muted); }
+.market-delta.up { color: var(--green); }
+.market-delta.down { color: var(--red); }
+.market-q {
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--type);
+}
+.market-q a { color: var(--type); border: 0; }
+.market-q a:hover { color: var(--amber); }
 .item {
   padding: 14px 0 16px;
   border-bottom: 1px solid var(--rule);
@@ -601,6 +690,7 @@ a:hover {
   <nav class="masthead-nav">
     <a href="../">Home</a>
     <a href="../archive.html">Archive</a>
+    <a href="../markets.html">Markets</a>
     <a href="../countries.html">Countries</a>
     <a href="../methodology.html">Methodology</a>
     <a href="../about.html">About</a>
@@ -623,7 +713,7 @@ a:hover {
 <section class="section"><div class="section-head"><span class="label">▌ UAE FOREIGN-POLICY SIGNALS</span><span class="count">16 ITEMS</span></div><article class="item" id="item-1"><span class="item-n">#01</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/economy/2026/04/21/imfs-jihad-azour-says-iran-war-more-disruptive-than-oil-shock-for-the-uae/" target="_blank" rel="noopener">imfs jihad azour says iran war more disruptive than oil shock for the uae</a></h3><p class="summary">IMF official warns Iran war is more disruptive than oil shock for UAE.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.80</span></div></div></article><article class="item" id="item-3"><span class="item-n">#03</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/opinion/comment/2026/04/21/gulf-us-iran-israel-middle-east-security-ceasefire-talks-negotiations-deal/" target="_blank" rel="noopener">gulf us iran israel middle east security ceasefire talks negotiations deal</a></h3><p class="summary">Opinion on Gulf security, US-Iran ceasefire talks, and Israel&#x27;s role.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.70</span></div></div></article><article class="item" id="item-5"><span class="item-n">#05</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/podcasts/trending-middle-east/2026/04/21/uncertainty-grows-over-us-iran-talks-as-ceasefire-deadline-looms/" target="_blank" rel="noopener">uncertainty grows over us iran talks as ceasefire deadline looms</a></h3><p class="summary">Uncertainty grows over US-Iran talks as ceasefire deadline approaches.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.70</span></div></div></article><article class="item" id="item-6"><span class="item-n">#06</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/world/mena/strait-of-hormuz-crisis-us-forces-say-27-vessels-redirected-amid-iran-blockade-1.500513672" target="_blank" rel="noopener">strait of hormuz crisis us forces say 27 vessels redirected amid iran blockade 1.500513672</a></h3><p class="summary">Strait of Hormuz crisis: US reports 27 vessels redirected amid Iran blockade.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.90</span></div></div></article><article class="item" id="item-7"><span class="item-n">#07</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/04/21/tense-wait-in-islamabad-for-signs-of-us-iran-talks/" target="_blank" rel="noopener">tense wait in islamabad for signs of us iran talks</a></h3><p class="summary">Islamabad tense amid signs of US-Iran talks progress.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.60</span></div></div></article><article class="item" id="item-9"><span class="item-n">#09</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/world/mena/security-of-strait-of-hormuz-not-free-iran-vp-mohammad-reza-aref-amid-rising-us-iran-tensions-1.500512468" target="_blank" rel="noopener">security of strait of hormuz not free iran vp mohammad reza aref amid rising us iran tensions 1.500512468</a></h3><p class="summary">Iran VP says security of Strait of Hormuz not free amid rising tensions.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.80</span></div></div></article><article class="item" id="item-10"><span class="item-n">#10</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/world/mena/bzt8e46-jordan-condemns-terrorist-plot-targeting-uae-1.500513497" target="_blank" rel="noopener">bzt8e46 jordan condemns terrorist plot targeting uae 1.500513497</a></h3><p class="summary">Jordan condemns terrorist plot targeting UAE.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.70</span></div></div></article><article class="item" id="item-11"><span class="item-n">#11</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/176kz76-egypt-condemns-terrorist-plot-uae-praises-foiling-1.500513550" target="_blank" rel="noopener">176kz76 egypt condemns terrorist plot uae praises foiling 1.500513550</a></h3><p class="summary">Egypt condemns terrorist plot; UAE praises foiling.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.70</span></div></div></article><article class="item" id="item-12"><span class="item-n">#12</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/world/mena/us-iran-ceasefire-in-doubt-as-iran-threatens-response-to-us-navy-ship-seizure-1.500512520" target="_blank" rel="noopener">us iran ceasefire in doubt as iran threatens response to us navy ship seizure 1.500512520</a></h3><p class="summary">US-Iran ceasefire in doubt as Iran threatens response to US navy ship seizure.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.80</span></div></div></article><article class="item" id="item-13"><span class="item-n">#13</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/bzt8e73-muslim-council-elders-strongly-condemns-plot-1.500513526" target="_blank" rel="noopener">bzt8e73 muslim council elders strongly condemns plot 1.500513526</a></h3><p class="summary">Muslim Council of Elders strongly condemns plot targeting UAE.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.60</span></div></div></article><article class="item" id="item-14"><span class="item-n">#14</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/world/mena/clock-ticking-as-iran-talks-clouded-by-doubt-1.500514127" target="_blank" rel="noopener">clock ticking as iran talks clouded by doubt 1.500514127</a></h3><p class="summary">Time running out for Iran talks as doubts persist.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.70</span> · <span>IR</span></div></div></article><article class="item" id="item-16"><span class="item-n">#16</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/us/2026/04/21/uae-economy-highly-resilient-ambassador-to-us-says-after-trump-discusses-potential-currency-swap/" target="_blank" rel="noopener">uae economy highly resilient ambassador to us says after trump discusses potential currency swap</a></h3><p class="summary">UAE ambassador highlights economy resilience after Trump mentions currency swap.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.30</span> · <span>AE · US</span></div></div></article><article class="item" id="item-17"><span class="item-n">#17</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/world/mena/driven-by-the-pressures-of-war-iran-gives-its-field-commanders-more-power-over-militias-in-iraq-1.500513819" target="_blank" rel="noopener">driven by the pressures of war iran gives its field commanders more power over militias in iraq 1.500513819</a></h3><p class="summary">Iran grants more power to field commanders over Iraqi militias amid war pressures.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 0.60</span> · <span class="sev">SEV 0.70</span> · <span>IR · IQ</span></div></div></article><article class="item" id="item-18"><span class="item-n">#18</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/world/mena/tehrans-perceptions-of-controlling-arabian-gulf-strait-of-hormuz-legally-invalid-completely-rejected-arab-league-1.500514554" target="_blank" rel="noopener">tehrans perceptions of controlling arabian gulf strait of hormuz legally invalid completely rejected arab league 1.500514554</a></h3><p class="summary">Arab League rejects Iran&#x27;s Strait of Hormuz claims; UAE implicated as Gulf state.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.60</span> · <span>IR · AE</span></div></div></article><article class="item" id="item-19"><span class="item-n">#19</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/opinion/editorial/2026/04/21/iraq-iran-middle-east/" target="_blank" rel="noopener">iraq iran middle east</a></h3><p class="summary">Editorial on Middle East dynamics involving Iraq and Iran.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.50</span> · <span class="sev">SEV 0.40</span></div></div></article><article class="item" id="item-21"><span class="item-n">#21</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/world/mena/trump-claims-us-winning-against-iran-ahead-of-2nd-talks-in-islamabad-enemy-is-confused-1.500513605" target="_blank" rel="noopener">trump claims us winning against iran ahead of 2nd talks in islamabad enemy is confused 1.500513605</a></h3><p class="summary">Trump claims US winning against Iran ahead of second talks in Islamabad.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 0.50</span> · <span class="sev">SEV 0.60</span></div></div></article></section>
 <section class="section"><div class="section-head"><span class="label">▌ UAE DOCTRINE</span><span class="count">04 ITEMS</span></div><article class="item" id="item-4"><span class="item-n">#04</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/04/21/sheikh-abdullah-vows-uae-will-confront-extremism-in-all-forms-after-terror-plot-foiled/" target="_blank" rel="noopener">sheikh abdullah vows uae will confront extremism in all forms after terror plot foiled</a></h3><p class="summary">Sheikh Abdullah vows UAE will confront extremism after terror plot foiled.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.60</span> · <span>AE</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article><article class="item" id="item-8"><span class="item-n">#08</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/government/gargash-uaeis-firm-in-confronting-threats-decisive-in-countering-attempts-to-undermine-security-1.500514423" target="_blank" rel="noopener">gargash uaeis firm in confronting threats decisive in countering attempts to undermine security 1.500514423</a></h3><p class="summary">Gargash says UAE firm in confronting threats and decisive on security.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.70</span> · <span>AE</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article><article class="item" id="item-22"><span class="item-n">#22</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/government/uae-is-a-trusted-global-partner-with-influence-that-cannot-be-overlooked-says-al-nuaimi-1.500513966" target="_blank" rel="noopener">uae is a trusted global partner with influence that cannot be overlooked says al nuaimi 1.500513966</a></h3><p class="summary">Al Nuaimi says UAE is a trusted global partner with undeniable influence.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.30</span> · <span>AE</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article><article class="item" id="item-25"><span class="item-n">#25</span><div class="item-body"><h3 class="title"><a href="https://gulfnews.com/uae/uae-resilience-built-on-unity-and-preparedness-says-maitha-al-shamsi-1.500514507" target="_blank" rel="noopener">uae resilience built on unity and preparedness says maitha al shamsi 1.500514507</a></h3><p class="summary">Maitha Al Shamsi says UAE resilience built on unity and preparedness.</p><div class="meta"><span class="src">Gulf News</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.30</span> · <span>AE</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article></section>
 <section class="section"><div class="section-head"><span class="label">▌ UAE ECOSYSTEM</span><span class="count">01 ITEM</span></div><article class="item" id="item-20"><span class="item-n">#20</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/property/2026/04/21/aldar-and-mubadala-joint-venture-acquires-the-link-at-masdar-city-for-178-million/" target="_blank" rel="noopener">aldar and mubadala joint venture acquires the link at masdar city for 178 million</a></h3><p class="summary">Aldar and Mubadala JV acquires The Link at Masdar City for AED 178 million.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.20</span></div></div></article></section>
-<footer class="foot"><span>© 2026 Dalila — daily intelligence brief</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Submit a suggestion</a></span></footer>
+<footer class="foot"><span>© 2026 Dalila</span> · <span><a href="index.html">Home</a></span> · <span><a href="archive.html">Archive</a></span> · <span><a href="markets.html">Markets</a></span> · <span><a href="about.html">About</a></span> · <span><a href="https://t.me/dalila_development_digest_bot">Telegram</a></span> · <span><a href="mailto:dalila.dev.digest@gmail.com">Feedback</a></span></footer>
 </div>
 </body>
 </html>

@@ -193,7 +193,96 @@ a:hover {
   letter-spacing: 0.14em;
 }
 
-/* ---------- items ---------- */
+/* ---------- market signals ---------- */
+.markets-section h2.section-head {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--type);
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+.mkt-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+.mkt-table { display: flex; flex-direction: column; gap: 4px; }
+.mkt-row {
+  display: grid;
+  grid-template-columns: 52px 1fr 72px 72px;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.mkt-row:last-child { border-bottom: 0; }
+.mkt-header {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--rule-strong) !important;
+}
+.mkt-prob {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--type);
+  text-align: right;
+}
+.mkt-q { color: var(--type); }
+.mkt-delta { text-align: right; font-weight: 600; }
+.mkt-src { color: var(--muted); font-size: 10px; text-align: right; }
+.delta-up { color: #2d9e5d; }
+.delta-dn { color: #c94a3a; }
+.delta-neu { color: var(--muted); }
+
+
+/* ---------- market page grid ---------- */
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+.market-card {
+  background: var(--bg-deep);
+  border: 1px solid var(--rule-strong);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.15s ease;
+}
+.market-card:hover { border-color: var(--amber); }
+.market-prob {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--amber);
+  line-height: 1;
+}
+.market-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.market-source { color: var(--muted); }
+.market-delta.up { color: var(--green); }
+.market-delta.down { color: var(--red); }
+.market-q {
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--type);
+}
+.market-q a { color: var(--type); border: 0; }
+.market-q a:hover { color: var(--amber); }
 .item {
   padding: 14px 0 16px;
   border-bottom: 1px solid var(--rule);
@@ -601,6 +690,7 @@ a:hover {
   <nav class="masthead-nav">
     <a href="./">Home</a>
     <a href="archive.html">Archive</a>
+    <a href="markets.html">Markets</a>
     <a href="countries.html">Countries</a>
     <a href="methodology.html" aria-current="page">Methodology</a>
     <a href="about.html">About</a>
@@ -609,206 +699,19 @@ a:hover {
 
 <div class="methodology">
 <h1>Methodology</h1>
-<p>Dalila is built to skim a wide net of news and structured data, surface what is relevant to the UAE&rsquo;s humanitarian and development agenda, and deliver one tight morning brief. The judgments embedded in that pipeline &mdash; what to read, what to skip, what counts as a real change in the world &mdash; are spelled out below.</p>
-<h2>How news is collected</h2>
-<p>Dalila pulls from a curated set of free, public sources: state wire services, UAE and Gulf press, global newswires, multilateral feeds (UN agencies and development banks), donor agencies, specialist trade press, and structured humanitarian and development databases. The full list lives on the About page.</p>
-<div class="method-table-wrap"><table class="method-table"><thead><tr>
-<th>Decision</th>
-<th>Value</th>
-<th>Why</th>
-</tr></thead><tbody>
-<tr>
-<td>Polling cadence</td>
-<td><strong>Every 30 minutes</strong></td>
-<td>Catches a 24-hour news cycle with high timeliness; polling more aggressively yields diminishing returns and risks being throttled by anti-bot defences on publisher sites.</td>
-</tr>
-<tr>
-<td>Real-time event feed sample</td>
-<td><strong>300 items per slice</strong></td>
-<td>Global event streams emit several thousand items at a time; sampling the most recent slice keeps coverage broad without overwhelming downstream analysis.</td>
-</tr>
-<tr>
-<td>Historical backfill window</td>
-<td><strong>Configurable per source</strong></td>
-<td>Long-form archive pulls walk publisher sitemaps and event-data archives back to a chosen start date. Capped per source so any one publisher cannot dominate the corpus.</td>
-</tr>
-<tr>
-<td>Conflict-data priority countries</td>
-<td><strong>16</strong></td>
-<td>A curated list covering all current major armed-conflict zones. Tightening the country filter keeps the structured event feed coherent with the rest of the brief.</td>
-</tr>
-</tbody></table></div>
-<h2>What gets filtered out before reading</h2>
-<p>Most news on the global wire is not about humanitarian or development affairs. A keyword-and-entity match runs against every item before any further analysis, dropping roughly four out of every five. The remaining items reach the classifier.</p>
-<div class="method-table-wrap"><table class="method-table"><thead><tr>
-<th>Decision</th>
-<th>Value</th>
-<th>Why</th>
-</tr></thead><tbody>
-<tr>
-<td>Pre-read filter</td>
-<td><strong>Keyword and entity match</strong></td>
-<td>Case-insensitive substring scan against the headline and excerpt. About 25 topic keywords (humanitarian, displacement, aid, donor, climate finance, named conflict zones) plus an entity watchlist.</td>
-</tr>
-<tr>
-<td>Entity watchlist</td>
-<td><strong>~250 names and aliases</strong></td>
-<td>UAE leadership and institutions, peer foundations, multilateral bodies. Aliases cover common transliteration variants.</td>
-</tr>
-<tr>
-<td>Source-level pass-through</td>
-<td><strong>UAE state, entity, and press sources</strong></td>
-<td>These have low daily volume and high signal density. Filtering them statistically discards real news, so they bypass the filter entirely.</td>
-</tr>
-</tbody></table></div>
-<h2>How items are read and categorised</h2>
-<p>Surviving items go through a language model that assigns a category, a UAE-relevance score from 0 to 1, a severity score, and structured tags (entities mentioned, country focus, doctrine alignment, financial commitments, bilateral meetings, and capital-instrument signals). Items are classified in batches, with the same instructions and entity watchlist sent on every call so that prompt caching engages efficiently.</p>
-<div class="method-table-wrap"><table class="method-table"><thead><tr>
-<th>Decision</th>
-<th>Value</th>
-<th>Why</th>
-</tr></thead><tbody>
-<tr>
-<td>Categories</td>
-<td><strong>Eight</strong></td>
-<td>Humanitarian, aid commitments, reports and evidence, conferences and events, UAE foreign-policy signals, UAE leadership doctrine, UAE ecosystem moves, other. Designed to be mutually exclusive and to map onto the sections in the brief.</td>
-</tr>
-<tr>
-<td>Batch size</td>
-<td><strong>25 items per call</strong></td>
-<td>Empirically the sweet spot for cost and throughput. Single-item calls waste overhead; larger batches do not improve quality and slow each call linearly.</td>
-</tr>
-<tr>
-<td>Daily volume ceiling</td>
-<td><strong>2,000 calls</strong></td>
-<td>A soft circuit-breaker. Far above normal demand; exists so a runaway loop cannot escalate cost without manual intervention.</td>
-</tr>
-<tr>
-<td>Instructions stability</td>
-<td><strong>Identical on every call</strong></td>
-<td>A static prompt is the precondition for the language model&rsquo;s internal caching. Any per-call variation (timestamps, IDs) would invalidate the cache and re-spend on every item.</td>
-</tr>
-</tbody></table></div>
-<h2>Avoiding duplicates</h2>
-<p>The same story often appears multiple times &mdash; reposted across outlets, syndicated from a wire, or carried by an aggregator. Three deduplication layers run before anything reaches the brief.</p>
-<div class="method-table-wrap"><table class="method-table"><thead><tr>
-<th>Decision</th>
-<th>Value</th>
-<th>Why</th>
-</tr></thead><tbody>
-<tr>
-<td>Exact-duplicate guard</td>
-<td><strong>Hash of URL plus title</strong></td>
-<td>Catches the same article re-ingested through different paths.</td>
-</tr>
-<tr>
-<td>Cross-outlet near-duplicate detection</td>
-<td><strong>Title similarity within 12 bits</strong> of a 64-bit fingerprint</td>
-<td>Cross-outlet reposts of the same story typically differ by 6&ndash;10 bits in this fingerprint; unrelated stories typically differ by 28&ndash;40. Twelve sits in the sweet spot.</td>
-</tr>
-<tr>
-<td>Cross-brief window</td>
-<td><strong>Seven days</strong></td>
-<td>An item used in Monday&rsquo;s brief should not reappear in Friday&rsquo;s. A week is roughly the half-life of a news cycle; a story discussed seven days later is usually a fresh angle, not a repost.</td>
-</tr>
-</tbody></table></div>
-<h2>Forecast and early-warning indices</h2>
-<p>Alongside the news feeds, Dalila tracks forecast and severity indices from established humanitarian-data producers. These appear in the brief&rsquo;s <strong>Foresight</strong> section, under a strict rule: only changes are surfaced, never states. A country that has been in crisis for months produces no item; a country whose situation has measurably shifted does. On the first observation of any new data series, a baseline is recorded silently so future readings have a comparison point.</p>
-<div class="method-table-wrap"><table class="method-table"><thead><tr>
-<th>Source</th>
-<th>What it measures</th>
-<th>Change threshold</th>
-<th>Authority</th>
-</tr></thead><tbody>
-<tr>
-<td><strong>ACLED CAST</strong></td>
-<td>Monthly conflict-escalation risk score, 0&ndash;10</td>
-<td>Movement of one point or more between observations</td>
-<td>ACLED&rsquo;s own methodology defines one-point shifts as &ldquo;notable&rdquo;; stable-country month-over-month noise sits around 0.3.</td>
-</tr>
-<tr>
-<td><strong>ACAPS INFORM</strong></td>
-<td>Monthly crisis-severity score, 0&ndash;5</td>
-<td>Movement of half a point or more</td>
-<td>The five named severity tiers sit at integer boundaries. Half a point is one tier-crossing&rsquo;s worth of movement.</td>
-</tr>
-<tr>
-<td><strong>GDACS</strong></td>
-<td>Real-time disaster alerts, Green / Orange / Red / Extreme</td>
-<td>Any tier change, plus new alerts</td>
-<td>The alert system is itself categorical; a tier transition is the meaningful event.</td>
-</tr>
-<tr>
-<td><strong>WFP HungerMap LIVE</strong></td>
-<td>People with insufficient food consumption, daily</td>
-<td>Either a 10% shift backed by at least 100,000 people, or any absolute shift of 500,000 or more</td>
-<td>The relative threshold flags real changes; the floor avoids noise in small populations; the absolute trigger catches large-population shifts that look small in percentage terms.</td>
-</tr>
-</tbody></table></div>
-<p>When a metric does move, the brief reports the direction with a visual indicator.</p>
-<div class="method-table-wrap"><table class="method-table"><thead><tr>
-<th>Indicator</th>
-<th>Meaning</th>
-</tr></thead><tbody>
-<tr>
-<td>🔴</td>
-<td>Worsening: more violence, more hunger, higher severity, or an alert tier escalating.</td>
-</tr>
-<tr>
-<td>🟢</td>
-<td>Improving: lower numbers, or an alert clearing.</td>
-</tr>
-<tr>
-<td>🆕</td>
-<td>A country newly entering this tracking series after the baseline was already established.</td>
-</tr>
-<tr>
-<td>🟡</td>
-<td>A non-directional categorical change.</td>
-</tr>
-</tbody></table></div>
-<h2>How the morning brief is assembled</h2>
-<p>Once items are read, classified, and deduplicated, the editor composes the daily brief from the previous 24&nbsp;hours of qualifying content. Items below a relevance threshold are excluded; section ordering is fixed; the foresight section is built only from observations that crossed a change threshold.</p>
-<div class="method-table-wrap"><table class="method-table"><thead><tr>
-<th>Decision</th>
-<th>Value</th>
-<th>Why</th>
-</tr></thead><tbody>
-<tr>
-<td>Delivery time</td>
-<td><strong>06:30 Gulf Standard Time</strong></td>
-<td>Reaches readers before the working day&rsquo;s first meeting.</td>
-</tr>
-<tr>
-<td>Minimum relevance to qualify</td>
-<td><strong>0.4 on the UAE-relevance scale</strong></td>
-<td>Below this, items are about humanitarian topics but lack a UAE-specific angle. The brief is UAE-lensed, so they do not earn a slot.</td>
-</tr>
-<tr>
-<td>Items per brief</td>
-<td><strong>Up to 25</strong></td>
-<td>A ceiling, not a target. The editor prunes harder in practice.</td>
-</tr>
-<tr>
-<td>Foresight section cap</td>
-<td><strong>Top 5 movers</strong> by magnitude of change</td>
-<td>Foresight items earn the spotlight only when their movement is genuinely large; surplus changes are dropped.</td>
-</tr>
-<tr>
-<td>Empty-brief fallback</td>
-<td><strong>&lt; 3 items above threshold</strong></td>
-<td>Rather than publish a thin brief, Dalila says: &ldquo;Quiet news cycle. <em>N</em> items reviewed, none above threshold.&rdquo;</td>
-</tr>
-<tr>
-<td>Target length</td>
-<td><strong>800&ndash;1,500 words</strong></td>
-<td>Long enough to give context, short enough to read with a coffee.</td>
-</tr>
-</tbody></table></div>
-<h2>A note on what is <em>not</em> automated</h2>
-<p>Dalila&rsquo;s judgment is encoded in the rules above and in the entity watchlist behind the prefilter; the language model classifying items, and the editor composing the brief, operate strictly within those rules. There is no live editorial discretion between ingestion and delivery: every brief is reproducible from the same inputs and the same calibration. When a number or rule on this page changes, the brief reflects it from the next cycle onward.</p>
+<p>Dalila is built to identify and surface news that matters to the UAE’s humanitarian and development agenda. Our process combines real-time data collection with rigorous filtering to ensure every brief is both relevant and actionable.</p>
+<h2>Data Collection</h2>
+<p>We monitor a curated set of global news wires, state press agencies, and multilateral development feeds. By polling these sources every 30 minutes, we ensure our coverage is timely without sacrificing the depth needed for professional analysis.</p>
+<h2>Intelligent Filtering</h2>
+<p>Not all news is development news. Every item passes through a multi-stage filter that evaluates it against a specific UAE-focused lens. We prioritize institutional moves, policy shifts, and significant humanitarian developments, while automatically removing noise and duplicates across different outlets.</p>
+<h2>Categorization and Scoring</h2>
+<p>Each selected item is categorized into one of eight sectors (e.g., Humanitarian, UAE Foreign Policy, Reports & Evidence) and scored for its relevance to the UAE mission. This allows the daily brief to be organized logically, helping readers quickly find the most impactful stories in their specific areas of interest.</p>
+<h2>Early Warning and Foresight</h2>
+<p>Beyond traditional news, Dalila tracks emerging trends through conflict-risk indices and prediction markets. We use a "change-only" rule: we only report on a situation when there is a measurable shift from the baseline, ensuring that our Foresight section provides true early warning rather than repeating known states.</p>
+<h2>Transparency</h2>
+<p>While the pipeline is automated to ensure consistency and speed, the rules it follows are documented and stable. This methodology ensures that every brief is reproducible and grounded in a clearly defined editorial framework focused on UAE development priorities.</p>
 </div>
-<footer class="foot"><span>© 2026 Dalila — daily intelligence brief</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Submit a suggestion</a></span></footer>
+<footer class="foot"><span>© 2026 Dalila</span> · <span><a href="index.html">Home</a></span> · <span><a href="archive.html">Archive</a></span> · <span><a href="markets.html">Markets</a></span> · <span><a href="about.html">About</a></span> · <span><a href="https://t.me/dalila_development_digest_bot">Telegram</a></span> · <span><a href="mailto:dalila.dev.digest@gmail.com">Feedback</a></span></footer>
 </div>
 </body>
 </html>

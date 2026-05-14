@@ -193,7 +193,96 @@ a:hover {
   letter-spacing: 0.14em;
 }
 
-/* ---------- items ---------- */
+/* ---------- market signals ---------- */
+.markets-section h2.section-head {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--type);
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+.mkt-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+.mkt-table { display: flex; flex-direction: column; gap: 4px; }
+.mkt-row {
+  display: grid;
+  grid-template-columns: 52px 1fr 72px 72px;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.mkt-row:last-child { border-bottom: 0; }
+.mkt-header {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--rule-strong) !important;
+}
+.mkt-prob {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--type);
+  text-align: right;
+}
+.mkt-q { color: var(--type); }
+.mkt-delta { text-align: right; font-weight: 600; }
+.mkt-src { color: var(--muted); font-size: 10px; text-align: right; }
+.delta-up { color: #2d9e5d; }
+.delta-dn { color: #c94a3a; }
+.delta-neu { color: var(--muted); }
+
+
+/* ---------- market page grid ---------- */
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+.market-card {
+  background: var(--bg-deep);
+  border: 1px solid var(--rule-strong);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.15s ease;
+}
+.market-card:hover { border-color: var(--amber); }
+.market-prob {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--amber);
+  line-height: 1;
+}
+.market-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.market-source { color: var(--muted); }
+.market-delta.up { color: var(--green); }
+.market-delta.down { color: var(--red); }
+.market-q {
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--type);
+}
+.market-q a { color: var(--type); border: 0; }
+.market-q a:hover { color: var(--amber); }
 .item {
   padding: 14px 0 16px;
   border-bottom: 1px solid var(--rule);
@@ -601,6 +690,7 @@ a:hover {
   <nav class="masthead-nav">
     <a href="../">Home</a>
     <a href="../archive.html">Archive</a>
+    <a href="../markets.html">Markets</a>
     <a href="../countries.html">Countries</a>
     <a href="../methodology.html">Methodology</a>
     <a href="../about.html">About</a>
@@ -623,7 +713,7 @@ a:hover {
 <section class="section"><div class="section-head"><span class="label">▌ CONFERENCES &amp; EVENTS</span><span class="count">01 ITEM</span></div><article class="item" id="item-15"><span class="item-n">#15</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/sport/combat-sports/2026/05/11/emirati-trailblazer-mohammad-yahya-proud-to-headline-pfl-in-dubai-and-tells-fans-to-expect-fireworks/" target="_blank" rel="noopener">Emirati trailblazer Mohammad Yahya proud to headline PFL in Dubai and tells fans to expect &#x27;fireworks&#x27;</a></h3><p class="summary">First Emirati fighter headlines PFL sporting event in Dubai May 24.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.85</span></div></div></article></section>
 <section class="section"><div class="section-head"><span class="label">▌ UAE FOREIGN-POLICY SIGNALS</span><span class="count">08 ITEMS</span></div><article class="item" id="item-2"><span class="item-n">#02</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/05/12/live-us-iran-war-kuwait-inflitration/" target="_blank" rel="noopener">Iran war latest: UAE condemns IRGC&#x27;s attempted infiltration of Kuwait</a></h3><p class="summary">UAE condemns IRGC&#x27;s attempted infiltration of Kuwait as security threat.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.60</span></div></div></article><article class="item" id="item-3"><span class="item-n">#03</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/05/11/president-sheikh-mohamed-discusses-iranian-attacks-on-uae-with-president-of-ukraine/" target="_blank" rel="noopener">Sheikh Mohamed and Ukraine&#x27;s Zelenskyy discuss Iranian attacks and trade deal</a></h3><p class="summary">Sheikh Mohamed condemns Iran strikes to Zelenskyy; discusses security, trade.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.60</span> · <span>AE · UA · IR</span></div></div></article><article class="item" id="item-4"><span class="item-n">#04</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/05/11/houthis-expanding-weapons-cache-with-drones-and-missiles-from-iran/" target="_blank" rel="noopener">Houthis expand arsenal with drones and missiles from Iran</a></h3><p class="summary">Houthis expand arsenal with advanced Iranian missiles and underwater weapons.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.80</span> · <span class="sev">SEV 0.70</span> · <span>YE · IR</span></div></div></article><article class="item" id="item-7"><span class="item-n">#07</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/05/11/iran-war-peace-proposal-talks/" target="_blank" rel="noopener">One page, 14 points, no deal: Diplomacy to end Iran war stalls</a></h3><p class="summary">US-Iran nuclear diplomacy stalls; Strait of Hormuz becomes central pressure point.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.60</span> · <span class="sev">SEV 0.70</span> · <span>IR · US</span></div></div></article><article class="item" id="item-12"><span class="item-n">#12</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/05/12/how-egypts-balancing-act-aims-to-preserve-relations-and-prevent-war/" target="_blank" rel="noopener">How Egypt&#x27;s balancing act aims to preserve relations and prevent war</a></h3><p class="summary">Egypt balances Gulf alliance with Tehran negotiation to prevent regional war.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.40</span> · <span>EG · IR</span></div></div></article><article class="item" id="item-13"><span class="item-n">#13</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uk/2026/05/11/iranian-drug-trafficking-network-sanctioned-for-carrying-out-attacks-on-uk/" target="_blank" rel="noopener">Iranian drug trafficking network sanctioned for carrying out attacks on UK</a></h3><p class="summary">UK, EU sanction Iranian drug network and intelligence officer for UK attacks.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.50</span> · <span class="sev">SEV 0.50</span> · <span>IR · GB</span></div></div></article><article class="item" id="item-14"><span class="item-n">#14</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/05/11/syria-aiming-for-stable-relations-with-israel-says-minister-al-shibani/" target="_blank" rel="noopener">Syria aiming for stable relations with Israel, says minister Al Shibani</a></h3><p class="summary">Syria&#x27;s FM seeks calm, stable relations with Israel while rebuilding.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.50</span> · <span class="sev">SEV 0.40</span> · <span>SY · IL</span></div></div></article><article class="item" id="item-19"><span class="item-n">#19</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/future/technology/2026/05/11/uae-doubles-down-on-us-tech-and-ai-ambitions-amid-iran-war/" target="_blank" rel="noopener">UAE doubles down on US tech and AI ambitions amid Iran war</a></h3><p class="summary">UAE ambassador reaffirms sovereign AI partnership with US despite regional conflict.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span></div></div></article></section>
 <section class="section"><div class="section-head"><span class="label">▌ UAE ECOSYSTEM</span><span class="count">06 ITEMS</span></div><article class="item" id="item-17"><span class="item-n">#17</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/energy/2026/05/11/adnoc-drilling-posts-q1-profit-rise-on-high-fleet-activity-and-long-term-contracts/" target="_blank" rel="noopener">Adnoc Drilling posts Q1 profit with no pause in Gulf orders</a></h3><p class="summary">ADNOC Drilling posts record Q1 profit from UAE upstream expansion projects.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span></div></div></article><article class="item" id="item-18"><span class="item-n">#18</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/property/2026/05/11/emaar-reports-35-surge-in-first-quarter-profit-despite-uncertainty-driven-by-war/" target="_blank" rel="noopener">Emaar reports 35% surge in first quarter profit despite uncertainty driven by war</a></h3><p class="summary">Emaar Properties reports 35% Q1 profit surge despite regional conflict.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span></div></div></article><article class="item" id="item-21"><span class="item-n">#21</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/05/11/dubais-salik-reports-decline-of-13-million-journeys-and-revenue-drop-amid-iran-war/" target="_blank" rel="noopener">Dubai&#x27;s Salik reports decline of 13 million journeys and revenue drop amid Iran war</a></h3><p class="summary">Dubai&#x27;s Salik toll operator reports 13M fewer journeys from Iran war impact.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span></div></div></article><article class="item" id="item-22"><span class="item-n">#22</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/uae/2026/05/11/date-palms-from-uaes-expo-pavilion-to-help-rebuilding-efforts-in-earthquake-hit-japanese-city/" target="_blank" rel="noopener">Date palms from UAE&#x27;s Expo pavilion to help rebuilding efforts in earthquake-hit Japanese city</a></h3><p class="summary">UAE Expo pavilion date palms donated for Wajima earthquake reconstruction center.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span>AE · JP</span> · <span>HUMANITARIAN</span></div></div></article><article class="item" id="item-23"><span class="item-n">#23</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/economy/2026/05/11/abu-dhabi-uae-public-private-partnership/" target="_blank" rel="noopener">Abu Dhabi launches $15bn pipeline of public-private partnership projects</a></h3><p class="summary">Abu Dhabi launches Dh55bn public-private partnership infrastructure pipeline.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span>AE</span> · <span>TRADE</span></div></div></article><article class="item" id="item-25"><span class="item-n">#25</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/business/2026/05/11/uae-and-syria-hold-first-business-forum-since-assads-fall/" target="_blank" rel="noopener">UAE and Syria hold first business forum since Assad&#x27;s fall</a></h3><p class="summary">UAE-Syria first business forum convenes; DP World $800M port agreement signed.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 1.00</span> · <span>AE · SY</span> · <span>TRADE</span></div></div></article></section>
-<footer class="foot"><span>© 2026 Dalila — daily intelligence brief</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Submit a suggestion</a></span></footer>
+<footer class="foot"><span>© 2026 Dalila</span> · <span><a href="index.html">Home</a></span> · <span><a href="archive.html">Archive</a></span> · <span><a href="markets.html">Markets</a></span> · <span><a href="about.html">About</a></span> · <span><a href="https://t.me/dalila_development_digest_bot">Telegram</a></span> · <span><a href="mailto:dalila.dev.digest@gmail.com">Feedback</a></span></footer>
 </div>
 </body>
 </html>

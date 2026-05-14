@@ -193,7 +193,96 @@ a:hover {
   letter-spacing: 0.14em;
 }
 
-/* ---------- items ---------- */
+/* ---------- market signals ---------- */
+.markets-section h2.section-head {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--type);
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+.mkt-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+.mkt-table { display: flex; flex-direction: column; gap: 4px; }
+.mkt-row {
+  display: grid;
+  grid-template-columns: 52px 1fr 72px 72px;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.mkt-row:last-child { border-bottom: 0; }
+.mkt-header {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--rule-strong) !important;
+}
+.mkt-prob {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--type);
+  text-align: right;
+}
+.mkt-q { color: var(--type); }
+.mkt-delta { text-align: right; font-weight: 600; }
+.mkt-src { color: var(--muted); font-size: 10px; text-align: right; }
+.delta-up { color: #2d9e5d; }
+.delta-dn { color: #c94a3a; }
+.delta-neu { color: var(--muted); }
+
+
+/* ---------- market page grid ---------- */
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+.market-card {
+  background: var(--bg-deep);
+  border: 1px solid var(--rule-strong);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.15s ease;
+}
+.market-card:hover { border-color: var(--amber); }
+.market-prob {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--amber);
+  line-height: 1;
+}
+.market-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.market-source { color: var(--muted); }
+.market-delta.up { color: var(--green); }
+.market-delta.down { color: var(--red); }
+.market-q {
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--type);
+}
+.market-q a { color: var(--type); border: 0; }
+.market-q a:hover { color: var(--amber); }
 .item {
   padding: 14px 0 16px;
   border-bottom: 1px solid var(--rule);
@@ -601,6 +690,7 @@ a:hover {
   <nav class="masthead-nav">
     <a href="../">Home</a>
     <a href="../archive.html">Archive</a>
+    <a href="../markets.html">Markets</a>
     <a href="../countries.html">Countries</a>
     <a href="../methodology.html">Methodology</a>
     <a href="../about.html">About</a>
@@ -624,7 +714,7 @@ a:hover {
 <section class="section"><div class="section-head"><span class="label">▌ CONFERENCES &amp; EVENTS</span><span class="count">01 ITEM</span></div><article class="item" id="item-10"><span class="item-n">#10</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/2026/02/19/trump-board-of-peace-gaza/" target="_blank" rel="noopener">trump board of peace gaza</a></h3><p class="summary">Trump administration launches Board of Peace initiative for Gaza.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.70</span></div></div></article></section>
 <section class="section"><div class="section-head"><span class="label">▌ UAE FOREIGN-POLICY SIGNALS</span><span class="count">11 ITEMS</span></div><article class="item" id="item-6"><span class="item-n">#06</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/bytidt7-ethnic-cleansing-concerns-gaza-west-bank-amid" target="_blank" rel="noopener">bytidt7 ethnic cleansing concerns gaza west bank amid</a></h3><p class="summary">WAM reports UAE concerns over ethnic cleansing in Gaza and West Bank.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.85</span> · <span class="sev">SEV 0.70</span> · <span>PS</span> · <span>HUMANITARIAN</span></div></div></article><article class="item" id="item-9"><span class="item-n">#09</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/bytidnf-crown-prince-abu-dhabi-concludes-visit-india" target="_blank" rel="noopener">bytidnf crown prince abu dhabi concludes visit india</a></h3><p class="summary">Crown Prince of Abu Dhabi concludes official visit to India.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.50</span> · <span>AE · IN</span></div></div></article><article class="item" id="item-11"><span class="item-n">#11</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/2026/02/19/iran-and-russia-hold-joint-naval-drills-amid-fears-us-could-strike-as-soon-as-saturday/" target="_blank" rel="noopener">iran and russia hold joint naval drills amid fears us could strike as soon as saturday</a></h3><p class="summary">Iran and Russia conduct joint naval drills amid escalating US tensions.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.60</span> · <span class="sev">SEV 0.80</span></div></div></article><article class="item" id="item-12"><span class="item-n">#12</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/02/19/iran-tells-airlines-to-avoid-key-middle-east-fly-zone-amid-sabre-rattling-missile-drills/" target="_blank" rel="noopener">iran tells airlines to avoid key middle east fly zone amid sabre rattling missile drills</a></h3><p class="summary">Iran conducts missile drills, orders airlines to avoid affected airspace.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.60</span></div></div></article><article class="item" id="item-14"><span class="item-n">#14</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/bytidbz-crown-prince-abu-dhabi-french-president-discuss" target="_blank" rel="noopener">bytidbz crown prince abu dhabi french president discuss</a></h3><p class="summary">Crown Prince of Abu Dhabi and French President discuss bilateral ties.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.40</span> · <span>AE · FR</span></div></div></article><article class="item" id="item-15"><span class="item-n">#15</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/bytidqc-warns-attack-iran-adds-irgc-terrorist-list" target="_blank" rel="noopener">bytidqc warns attack iran adds irgc terrorist list</a></h3><p class="summary">WAM reports US warning against attack on Iran and designation of IRGC as terrorist group.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.70</span> · <span class="sev">SEV 0.50</span> · <span>IR · US</span></div></div></article><article class="item" id="item-19"><span class="item-n">#19</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/us/2026/02/19/iran-us-un-letter/" target="_blank" rel="noopener">iran us un letter</a></h3><p class="summary">Iran and US exchange diplomatic communications through UN.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.60</span> · <span class="sev">SEV 0.50</span></div></div></article><article class="item" id="item-22"><span class="item-n">#22</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/bytidkj-crown-prince-abu-dhabi-meets-prime-minister-india" target="_blank" rel="noopener">bytidkj crown prince abu dhabi meets prime minister india</a></h3><p class="summary">Crown Prince of Abu Dhabi meets Indian Prime Minister in bilateral talks.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.30</span> · <span>AE · IN</span></div></div></article><article class="item" id="item-23"><span class="item-n">#23</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/bytidt6-rejects-israeli-claims-toppling-government-tel" target="_blank" rel="noopener">bytidt6 rejects israeli claims toppling government tel</a></h3><p class="summary">UAE rejects Israeli claims about toppling government.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 0.90</span> · <span class="sev">SEV 0.30</span> · <span>AE · IL</span></div></div></article><article class="item" id="item-24"><span class="item-n">#24</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/us/2026/02/19/us-iran-trump/" target="_blank" rel="noopener">us iran trump</a></h3><p class="summary">Trump administration&#x27;s approach to US-Iran relations under new administration.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.60</span> · <span class="sev">SEV 0.40</span></div></div></article><article class="item" id="item-25"><span class="item-n">#25</span><div class="item-body"><h3 class="title"><a href="https://www.thenationalnews.com/news/mena/2026/02/19/iraqs-foreign-ministry-confirms-us-sanctions-threat-amid-government-formation-talks/" target="_blank" rel="noopener">iraqs foreign ministry confirms us sanctions threat amid government formation talks</a></h3><p class="summary">US threatens sanctions against Iraq amid government formation negotiations.</p><div class="meta"><span class="src">The National</span> · <span class="rel">REL 0.50</span> · <span class="sev">SEV 0.40</span></div></div></article></section>
 <section class="section"><div class="section-head"><span class="label">▌ UAE DOCTRINE</span><span class="count">01 ITEM</span></div><article class="item" id="item-20"><span class="item-n">#20</span><div class="item-body"><h3 class="title"><a href="https://www.wam.ae/en/article/bytid3a-behalf-uae-president-abu-dhabi-crown-prince" target="_blank" rel="noopener">bytid3a behalf uae president abu dhabi crown prince</a></h3><p class="summary">Crown Prince acts on behalf of UAE President.</p><div class="meta"><span class="src">Emirates News Agency (WAM)</span> · <span class="rel">REL 1.00</span> · <span class="sev">SEV 0.30</span> · <span>AE</span> · <span class="doctrine-tag">REINFORCING</span></div></div></article></section>
-<footer class="foot"><span>© 2026 Dalila — daily intelligence brief</span><span><a href="https://t.me/dalila_development_digest_bot">Subscribe on Telegram</a></span><span><a href="mailto:dalila.dev.digest@gmail.com">Submit a suggestion</a></span></footer>
+<footer class="foot"><span>© 2026 Dalila</span> · <span><a href="index.html">Home</a></span> · <span><a href="archive.html">Archive</a></span> · <span><a href="markets.html">Markets</a></span> · <span><a href="about.html">About</a></span> · <span><a href="https://t.me/dalila_development_digest_bot">Telegram</a></span> · <span><a href="mailto:dalila.dev.digest@gmail.com">Feedback</a></span></footer>
 </div>
 </body>
 </html>
