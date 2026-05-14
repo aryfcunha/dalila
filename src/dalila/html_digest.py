@@ -2672,7 +2672,7 @@ def render_about(
 
     body.append('<h2>Sources</h2>')
     for bucket in sorted_buckets:
-        items = grouped[bucket]
+        items = grouped.get(bucket, [])
         if not items:
             continue
         label = bucket_labels.get(bucket, bucket.title())
