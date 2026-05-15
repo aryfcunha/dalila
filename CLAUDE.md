@@ -129,6 +129,12 @@ Storage: one SQLite file (`dalila.db`). Scheduling: APScheduler in-process. No R
 - **Country-view world map fix**: countries rendered as Natural-Earth-projected SVG paths with sqrt-scaled amber heatmap. Co-mention arcs anchored at projected capital coordinates (CAPITALS table inline in the JS). Architectural bug fix: arcs + dots + labels render INSIDE the main map SVG (not a separate overlay) so they share the exact same coordinate system — a previous separate-overlay design had a 48px vertical mismatch.
 - **Archive progressive disclosure**: 20 briefs visible, "Load more" reveals next 20. Server-side renders the full list under `.hidden` class so it remains crawlable.
 - **Publish-site dedup**: when multiple digests exist for the same `date_label` (e.g. an old pre-prune brief and a fresh post-prune one), the most recent by id wins. Archive cap bumped 60 → 365.
+- **Prediction Market Expansion & Automation** (2026-05-15):
+    - Added **30-minute probability deltas** for real-time volatility tracking.
+    - Expanded indicator dashboard to **9 items** with standardized grid heights.
+    - Restored/Re-instated the **"Build" page** (`build.html`) in masthead/footer.
+    - Integrated **Market Signals into Telegram brief** (Markdown composer fix).
+    - Hardened automation: `dalila run-pipeline` command + VM cron adjusted to 02:40 UTC (06:40 GST).
 
 ## Style / conventions
 
@@ -171,6 +177,7 @@ dalila verify-sources                    # probe every enabled source
 dalila ingest                            # one ingest pass
 dalila classify --limit 50               # classify pending items (Claude/CLI)
 dalila doctrine --limit 20               # extract doctrine facts
+dalila run-pipeline                      # full pass (ingest + classify + doctrine)
 dalila digest                            # compose + print today's digest
 dalila bot                               # bot + scheduler (production)
 dalila set-name                          # push bot identity + commands to Telegram

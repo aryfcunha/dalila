@@ -115,6 +115,7 @@ To capture high-signal volatility and early sentiment shifts, Dalila monitors pr
 | Market Platforms | **Manifold and Kalshi** | Manifold provides broad topic coverage and high liquidity for qualitative geopolitical questions; Kalshi offers regulated, binary markets for high-liquidity economic indicators. |
 | Alert threshold (1h) | **5 percentage points** | An absolute probability shift of 5pp in an hour is statistically significant and often precedes breaking news. |
 | Alert threshold (24h) | **8 percentage points** | Captures slower but persistent sentiment shifts that reflect maturing crises or diplomatic breakthroughs. |
+| Near-term delta | **30-minute window** | Provides near-real-time visibility into probability shifts as news breaks. |
 
 When a large delta is detected, it triggers the same high-frequency ingest loop as breaking news.
 
@@ -134,7 +135,7 @@ section is built only from observations that crossed a change threshold.
 | Foresight section cap | **Top 5 movers** by magnitude of change | Foresight items earn the spotlight only when their movement is genuinely large; surplus changes are dropped. |
 | Empty-brief fallback | **&lt; 3 items above threshold** | Rather than publish a thin brief, Dalila says: &ldquo;Quiet news cycle. *N* items reviewed, none above threshold.&rdquo; |
 | Target length | **800–1,500 words** | Long enough to give context, short enough to read with a coffee. |
-| Market signals cap | **Top 5 most relevant** | Markets are scored based on the magnitude of their 24h move and their topic overlap with today's top stories. |
+| Market signals cap | **9 primary indicators** | The dashboard displays the most relevant geopolitical and economic indicators based on magnitude of move and topic overlap. |
 
 
 ## A note on what is *not* automated
