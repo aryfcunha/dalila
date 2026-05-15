@@ -96,15 +96,15 @@ def resolve_iso2(row: dict, name_lookup: dict[str, str]) -> str | None:
     alpha-3 → alpha-2 (rare) → country name lookup.
     Returns None for territories / disputed entities not in our maps."""
     for key in ("iso3", "country_iso3", "iso_alpha3", "ISO3", "alpha3"):
-        a3 = (row.get(key) or "").strip().upper()
+        a3 = str(row.get(key) or "").strip().upper()
         if len(a3) == 3 and a3 in _A3_TO_A2:
             return _A3_TO_A2[a3]
     for key in ("iso2", "country_iso", "ISO2", "alpha2"):
-        a2 = (row.get(key) or "").strip().upper()
+        a2 = str(row.get(key) or "").strip().upper()
         if len(a2) == 2 and a2.isalpha():
             return a2
     for key in ("country", "country_name", "name", "adm0_name"):
-        name = (row.get(key) or "").strip().lower()
+        name = str(row.get(key) or "").strip().lower()
         if name in name_lookup:
             return name_lookup[name]
     return None
