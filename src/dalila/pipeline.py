@@ -545,7 +545,16 @@ def run_compose_digest(
         )
         items = _dedupe_by_simhash(items)
         items = items[:max_items]
-        content, _ = compose_digest(items, when=end_local)
+
+        # Fetch market signals for the Telegram brief
+        market_signals: list[dict] = []
+        try:
+            from dalila.ingestors.prediction_markets import get_market_signals
+            market_signals = get_market_signals(conn, digest_items=items)
+        except Exception as exc:
+            log.debug("market signals unavailable for composer: %s", exc)
+
+        content, _ = compose_digest(items, when=end_local, market_signals=market_signals)
         # If the editor returned an empty fallback (< 3 items), don't persist
         # a placeholder digest — clutters the DB and the archive iteration
         # logic already skips zero-item digests in publish-site. Returning

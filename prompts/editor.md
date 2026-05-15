@@ -83,6 +83,17 @@ You will receive JSON of this shape:
 {
   "date": "Friday 15 May 2026",
   "item_count_total": 412,
+  "market_signals": [
+    {
+      "market_id": "will-uae-host-cop30",
+      "source": "manifold",
+      "question": "Will the UAE host COP30 in 2026?",
+      "probability": 0.12,
+      "p_24h": 0.08,
+      "p_7d": 0.05,
+      "p_30m": 0.11
+    }
+  ],
   "items": [
     {
       "n": 1,

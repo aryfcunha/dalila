@@ -81,6 +81,7 @@ def main(argv: list[str] | None = None) -> int:
     p_doctrine.add_argument("--limit", type=int, default=20, help="Max items to process this run")
     sub.add_parser("verify-sources", help="Probe every enabled source and report fetched count + sample title")
     sub.add_parser("set-name", help="Push the canonical bot name + descriptions to Telegram (one-shot)")
+    sub.add_parser("run-pipeline", help="Run a full pipeline pass (ingest, classify, doctrine)")
     sub.add_parser("bot", help="Start the Telegram bot with the scheduler (long-running)")
 
     args = parser.parse_args(argv)
@@ -228,6 +229,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "set-name":
         return _cmd_set_name()
 
+    if args.cmd == "run-pipeline":
+        return _cmd_run_pipeline()
+
     if args.cmd == "bot":
         return _cmd_bot()
 
@@ -294,6 +298,30 @@ def _cmd_set_name() -> int:
         return 0
 
     return asyncio.run(runner())
+
+
+def _cmd_run_pipeline() -> int:
+    """Run a full pipeline pass (ingest, classify, doctrine)."""
+    from dalila import doctrine as doctrine_mod
+    from dalila.pipeline import run_classify, run_ingest
+    db.init_db()
+
+    print("Pipeline: Running ingest...")
+    stats = run_ingest()
+    for sid, s in stats.items():
+        if s["new"] > 0 or s["error"]:
+            print(f"  {sid:20s}  fetched={s['fetched']:4d}  new={s['new']:4d}  passed={s['prefilter_passed']:4d}  err={s['error'] or '-'}")
+
+    print("Pipeline: Running classify...")
+    cres = run_classify(limit=100)
+    print(f"  → {cres}")
+
+    print("Pipeline: Running doctrine extraction...")
+    dres = doctrine_mod.run_pass(limit=20)
+    print(f"  → {dres}")
+
+    print("Pipeline complete.")
+    return 0
 
 
 def _cmd_verify_sources() -> int:

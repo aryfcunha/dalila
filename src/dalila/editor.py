@@ -21,7 +21,8 @@ from dalila.config import get_config, load_prompt
 log = logging.getLogger(__name__)
 
 
-def compose_digest(items: list[dict], *, when: datetime | None = None) -> tuple[str, list[int]]:
+def compose_digest(items: list[dict], *, when: datetime | None = None,
+                   market_signals: list[dict] | None = None) -> tuple[str, list[int]]:
     """Compose a digest from classified items. Returns (markdown, [item_ids]).
 
     If fewer than 3 items, returns a short fallback message.
@@ -58,6 +59,7 @@ def compose_digest(items: list[dict], *, when: datetime | None = None) -> tuple[
     user_payload = {
         "date": date_label,
         "item_count_total": len(items),
+        "market_signals": market_signals or [],
         "items": numbered,
     }
     user_msg = (
