@@ -210,7 +210,6 @@ def attach_jobs(scheduler: AsyncIOScheduler, app: Application) -> None:
         trigger=IntervalTrigger(minutes=5),
         id="ingest",
         replace_existing=True,
-        next_run_time=None,  # don't fire immediately on bot start
     )
 
     # Classify every 5 minutes (cheap; only runs if there's a backlog)
@@ -257,7 +256,6 @@ def attach_jobs(scheduler: AsyncIOScheduler, app: Application) -> None:
         trigger=IntervalTrigger(minutes=30),
         id="markets",
         replace_existing=True,
-        next_run_time=None,  # don't fire immediately on start
     )
 
     log.info(
