@@ -40,10 +40,9 @@ SETTINGS_PATH = Path(__file__).parents[3] / "prediction_markets.yaml"
 
 _UA = {"User-Agent": "Dalila/0.1 (UAE intelligence digest; +https://github.com/aryfcunha/dalila)"}
 
-# Domain seeds — each is searched across platforms. Seeds that match active,
-# liquid markets (vol ≥ 500) are preferred; low-volume markets rarely move.
-# Polymarket's highest-volume geopolitical markets appear on Manifold as
-# bot-created mirrors, so we effectively get Polymarket signal via Manifold.
+# Permanent anchor seeds — always searched regardless of news cycle.
+# These keep discovery anchored to the UAE / humanitarian / development lens.
+# Edit prediction_markets.yaml → discovery.domain_seeds to override at runtime.
 _DOMAIN_SEEDS = [
     # Israel / Gaza / Iran axis
     "Gaza Hamas",
@@ -65,6 +64,11 @@ _DOMAIN_SEEDS = [
     # UAE direct signal
     "UAE",
 ]
+
+# Token-level exclusion set — news seeds that duplicate anchor coverage are dropped.
+_ANCHOR_TOKENS: frozenset[str] = frozenset(
+    tok.lower() for seed in _DOMAIN_SEEDS for tok in seed.split()
+)
 
 
 # ── settings loader ────────────────────────────────────────────────────────────
@@ -377,21 +381,73 @@ def _recent_digest_entities(conn: sqlite3.Connection) -> list[str]:
     return [term for term, _ in ranked[:entity_limit]]
 
 
+# ── News-derived seed extraction ──────────────────────────────────────────────
+def _extract_news_seeds(
+    conn: sqlite3.Connection, *, lookback_days: int = 14, limit: int = 8
+) -> list[str]:
+    """Derive market search seeds from recent UAE-relevant classified news.
+
+    Pulls named entities from classified items with uae_relevance >= 0.5 over
+    the last `lookback_days`. Only proper nouns (first char uppercase, ≥ 4 chars)
+    that don't overlap with the permanent anchor seeds are returned.
+
+    This lets the market watchlist evolve with the news cycle — new crises,
+    summits, and aid commitments surface automatically — while the anchor seeds
+    guarantee baseline UAE / humanitarian / development coverage.
+    """
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=lookback_days)).isoformat()
+    rows = conn.execute(
+        """SELECT entities_json FROM items
+           WHERE ingested_at >= ?
+             AND classified_at IS NOT NULL
+             AND uae_relevance >= 0.5
+           ORDER BY ingested_at DESC
+           LIMIT 1000""",
+        (cutoff,),
+    ).fetchall()
+
+    freq: dict[str, int] = {}
+    for row in rows:
+        try:
+            for ent in (json.loads(row[0] or "[]") or []):
+                name = (ent.get("name") or "").strip()
+                if (
+                    len(name) >= 4
+                    and name[0].isupper()
+                    # drop anything whose tokens fully overlap with anchors
+                    and not all(tok.lower() in _ANCHOR_TOKENS for tok in name.split())
+                ):
+                    freq[name] = freq.get(name, 0) + 1
+        except Exception:
+            pass
+
+    ranked = sorted(freq.items(), key=lambda x: x[1], reverse=True)
+    return [term for term, _ in ranked[:limit]]
+
+
 # ── Market discovery ──────────────────────────────────────────────────────────
 def discover_markets(conn: sqlite3.Connection) -> list[dict]:
-    """Discover markets by searching all platforms for curated domain seeds.
+    """Discover markets by searching anchor seeds + dynamic news-derived seeds.
 
-    Uses only the domain seeds (not digest entity extraction) so that
-    results stay anchored to the UAE/humanitarian lens rather than drifting
-    toward whatever US-political entities happened to appear in the news.
-
-    Each seed is searched across Manifold, Metaculus (via Metaforecast),
-    and Polymarket. Results that appear for multiple seeds are ranked higher.
+    Permanent anchor seeds keep results grounded in the UAE / humanitarian /
+    development lens. Dynamic seeds are extracted from recent high-UAE-relevance
+    classified items so the watchlist evolves with the news cycle (new crises,
+    summits, aid programmes) without drifting toward unrelated US-political noise.
     """
-    seeds = _s("discovery.domain_seeds", _DOMAIN_SEEDS)
+    anchor_seeds: list[str] = _s("discovery.domain_seeds", _DOMAIN_SEEDS)
+    news_seeds = _extract_news_seeds(conn)
+
+    anchor_lower = {s.lower() for s in anchor_seeds}
+    extra_seeds = [s for s in news_seeds if s.lower() not in anchor_lower]
+    seeds = list(anchor_seeds) + extra_seeds
+
     max_markets = int(_s("discovery.max_markets", 50))
 
-    log.info("prediction markets: discovering markets for %d seeds", len(seeds))
+    log.info(
+        "prediction markets: discovering markets for %d seeds "
+        "(%d anchors + %d from recent news)",
+        len(seeds), len(anchor_seeds), len(extra_seeds),
+    )
 
     seen: dict[str, dict] = {}  # market_id -> dict
 

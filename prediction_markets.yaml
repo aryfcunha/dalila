@@ -20,8 +20,11 @@ discovery:
   # Maximum number of discovered markets to track at once
   max_markets: 25
 
-  # Domain seed terms used when digest history is sparse (< 3 recent items).
-  # These anchor discovery to the UAE + humanitarian/development lens.
+  # Permanent anchor seeds — always searched on every discovery cycle.
+  # Dynamic seeds derived from recent high-UAE-relevance classified news are
+  # appended automatically (see ingestors/prediction_markets.py:_extract_news_seeds).
+  # These anchors guarantee baseline UAE / humanitarian / development coverage
+  # even when news seeds drift toward unrelated topics.
   domain_seeds:
     - "Sudan"
     - "OPEC"
@@ -33,6 +36,8 @@ discovery:
     - "Yemen"
     - "Syria"
     - "Gaza humanitarian"
+    - "UAE aid"
+    - "humanitarian funding"
 
 alerts:
   # Minimum absolute probability move (0–1) over 1h to trigger a breaking signal

@@ -740,6 +740,16 @@ a:hover {{
 """
 
 
+_FAVICON = (
+    "data:image/svg+xml,"
+    "%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E"
+    "%3Crect width='32' height='32' rx='5' fill='%230A0A0A'/%3E"
+    "%3Cpath d='M9 7h7c5.5 0 8.5 3.1 8.5 9s-3 9-8.5 9H9V7z"
+    "m3.5 3.5v11h3.5c3 0 5-2 5-5.5s-2-5.5-5-5.5h-3.5z' fill='%23FFB454'/%3E"
+    "%3C/svg%3E"
+)
+
+
 def _doc(title: str, body: str) -> str:
     return (
         '<!doctype html>\n'
@@ -748,6 +758,7 @@ def _doc(title: str, body: str) -> str:
         '<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
         f'<title>{html.escape(title)}</title>\n'
+        f'<link rel="icon" type="image/svg+xml" href="{_FAVICON}">\n'
         f'<style>{_base_css()}</style>\n'
         '</head>\n'
         '<body>\n'
@@ -2767,16 +2778,14 @@ def render_markets(
             url = m.get('url') or '#'
             
             body.append(f"""
-            <a href="{url}" target="_blank" rel="noopener" 
+            <a href="{url}" target="_blank" rel="noopener"
                style="text-decoration:none; color:inherit; display:block;">
             <div class="market-card">
-                <div class="market-prob" style="display:flex; justify-content:space-between; align-items:baseline;">
-                    <span>{prob_pct}</span>
-                    <div style="font-size:12px; font-weight:normal; display:flex; gap:8px; align-items:baseline;">
-                        {fmt_delta(d30m, "30m")}
-                        {fmt_delta(d24, "24h")}
-                        {fmt_delta(d7d, "1w")}
-                    </div>
+                <div class="market-prob">{prob_pct}</div>
+                <div style="font-size:12px; display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+                    {fmt_delta(d30m, "30m")}
+                    {fmt_delta(d24, "24h")}
+                    {fmt_delta(d7d, "1w")}
                 </div>
                 <div class="market-meta">
                     <span class="market-source">{source}</span>
