@@ -112,15 +112,25 @@ def _seed_sources(conn: sqlite3.Connection) -> None:
 import re
 
 def clean_title(title: str) -> str:
-    # Remove 'Opt:' prefix (common in some sources)
+    from dalila.models import title_case_clean
+
     new_title = re.sub(r'^Opt:\s*', '', title, flags=re.IGNORECASE)
-    
-    # Remove random numbers like 1.500538495 or similar long floats/identifiers
+
+    # Strip trailing numeric noise (scores, GDELT IDs, floats) regardless of length
+    new_title = re.sub(r'[\s\-–—]+[\d]+\.[\d]+\s*$', '', new_title)   # trailing float
+    new_title = re.sub(r'[\s\-–—]+[\d]{4,}\s*$', '', new_title)        # trailing long int
+
+    # Strip long floats / hex identifiers appearing anywhere mid-title
     new_title = re.sub(r'\b\d+\.\d{5,}\b', '', new_title)
     new_title = re.sub(r'\b\d{8,}\b', '', new_title)
+    new_title = re.sub(r'\b[a-f0-9]{12,}\b', '', new_title, flags=re.IGNORECASE)
+
     new_title = re.sub(r'\s+', ' ', new_title).strip()
+
+    # Full title-case when the title opens in lowercase (not just first char)
     if new_title and new_title[0].islower():
-        new_title = new_title[0].upper() + new_title[1:]
+        new_title = title_case_clean(new_title)
+
     return new_title
 
 def insert_item(conn: sqlite3.Connection, item: RawItem, prefilter_passed: bool) -> int | None:
