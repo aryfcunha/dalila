@@ -904,14 +904,16 @@ def run_publish_site(out_dir: "Path") -> dict:
 
 
 def run_regenerate_markets_page(out_dir: "Path | None" = None) -> bool:
-    """Regenerate only markets.html from the current DB state.
+    """Regenerate markets.html and git-push it if DALILA_SITE_GIT_PUSH=1.
 
     Called after every market poll so the website reflects the latest
     probabilities and deltas without a full publish-site run.
     Returns True on success.
     """
     import os
+    import subprocess
     from pathlib import Path as _Path
+    from datetime import datetime, timezone
     from dalila.html_digest import render_markets
     from dalila.ingestors.prediction_markets import get_market_signals
 
@@ -923,16 +925,50 @@ def run_regenerate_markets_page(out_dir: "Path | None" = None) -> bool:
     out_dir = _Path(out_dir)
     if not out_dir.exists():
         return False
+
     try:
         with db.connect() as conn:
             markets_data = get_market_signals(conn, top_n=30)
         markets_html = render_markets(markets_data)
-        (out_dir / "markets.html").write_text(markets_html, encoding="utf-8")
+        markets_path = out_dir / "markets.html"
+        markets_path.write_text(markets_html, encoding="utf-8")
         log.info("markets page regenerated (%d signals)", len(markets_data))
-        return True
     except Exception:
         log.exception("run_regenerate_markets_page failed")
         return False
+
+    if os.getenv("DALILA_SITE_GIT_PUSH") != "1":
+        return True
+
+    # Find repo root and push the single file
+    repo = out_dir.resolve()
+    for _ in range(8):
+        if (repo / ".git").exists():
+            break
+        if repo.parent == repo:
+            log.warning("markets push: no .git found above %s", out_dir)
+            return True
+        repo = repo.parent
+
+    try:
+        rel_path = markets_path.resolve().relative_to(repo)
+        subprocess.run(["git", "add", "--", str(rel_path)],
+                       cwd=repo, check=True, capture_output=True, text=True, timeout=30)
+        diff = subprocess.run(["git", "diff", "--cached", "--quiet"],
+                              cwd=repo, text=True, timeout=15)
+        if diff.returncode == 0:
+            log.info("markets push: no changes to commit")
+            return True
+        stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+        subprocess.run(["git", "commit", "-m", f"Update market signals — {stamp}"],
+                       cwd=repo, check=True, capture_output=True, text=True, timeout=30)
+        subprocess.run(["git", "push", "origin", "main"],
+                       cwd=repo, check=True, capture_output=True, text=True, timeout=60)
+        log.info("markets push: pushed markets.html to origin/main")
+    except Exception:
+        log.exception("markets push: git failed")
+
+    return True
 
 
 def _items_by_ids(conn, ids: list[int]) -> list[dict]:
