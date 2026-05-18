@@ -285,6 +285,14 @@ def _markets_job() -> None:
     except Exception:
         log.exception("markets job failed")
 
+    # Regenerate markets.html so the website always reflects the latest
+    # probabilities and deltas — not just what was current at digest time.
+    try:
+        from dalila.pipeline import run_regenerate_markets_page
+        run_regenerate_markets_page()
+    except Exception:
+        log.exception("markets page regeneration failed")
+
 
 # Tracks event-ids we've already pre-flighted so we don't spam the user
 # with the same heads-up every day in the 7-day window. Cleared on

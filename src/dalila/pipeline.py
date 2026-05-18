@@ -866,7 +866,7 @@ def run_publish_site(out_dir: "Path") -> dict:
     try:
         from dalila.ingestors.prediction_markets import get_market_signals
         with db.connect() as conn:
-            markets_data = get_market_signals(conn)
+            markets_data = get_market_signals(conn, top_n=30)
         markets_html = render_markets(markets_data)
         (out_dir / "markets.html").write_text(markets_html, encoding="utf-8")
     except Exception:
@@ -885,6 +885,38 @@ def run_publish_site(out_dir: "Path") -> dict:
             str(out_dir / "customize.html"),
         ] + [str(digests_dir / f"{d['slug']}.html") for d in written],
     }
+
+
+def run_regenerate_markets_page(out_dir: "Path | None" = None) -> bool:
+    """Regenerate only markets.html from the current DB state.
+
+    Called after every market poll so the website reflects the latest
+    probabilities and deltas without a full publish-site run.
+    Returns True on success.
+    """
+    import os
+    from pathlib import Path as _Path
+    from dalila.html_digest import render_markets
+    from dalila.ingestors.prediction_markets import get_market_signals
+
+    if out_dir is None:
+        out_dir = _Path(
+            os.getenv("DALILA_SITE_OUT_DIR")
+            or (_Path.home() / "dalila" / "docs")
+        )
+    out_dir = _Path(out_dir)
+    if not out_dir.exists():
+        return False
+    try:
+        with db.connect() as conn:
+            markets_data = get_market_signals(conn, top_n=30)
+        markets_html = render_markets(markets_data)
+        (out_dir / "markets.html").write_text(markets_html, encoding="utf-8")
+        log.info("markets page regenerated (%d signals)", len(markets_data))
+        return True
+    except Exception:
+        log.exception("run_regenerate_markets_page failed")
+        return False
 
 
 def _items_by_ids(conn, ids: list[int]) -> list[dict]:

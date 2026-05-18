@@ -569,9 +569,11 @@ def _is_duplicate_topic(m1: dict, m2: dict) -> bool:
 
 
 def get_market_signals(conn: sqlite3.Connection,
-                       digest_items: list[dict] | None = None) -> list[dict]:
+                       digest_items: list[dict] | None = None,
+                       top_n: int | None = None) -> list[dict]:
     """Return top N market signals scored for today's digest content."""
-    top_n = int(_s("digest.top_n", 9))
+    if top_n is None:
+        top_n = int(_s("digest.top_n", 9))
 
     rows = conn.execute(
         """SELECT s.market_id, s.source, s.question, s.probability, s.volume, s.url,
