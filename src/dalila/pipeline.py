@@ -678,22 +678,25 @@ def run_render_html_digest(
 
 
 def run_publish_site(out_dir: "Path") -> dict:
-    """Generate the full static site at `out_dir`:
-        index.html                — home page: shows the LATEST brief inline
-        archive.html              — chronological list of all past briefs
-        about.html                — project info, sources, subscribe
-        digests/<YYYY-MM-DD>.html — one page per persisted brief
+    """Generate the static site at `out_dir`.
 
-    Re-renders every persisted digest from the items they referenced. The
-    home page reuses the latest brief's content. Files are idempotent;
-    safe to re-run.
+    Past digest pages (digests/YYYY-MM-DD.html) are immutable — existing
+    files on disk are NEVER re-rendered, even if the template changes.
+    Only today's digest is written/refreshed from the DB.
+
+    The archive list is built by scanning whatever *.html files exist in
+    digests/ on disk, so no DB query is needed for historical entries.
+
+    Pages always regenerated on every call:
+      index.html, archive.html, about.html, methodology.html,
+      build.html, countries.html, markets.html
     """
     from pathlib import Path
     import json as _json
 
-    from dalila.config import load_countries, load_sources
+    from dalila.config import load_sources
     from dalila.html_digest import (
-        render_about, render_archive, render_countries, render_digest, render_index,
+        render_about, render_archive, render_digest, render_index,
         render_methodology, render_markets, render_customize,
     )
 
@@ -701,28 +704,25 @@ def run_publish_site(out_dir: "Path") -> dict:
     digests_dir = out_dir / "digests"
     digests_dir.mkdir(parents=True, exist_ok=True)
 
-    written: list[dict] = []
+    today_slug = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     latest_items: list[dict] | None = None
     latest_when: datetime | None = None
+    rendered_today = False
 
+    # ── Step 1: render only today's digest from DB ──────────────────────────
+    # We query at most the last 14 days so we can also populate latest_items
+    # for index.html without touching the vast majority of the DB.
     with db.connect() as conn:
-        # When a date has multiple digests (e.g. an old pre-prune brief and
-        # a fresh post-prune one), we keep the MOST RECENTLY COMPOSED.
-        # The DISTINCT-via-MAX subquery rolls them up so the archive shows
-        # one entry per calendar date.
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=14)).isoformat()
         rows = conn.execute(
-            """
-            SELECT d.id, d.composed_at, d.date_label, d.item_ids_json
-            FROM digests d
-            WHERE d.id IN (
-                SELECT MAX(id) FROM digests GROUP BY date_label
-            )
-            ORDER BY d.composed_at DESC
-            LIMIT 365
-            """
+            """SELECT d.id, d.composed_at, d.date_label, d.item_ids_json
+               FROM digests d
+               WHERE d.id IN (SELECT MAX(id) FROM digests GROUP BY date_label)
+                 AND d.composed_at >= ?
+               ORDER BY d.composed_at DESC
+               LIMIT 14""",
+            (cutoff,),
         ).fetchall()
-
-        today_slug = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
         for row in rows:
             try:
@@ -746,115 +746,68 @@ def run_publish_site(out_dir: "Path") -> dict:
                     pass
 
             slug = slug_dt.strftime("%Y-%m-%d")
-            dest = digests_dir / f"{slug}.html"
-
-            # Past digests are canonical — skip if the HTML already exists.
-            # Only today's digest is re-rendered so it picks up fresh market signals.
-            if dest.exists() and slug != today_slug:
-                written.append({
-                    "slug": slug,
-                    "date_label": row["date_label"],
-                    "preview": "",
-                })
-                if latest_items is None:
-                    # Still need to populate latest for index.html
-                    items = _items_by_ids(conn, item_ids)
-                    if items:
-                        latest_items = items
-                        latest_when = composed
-                continue
-
             items = _items_by_ids(conn, item_ids)
             if not items:
                 continue
 
-            items = _dedupe_by_simhash(items, threshold=16)
-            total = db.count_reviewed_24h(conn, as_of=slug_dt) or len(items)
-
-            html_str = render_digest(items, when=slug_dt, total_ingested=total)
-            dest.write_text(html_str, encoding="utf-8")
-            written.append({
-                "slug": slug,
-                "date_label": row["date_label"],
-                "preview": _preview_text(items, n=2),
-            })
+            # Capture the most-recent digest's items for index.html
             if latest_items is None:
                 latest_items = items
                 latest_when = composed
 
-        # ---- Supplement: scan the digests dir for pre-existing HTML files ----
-        # Historical briefs composed on the VM exist as HTML but their items
-        # are not in this local DB, so the loop above couldn't re-render them.
-        # We include them in the archive list (linking to the existing file)
-        # WITHOUT overwriting the files — they are canonical and correct.
-        written_slugs = {d["slug"] for d in written}
-        for html_path in sorted(digests_dir.glob("*.html"), reverse=True):
-            slug = html_path.stem  # e.g. "2026-01-02"
-            if slug in written_slugs:
-                continue  # already handled by DB render above
-            # Derive a human-readable date_label from the slug
-            try:
-                dt = datetime.strptime(slug, "%Y-%m-%d")
-                date_label = dt.strftime("%A %d %B %Y")
-            except Exception:
-                date_label = slug
-            written.append({
-                "slug": slug,
-                "date_label": date_label,
-                "preview": "",  # no items in local DB → no preview
-            })
-            written_slugs.add(slug)
+            # Only write the file for today — all past files stay untouched.
+            if slug == today_slug:
+                items_deduped = _dedupe_by_simhash(items, threshold=16)
+                total = db.count_reviewed_24h(conn, as_of=slug_dt) or len(items_deduped)
+                html_str = render_digest(items_deduped, when=slug_dt, total_ingested=total)
+                (digests_dir / f"{slug}.html").write_text(html_str, encoding="utf-8")
+                rendered_today = True
+                log.info("publish-site: rendered today's digest → %s", slug)
 
-        # Sort newest-first for the archive page
-        def _slug_sort_key(d):
-            try:
-                return datetime.strptime(d["slug"], "%Y-%m-%d")
-            except Exception:
-                return datetime.min
-        written.sort(key=_slug_sort_key, reverse=True)
-
-        # 1. Home page = latest brief inline
+        # ── Step 2: index.html (needs conn for count query) ─────────────────
         if latest_items:
             total = db.count_reviewed_24h(conn, as_of=latest_when) or len(latest_items)
-            index_html = render_index(
-                latest_items, when=latest_when, total_ingested=total,
-            )
+            index_html = render_index(latest_items, when=latest_when, total_ingested=total)
         else:
-            # Truly empty — render the archive page as home so visitors see something
-            index_html = render_archive(written)
+            index_html = None  # filled below after archive list is built
+
+    # ── Step 3: build archive list entirely from files on disk ──────────────
+    # Past digest HTML files are the source of truth; no DB query needed.
+    all_digests: list[dict] = []
+    for html_path in sorted(digests_dir.glob("*.html"), reverse=True):
+        slug = html_path.stem
+        try:
+            dt = datetime.strptime(slug, "%Y-%m-%d")
+            date_label = dt.strftime("%A %d %B %Y")
+        except Exception:
+            date_label = slug
+        all_digests.append({"slug": slug, "date_label": date_label, "preview": ""})
+
+    if index_html is None:
+        index_html = render_archive(all_digests)
+
+    # ── Step 4: write live root pages ───────────────────────────────────────
     (out_dir / "index.html").write_text(index_html, encoding="utf-8")
+    (out_dir / "archive.html").write_text(render_archive(all_digests), encoding="utf-8")
 
-    # 2. Archive page = list of all briefs
-    archive_html = render_archive(written)
-    (out_dir / "archive.html").write_text(archive_html, encoding="utf-8")
-
-    # 3. About page
     sources = load_sources()
-    about_html = render_about(sources)
-    (out_dir / "about.html").write_text(about_html, encoding="utf-8")
+    (out_dir / "about.html").write_text(render_about(sources), encoding="utf-8")
 
-    # 3b. Methodology page (generated from METHODOLOGY.md at repo root).
     try:
-        methodology_html = render_methodology()
-        (out_dir / "methodology.html").write_text(methodology_html, encoding="utf-8")
+        (out_dir / "methodology.html").write_text(render_methodology(), encoding="utf-8")
     except Exception:
         log.exception("publish-site: methodology page generation failed")
-    # 3c. Build page
+
     try:
-        build_html = render_customize()
-        (out_dir / "build.html").write_text(build_html, encoding="utf-8")
+        (out_dir / "build.html").write_text(render_customize(), encoding="utf-8")
     except Exception:
         log.exception("publish-site: build page generation failed")
 
-    # 4. Countries view (region-grouped heatmap + per-country news on click)
     try:
         from dalila.config import load_countries
         from dalila.html_digest import render_countries
 
         cat = load_countries()
-        # window_days is now just the initial-display window; the timeline
-        # payload carries up to 180 days of per-day per-country counts so the
-        # client-side chips (7/30/90/All) can re-bucket without a server call.
         window_days = 90
         timeline_days = 180
         with db.connect() as conn:
@@ -878,7 +831,6 @@ def run_publish_site(out_dir: "Path") -> dict:
     except Exception:
         log.exception("publish-site: countries page generation failed")
 
-    # 5. Prediction Markets page
     try:
         from dalila.ingestors.prediction_markets import get_market_signals
         with db.connect() as conn:
@@ -888,18 +840,26 @@ def run_publish_site(out_dir: "Path") -> dict:
     except Exception:
         log.exception("publish-site: markets page generation failed")
 
+    live_pages = [
+        str(out_dir / "index.html"),
+        str(out_dir / "archive.html"),
+        str(out_dir / "countries.html"),
+        str(out_dir / "markets.html"),
+        str(out_dir / "methodology.html"),
+        str(out_dir / "about.html"),
+        str(out_dir / "build.html"),
+    ]
+    if rendered_today:
+        live_pages.append(str(digests_dir / f"{today_slug}.html"))
+
+    log.info(
+        "publish-site: done — %d digest(s) on disk; today re-rendered=%s",
+        len(all_digests), rendered_today,
+    )
     return {
         "out_dir": str(out_dir),
-        "digests": len(written),
-        "wrote": [
-            str(out_dir / "index.html"),
-            str(out_dir / "archive.html"),
-            str(out_dir / "countries.html"),
-            str(out_dir / "markets.html"),
-            str(out_dir / "methodology.html"),
-            str(out_dir / "about.html"),
-            str(out_dir / "customize.html"),
-        ] + [str(digests_dir / f"{d['slug']}.html") for d in written],
+        "digests": len(all_digests),
+        "wrote": live_pages,
     }
 
 
