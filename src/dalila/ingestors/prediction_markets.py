@@ -40,6 +40,34 @@ SETTINGS_PATH = Path(__file__).parents[3] / "prediction_markets.yaml"
 
 _UA = {"User-Agent": "Dalila/0.1 (UAE intelligence digest; +https://github.com/aryfcunha/dalila)"}
 
+# Markets whose questions match any of these patterns are dropped — they are
+# US-domestic or otherwise irrelevant to a UAE/humanitarian lens.
+_BLOCKLIST_RE = re.compile(
+    r"""
+    \bjd\s+vance\b
+    | \bsotomayor\b
+    | \bsupreme\s+court\b
+    | \brepublican\s+president\b
+    | \bgay\s+marriage\b
+    | \bhomosexuality\b
+    | \bchristian\s+affiliation\b
+    | \bus\s+president\s+(in\s+)?20[2-9]\d\b   # US election year markets
+    | \bpresidential\s+election.*\b(united\s+states|america)\b
+    | \b(united\s+states|america).*\bpresidential\s+election\b
+    | \blula\b                                   # Brazil domestic
+    | \bcancellation.*cdg\b | \bcdg.*cancellation\b   # Paris airport ops
+    | \bchina\s+overtake.*economy\b             # very-long-term macro
+    | \bmove.*\$\d+k?.*out\s+of\s+the\s+united\s+states\b
+    | \billegal.*united\s+states.*trump\b
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+def _is_relevant(question: str) -> bool:
+    """Return False for markets that are US-domestic or otherwise off-topic."""
+    return not bool(_BLOCKLIST_RE.search(question))
+
+
 # Domain fallback seeds — used when digest history is sparse.
 _DOMAIN_SEEDS = [
     "UAE foreign policy",
@@ -419,6 +447,9 @@ def discover_markets(conn: sqlite3.Connection) -> list[dict]:
             if mid not in seen:
                 m["_relevance_score"] = 2.0
                 seen[mid] = m
+
+    # Drop off-topic markets before ranking
+    seen = {mid: m for mid, m in seen.items() if _is_relevant(m.get("question", ""))}
 
     # Rank: relevance_score first, then volume
     ranked = sorted(
