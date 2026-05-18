@@ -40,34 +40,6 @@ SETTINGS_PATH = Path(__file__).parents[3] / "prediction_markets.yaml"
 
 _UA = {"User-Agent": "Dalila/0.1 (UAE intelligence digest; +https://github.com/aryfcunha/dalila)"}
 
-# Markets whose questions match any of these patterns are dropped — they are
-# US-domestic or otherwise irrelevant to a UAE/humanitarian lens.
-_BLOCKLIST_RE = re.compile(
-    r"""
-    \bjd\s+vance\b
-    | \bsotomayor\b
-    | \bsupreme\s+court\b
-    | \brepublican\s+president\b
-    | \bgay\s+marriage\b
-    | \bhomosexuality\b
-    | \bchristian\s+affiliation\b
-    | \bus\s+president\s+(in\s+)?20[2-9]\d\b   # US election year markets
-    | \bpresidential\s+election.*\b(united\s+states|america)\b
-    | \b(united\s+states|america).*\bpresidential\s+election\b
-    | \blula\b                                   # Brazil domestic
-    | \bcancellation.*cdg\b | \bcdg.*cancellation\b   # Paris airport ops
-    | \bchina\s+overtake.*economy\b             # very-long-term macro
-    | \bmove.*\$\d+k?.*out\s+of\s+the\s+united\s+states\b
-    | \billegal.*united\s+states.*trump\b
-    """,
-    re.IGNORECASE | re.VERBOSE,
-)
-
-def _is_relevant(question: str) -> bool:
-    """Return False for markets that are US-domestic or otherwise off-topic."""
-    return not bool(_BLOCKLIST_RE.search(question))
-
-
 # Domain fallback seeds — used when digest history is sparse.
 _DOMAIN_SEEDS = [
     "UAE foreign policy",
@@ -399,59 +371,45 @@ def _recent_digest_entities(conn: sqlite3.Connection) -> list[str]:
 
 # ── Market discovery ──────────────────────────────────────────────────────────
 def discover_markets(conn: sqlite3.Connection) -> list[dict]:
-    """Build a fresh market set by searching Manifold for digest entities.
+    """Discover markets by searching all platforms for curated domain seeds.
 
-    Falls back to domain seeds when digest history is thin.
-    Returns a deduplicated list of market dicts, ranked by volume.
+    Uses only the domain seeds (not digest entity extraction) so that
+    results stay anchored to the UAE/humanitarian lens rather than drifting
+    toward whatever US-political entities happened to appear in the news.
+
+    Each seed is searched across Manifold, Metaculus (via Metaforecast),
+    and Polymarket. Results that appear for multiple seeds are ranked higher.
     """
-    entities = _recent_digest_entities(conn)
-
-    # Always include a selection of domain seeds to ensure regional consistency
     seeds = _s("discovery.domain_seeds", _DOMAIN_SEEDS)
-    for seed in seeds:
-        if seed not in entities:
-            entities.append(seed)
-
-    log.info("prediction markets: discovering markets for %d search terms", len(entities))
-
     max_markets = int(_s("discovery.max_markets", 50))
+
+    log.info("prediction markets: discovering markets for %d seeds", len(seeds))
+
     seen: dict[str, dict] = {}  # market_id -> dict
 
-    for term in entities[:20]:  # cap API calls
-        for m in _search_manifold(term, limit=6):
+    for seed in seeds:
+        for m in _search_manifold(seed, limit=5, min_vol=100.0):
             mid = m["market_id"]
             if mid not in seen:
                 seen[mid] = m
             else:
                 seen[mid]["_relevance_score"] = seen[mid].get("_relevance_score", 1) + 1
 
-    # Search for priority seeds with a LOWER volume threshold (100) to catch niche signal
-    for seed in seeds:
-        # 1. Manifold
-        for m in _search_manifold(seed, limit=3, min_vol=100.0):
-            mid = m["market_id"]
-            if mid not in seen:
-                m["_relevance_score"] = 2.0 # Artificial boost for domain seeds
-                seen[mid] = m
-        
-        # 2. Metaculus (via Metaforecast)
         for m in _search_metaforecast(seed, limit=2):
             mid = m["market_id"]
             if mid not in seen:
-                m["_relevance_score"] = 2.0
                 seen[mid] = m
+            else:
+                seen[mid]["_relevance_score"] = seen[mid].get("_relevance_score", 1) + 1
 
-        # 3. Polymarket
         for m in _search_polymarket(seed, limit=2):
             mid = m["market_id"]
             if mid not in seen:
-                m["_relevance_score"] = 2.0
                 seen[mid] = m
+            else:
+                seen[mid]["_relevance_score"] = seen[mid].get("_relevance_score", 1) + 1
 
-    # Drop off-topic markets before ranking
-    seen = {mid: m for mid, m in seen.items() if _is_relevant(m.get("question", ""))}
-
-    # Rank: relevance_score first, then volume
+    # Rank: markets matching multiple seeds first, then by volume
     ranked = sorted(
         seen.values(),
         key=lambda x: (x.get("_relevance_score", 1), x.get("volume", 0)),

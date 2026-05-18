@@ -722,6 +722,8 @@ def run_publish_site(out_dir: "Path") -> dict:
             """
         ).fetchall()
 
+        today_slug = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
         for row in rows:
             try:
                 item_ids = _json.loads(row["item_ids_json"]) or []
@@ -729,19 +731,12 @@ def run_publish_site(out_dir: "Path") -> dict:
                 item_ids = []
             if not item_ids:
                 continue
-            items = _items_by_ids(conn, item_ids)
-            if not items:
-                continue
-            
-            # Stricter dedup for historical re-renders (in case threshold was lower before)
-            items = _dedupe_by_simhash(items, threshold=16)
 
             try:
                 composed = datetime.fromisoformat(row["composed_at"].replace("Z", "+00:00"))
             except Exception:
                 composed = datetime.now(timezone.utc)
 
-            # Target date for the brief
             slug_dt = composed
             label = (row["date_label"] or "").strip()
             if label:
@@ -749,19 +744,40 @@ def run_publish_site(out_dir: "Path") -> dict:
                     slug_dt = datetime.strptime(label, "%A %d %B %Y").replace(tzinfo=timezone.utc)
                 except Exception:
                     pass
-            
-            # Calculate real reviewed count for this day
-            total = db.count_reviewed_24h(conn, as_of=slug_dt) or len(items)
-            
+
             slug = slug_dt.strftime("%Y-%m-%d")
+            dest = digests_dir / f"{slug}.html"
+
+            # Past digests are canonical — skip if the HTML already exists.
+            # Only today's digest is re-rendered so it picks up fresh market signals.
+            if dest.exists() and slug != today_slug:
+                written.append({
+                    "slug": slug,
+                    "date_label": row["date_label"],
+                    "preview": "",
+                })
+                if latest_items is None:
+                    # Still need to populate latest for index.html
+                    items = _items_by_ids(conn, item_ids)
+                    if items:
+                        latest_items = items
+                        latest_when = composed
+                continue
+
+            items = _items_by_ids(conn, item_ids)
+            if not items:
+                continue
+
+            items = _dedupe_by_simhash(items, threshold=16)
+            total = db.count_reviewed_24h(conn, as_of=slug_dt) or len(items)
+
             html_str = render_digest(items, when=slug_dt, total_ingested=total)
-            (digests_dir / f"{slug}.html").write_text(html_str, encoding="utf-8")
+            dest.write_text(html_str, encoding="utf-8")
             written.append({
                 "slug": slug,
                 "date_label": row["date_label"],
                 "preview": _preview_text(items, n=2),
             })
-            # Latest = first (newest) digest with items
             if latest_items is None:
                 latest_items = items
                 latest_when = composed
