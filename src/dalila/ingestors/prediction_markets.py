@@ -559,9 +559,10 @@ def poll_markets(conn: sqlite3.Connection) -> list[dict]:
 
     # Evict snapshots not refreshed in the last 48 hours — they are no longer
     # being discovered by the current seed set and should age out quietly.
+    cutoff_48h = (datetime.now(timezone.utc) - timedelta(hours=48)).isoformat()
     conn.execute(
-        "DELETE FROM prediction_market_snapshots "
-        "WHERE recorded_at < datetime('now', '-48 hours')"
+        "DELETE FROM prediction_market_snapshots WHERE recorded_at < ?",
+        (cutoff_48h,),
     )
 
     return alerts
@@ -621,6 +622,11 @@ def get_market_signals(conn: sqlite3.Connection,
     if top_n is None:
         top_n = int(_s("digest.top_n", 9))
 
+    now = datetime.now(timezone.utc)
+    cutoff_24h  = (now - timedelta(hours=23)).isoformat()
+    cutoff_7d   = (now - timedelta(hours=167)).isoformat()
+    cutoff_30m  = (now - timedelta(minutes=25)).isoformat()
+
     rows = conn.execute(
         """SELECT s.market_id, s.source, s.question, s.probability, s.volume, s.url,
                   h24.probability as p_24h,
@@ -630,21 +636,22 @@ def get_market_signals(conn: sqlite3.Connection,
            LEFT JOIN (
                SELECT market_id, source, probability, MAX(recorded_at)
                FROM prediction_market_history
-               WHERE recorded_at <= datetime('now', '-23 hours')
+               WHERE recorded_at <= ?
                GROUP BY market_id, source
            ) h24 ON h24.market_id = s.market_id AND h24.source = s.source
            LEFT JOIN (
                SELECT market_id, source, probability, MAX(recorded_at)
                FROM prediction_market_history
-               WHERE recorded_at <= datetime('now', '-167 hours')
+               WHERE recorded_at <= ?
                GROUP BY market_id, source
            ) h7d ON h7d.market_id = s.market_id AND h7d.source = s.source
            LEFT JOIN (
                SELECT market_id, source, probability, MAX(recorded_at)
                FROM prediction_market_history
-               WHERE recorded_at <= datetime('now', '-25 minutes')
+               WHERE recorded_at <= ?
                GROUP BY market_id, source
-           ) h30m ON h30m.market_id = s.market_id AND h30m.source = s.source"""
+           ) h30m ON h30m.market_id = s.market_id AND h30m.source = s.source""",
+        (cutoff_24h, cutoff_7d, cutoff_30m),
     ).fetchall()
 
     scored = []

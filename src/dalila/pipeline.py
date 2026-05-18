@@ -707,43 +707,48 @@ def run_publish_site(out_dir: "Path") -> dict:
     today_slug = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     latest_items: list[dict] | None = None
     latest_when: datetime | None = None
+    latest_slug: str | None = None
     rendered_today = False
 
-    # ── Step 1: render only today's digest from DB ──────────────────────────
-    # We query at most the last 14 days so we can also populate latest_items
-    # for index.html without touching the vast majority of the DB.
+    # ── Step 1: find today's digest + the most-recently-dated digest ────────
+    # We pull all unique-per-date rows and sort by the actual date encoded in
+    # date_label (not composed_at, which is always the backfill run date and
+    # therefore meaningless for ordering purposes).
     with db.connect() as conn:
-        cutoff = (datetime.now(timezone.utc) - timedelta(days=14)).isoformat()
         rows = conn.execute(
             """SELECT d.id, d.composed_at, d.date_label, d.item_ids_json
                FROM digests d
                WHERE d.id IN (SELECT MAX(id) FROM digests GROUP BY date_label)
-                 AND d.composed_at >= ?
-               ORDER BY d.composed_at DESC
-               LIMIT 14""",
-            (cutoff,),
+               ORDER BY d.id DESC""",
         ).fetchall()
 
+        # Parse each row into (slug_dt, composed, items_fn) and sort by slug_dt
+        # so the home page always reflects the most recent actual brief date.
+        parsed: list[tuple] = []
         for row in rows:
-            try:
-                item_ids = _json.loads(row["item_ids_json"]) or []
-            except Exception:
-                item_ids = []
-            if not item_ids:
-                continue
-
+            label = (row["date_label"] or "").strip()
             try:
                 composed = datetime.fromisoformat(row["composed_at"].replace("Z", "+00:00"))
             except Exception:
                 composed = datetime.now(timezone.utc)
-
             slug_dt = composed
-            label = (row["date_label"] or "").strip()
             if label:
                 try:
                     slug_dt = datetime.strptime(label, "%A %d %B %Y").replace(tzinfo=timezone.utc)
                 except Exception:
                     pass
+            try:
+                item_ids = _json.loads(row["item_ids_json"]) or []
+            except Exception:
+                item_ids = []
+            parsed.append((slug_dt, composed, item_ids))
+
+        # Sort descending by actual brief date
+        parsed.sort(key=lambda x: x[0], reverse=True)
+
+        for slug_dt, composed, item_ids in parsed:
+            if not item_ids:
+                continue
 
             slug = slug_dt.strftime("%Y-%m-%d")
             items = _items_by_ids(conn, item_ids)
@@ -753,7 +758,8 @@ def run_publish_site(out_dir: "Path") -> dict:
             # Capture the most-recent digest's items for index.html
             if latest_items is None:
                 latest_items = items
-                latest_when = composed
+                latest_when = slug_dt
+                latest_slug = slug
 
             # Only write the file for today — all past files stay untouched.
             if slug == today_slug:
@@ -782,6 +788,33 @@ def run_publish_site(out_dir: "Path") -> dict:
         except Exception:
             date_label = slug
         all_digests.append({"slug": slug, "date_label": date_label, "preview": ""})
+
+    # If there are newer digest files on disk than what the DB returned (e.g.
+    # the DB was re-initialised but rendered files survived), use the on-disk
+    # file for index.html instead of the stale DB content.
+    if all_digests and (latest_slug is None or all_digests[0]["slug"] > latest_slug):
+        index_html = None  # force fallback below
+
+    if index_html is None and all_digests:
+        # Read the most recent on-disk digest and re-root its nav links so
+        # they work from the site root instead of the digests/ subdirectory.
+        latest_path = digests_dir / f"{all_digests[0]['slug']}.html"
+        if latest_path.exists():
+            raw = latest_path.read_text(encoding="utf-8")
+            # Digest pages use link_prefix="../"; index.html lives at root.
+            # Order matters: fix the home href first (../ → ./) then strip
+            # the remaining ../ prefix from all other nav links.
+            index_html = (
+                raw
+                .replace('href="../"', 'href="./"')
+                .replace("href='../'", "href='./'")
+                .replace('href="../', 'href="')
+                .replace("href='../", "href='")
+            )
+            log.info(
+                "publish-site: index.html sourced from on-disk %s (no DB items for this date)",
+                all_digests[0]["slug"],
+            )
 
     if index_html is None:
         index_html = render_archive(all_digests)
