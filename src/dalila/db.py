@@ -114,20 +114,32 @@ import re
 def clean_title(title: str) -> str:
     from dalila.models import title_case_clean
 
-    new_title = re.sub(r'^Opt:\s*', '', title, flags=re.IGNORECASE)
+    new_title = (title or "").strip()
 
-    # Strip trailing numeric noise (scores, GDELT IDs, floats) regardless of length
-    new_title = re.sub(r'[\s\-–—]+[\d]+\.[\d]+\s*$', '', new_title)   # trailing float
-    new_title = re.sub(r'[\s\-–—]+[\d]{4,}\s*$', '', new_title)        # trailing long int
+    # OCHA/ReliefWeb geo-prefix: "oPt:" = occupied Palestinian territory
+    new_title = re.sub(r'^[Oo][Pp][Tt]\s*[-:–—]\s*', '', new_title)
 
-    # Strip long floats / hex identifiers appearing anywhere mid-title
+    # Generic "Opt:" prefix (some feeds use it as a content-type tag)
+    new_title = re.sub(r'^Opt:\s*', '', new_title, flags=re.IGNORECASE)
+
+    # GDELT article-ID tokens that leak into slug-derived titles.
+    # Format 1: "by[4-8 alphanumeric] " (e.g. "byftehv", "by2pv0t")
+    # Format 2: "[digit][4-7 alphanumeric] " (e.g. "1705hyd", "175byuy")
+    new_title = re.sub(r'^by[a-z0-9]{4,8}\s+', '', new_title, flags=re.IGNORECASE)
+    new_title = re.sub(r'^\d[a-z0-9]{4,7}\s+', '', new_title, flags=re.IGNORECASE)
+
+    # Trailing numeric noise (scores, GDELT IDs, floats)
+    new_title = re.sub(r'[\s\-–—]+\d+\.\d+\s*$', '', new_title)   # trailing float
+    new_title = re.sub(r'[\s\-–—]+\d{4,}\s*$', '', new_title)      # trailing long int
+
+    # Long floats / hex identifiers anywhere mid-title
     new_title = re.sub(r'\b\d+\.\d{5,}\b', '', new_title)
     new_title = re.sub(r'\b\d{8,}\b', '', new_title)
     new_title = re.sub(r'\b[a-f0-9]{12,}\b', '', new_title, flags=re.IGNORECASE)
 
     new_title = re.sub(r'\s+', ' ', new_title).strip()
 
-    # Full title-case when the title opens in lowercase (not just first char)
+    # Full title-case when the title opens in lowercase
     if new_title and new_title[0].islower():
         new_title = title_case_clean(new_title)
 
