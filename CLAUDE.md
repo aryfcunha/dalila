@@ -129,6 +129,10 @@ Storage: one SQLite file (`dalila.db`). Scheduling: APScheduler in-process. No R
 - **Country-view world map fix**: countries rendered as Natural-Earth-projected SVG paths with sqrt-scaled amber heatmap. Co-mention arcs anchored at projected capital coordinates (CAPITALS table inline in the JS). Architectural bug fix: arcs + dots + labels render INSIDE the main map SVG (not a separate overlay) so they share the exact same coordinate system — a previous separate-overlay design had a 48px vertical mismatch.
 - **Archive progressive disclosure**: 20 briefs visible, "Load more" reveals next 20. Server-side renders the full list under `.hidden` class so it remains crawlable.
 - **Publish-site dedup**: when multiple digests exist for the same `date_label` (e.g. an old pre-prune brief and a fresh post-prune one), the most recent by id wins. Archive cap bumped 60 → 365.
+- **Daily Digest Scheduling Bug Fix & Background Ingestion Hardening** (2026-05-18):
+    - Resolved a critical scheduling flaw where `_ingest_job` and `_markets_job` had `next_run_time=None` passed to the scheduler, pausing background polling indefinitely.
+    - Fixed the resulting race condition where the bot's daily digest ran at `02:30 UTC` before the system cron job (`02:40 UTC`), which historically led to empty digests and skipped broadcasts on weekends.
+    - Removed `next_run_time=None` to ensure active background polling and classification runs continuously 24/7, keeping the 24-hour brief window consistently populated.
 - **Prediction Market Expansion & Automation** (2026-05-15):
     - Added **30-minute probability deltas** for real-time volatility tracking.
     - Expanded indicator dashboard to **9 items** with standardized grid heights.
@@ -224,6 +228,7 @@ The CAST ingestor (and any future monthly forecast ingestors) is currently invok
 - Don't make `/digest` recompose by default. It returns the persisted daily digest; only `/digest fresh` triggers recomposition. This was a deliberate cost choice.
 - Don't render arc endpoints / dots into a separate SVG layer from the country paths. They MUST share the same SVG element so they share the same `viewBox → pixel` transform. The current implementation uses a `<g class="arcs-layer">` inside the main map SVG.
 - Don't make CAST or any future forecast ingestor emit items on the first run for a source. The baseline-establishment behaviour is part of the public methodology contract.
+- Don't pass `next_run_time=None` when adding interval/cron jobs in `scheduler.attach_jobs` unless you explicitly intend to register them in a paused state. In APScheduler 3.x, this prevents them from ever executing. Omit it to let APScheduler schedule the first run automatically after the first interval has elapsed.
 
 ## Glossary
 
