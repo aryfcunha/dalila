@@ -40,22 +40,30 @@ SETTINGS_PATH = Path(__file__).parents[3] / "prediction_markets.yaml"
 
 _UA = {"User-Agent": "Dalila/0.1 (UAE intelligence digest; +https://github.com/aryfcunha/dalila)"}
 
-# Domain fallback seeds — used when digest history is sparse.
+# Domain seeds — each is searched across platforms. Seeds that match active,
+# liquid markets (vol ≥ 500) are preferred; low-volume markets rarely move.
+# Polymarket's highest-volume geopolitical markets appear on Manifold as
+# bot-created mirrors, so we effectively get Polymarket signal via Manifold.
 _DOMAIN_SEEDS = [
-    "UAE foreign policy",
-    "humanitarian crisis 2026",
-    "Gaza ceasefire",
-    "Iran nuclear",
+    # Israel / Gaza / Iran axis
+    "Gaza Hamas",
+    "Israel ceasefire",
+    "Iran war",
+    "Iran nuclear deal",
     "Strait of Hormuz",
-    "global recession 2026",
-    "Sudan famine",
-    "GCC economy",
-    "Red Sea shipping",
-    "Hezbollah Israel",
-    "BRICS UAE",
-    "artificial intelligence safety",
-    "climate change migration",
+    "Lebanon Hezbollah",
+    # Gulf / Arabian Peninsula
+    "Saudi Arabia Israel normalization",
+    "Yemen Houthi",
+    "OPEC production",
     "oil price 2026",
+    # Broader MENA & conflict
+    "Syria",
+    "Sudan civil war",
+    "Red Sea shipping",
+    "Russia Ukraine ceasefire",
+    # UAE direct signal
+    "UAE",
 ]
 
 
@@ -98,7 +106,7 @@ def _search_manifold(query: str, limit: int = 5, min_vol: float | None = None) -
         data = _http_get(url, timeout=8)
         results = []
         if min_vol is None:
-            min_vol = float(_s("discovery.min_volume", 300))
+            min_vol = float(_s("discovery.min_volume", 500))
         for m in (data if isinstance(data, list) else []):
             question = m.get("question", "")
             prob = m.get("probability")
@@ -388,21 +396,7 @@ def discover_markets(conn: sqlite3.Connection) -> list[dict]:
     seen: dict[str, dict] = {}  # market_id -> dict
 
     for seed in seeds:
-        for m in _search_manifold(seed, limit=5, min_vol=100.0):
-            mid = m["market_id"]
-            if mid not in seen:
-                seen[mid] = m
-            else:
-                seen[mid]["_relevance_score"] = seen[mid].get("_relevance_score", 1) + 1
-
-        for m in _search_metaforecast(seed, limit=2):
-            mid = m["market_id"]
-            if mid not in seen:
-                seen[mid] = m
-            else:
-                seen[mid]["_relevance_score"] = seen[mid].get("_relevance_score", 1) + 1
-
-        for m in _search_polymarket(seed, limit=2):
+        for m in _search_manifold(seed, limit=5, min_vol=500.0):
             mid = m["market_id"]
             if mid not in seen:
                 seen[mid] = m
@@ -506,6 +500,13 @@ def poll_markets(conn: sqlite3.Connection) -> list[dict]:
                 mid, prob * 100,
                 (d1h or 0) * 100, (d24h or 0) * 100,
             )
+
+    # Evict snapshots not refreshed in the last 48 hours — they are no longer
+    # being discovered by the current seed set and should age out quietly.
+    conn.execute(
+        "DELETE FROM prediction_market_snapshots "
+        "WHERE recorded_at < datetime('now', '-48 hours')"
+    )
 
     return alerts
 
