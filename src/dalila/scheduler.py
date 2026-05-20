@@ -24,6 +24,9 @@ _RATE_LIMIT_BACKOFF = timedelta(hours=1)
 # Small cushion added on top of the parsed reset time so we don't fire the very
 # instant the window opens (server clock skew, gradual roll-out).
 _RATE_LIMIT_BUFFER = timedelta(seconds=60)
+# Hard ceiling on any rate-limit pause — prevents a malformed reset timestamp
+# from stalling the classifier permanently across restarts.
+_MAX_PAUSE = timedelta(hours=2)
 _classify_paused_until: datetime | None = None
 
 
@@ -88,11 +91,13 @@ def _classify_job() -> None:
     if result.get("rate_limited"):
         reset_at = result.get("rate_limit_reset_at")
         if reset_at:
-            _classify_paused_until = reset_at + _RATE_LIMIT_BUFFER
-            log.warning("rate-limited — pausing scheduled classify until %s (parsed from error)",
-                        _classify_paused_until.isoformat())
+            proposed = reset_at + _RATE_LIMIT_BUFFER
+            _classify_paused_until = min(proposed, now + _MAX_PAUSE)
+            log.warning("rate-limited — pausing scheduled classify until %s%s",
+                        _classify_paused_until.isoformat(),
+                        " (capped at 2h)" if proposed > _classify_paused_until else " (parsed from error)")
         else:
-            _classify_paused_until = now + _RATE_LIMIT_BACKOFF
+            _classify_paused_until = now + min(_RATE_LIMIT_BACKOFF, _MAX_PAUSE)
             log.warning("rate-limited (no reset time in error) — pausing scheduled classify until %s (fallback)",
                         _classify_paused_until.isoformat())
 
@@ -371,6 +376,6 @@ def _doctrine_job() -> None:
     result = doctrine_module.run_pass(limit=10)
     log.info("doctrine done: %s", result)
     if result.get("rate_limited"):
-        _doctrine_paused_until = now + _RATE_LIMIT_BACKOFF
+        _doctrine_paused_until = now + min(_RATE_LIMIT_BACKOFF, _MAX_PAUSE)
         log.warning("doctrine rate-limited — paused until %s",
                     _doctrine_paused_until.isoformat())
