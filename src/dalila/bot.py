@@ -167,7 +167,8 @@ async def cmd_digest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
     await update.message.reply_text("Composing fresh digest — this takes a minute…")
     try:
-        digest_id, content = run_compose_digest()
+        import asyncio
+        digest_id, content = await asyncio.to_thread(run_compose_digest)
     except Exception as exc:
         log.exception("on-demand digest failed")
         await update.message.reply_text(f"Sorry, digest composition failed: {exc}")
@@ -537,13 +538,22 @@ async def _reply_with_link(update: Update, n: int) -> None:
 
 
 async def _send_long(update: Update, text: str, chunk: int = 3800) -> None:
-    """Telegram caps messages at ~4096 chars. Split on blank lines where possible."""
+    """Telegram caps messages at ~4096 chars. Split on blank lines where possible.
+
+    If a single paragraph exceeds `chunk` (e.g. a dense market block), it is
+    hard-split at `chunk` boundaries so we never send a message Telegram would
+    reject with MessageTooLong.
+    """
     if len(text) <= chunk:
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
         return
     parts: list[str] = []
     buf = ""
     for para in text.split("\n\n"):
+        # Hard-split oversized single paragraphs before they enter the buffer.
+        while len(para) > chunk:
+            parts.append(para[:chunk])
+            para = para[chunk:]
         if len(buf) + len(para) + 2 > chunk:
             if buf:
                 parts.append(buf)

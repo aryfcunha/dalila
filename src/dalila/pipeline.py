@@ -321,6 +321,12 @@ def run_classify(
                 classified += 1
             batches_done += 1
             log.info("batch %d done (%d items classified so far)", batches_done, classified)
+            # Re-check daily cap after each batch so a large single call can't
+            # blow past the limit set by the operator.
+            if db.todays_classifier_call_count(conn) >= cfg.daily_classifier_call_cap:
+                log.warning("daily classifier cap (%d) reached after %d items; stopping",
+                            cfg.daily_classifier_call_cap, classified)
+                break
 
     return {
         "classified": classified,
@@ -552,7 +558,7 @@ def run_compose_digest(
             from dalila.ingestors.prediction_markets import get_market_signals
             market_signals = get_market_signals(conn, digest_items=items)
         except Exception as exc:
-            log.debug("market signals unavailable for composer: %s", exc)
+            log.warning("market signals unavailable for composer: %s", exc)
 
         content, _ = compose_digest(items, when=end_local, market_signals=market_signals)
         # If the editor returned an empty fallback (< 3 items), don't persist

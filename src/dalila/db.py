@@ -388,14 +388,25 @@ def previously_digested_item_ids(
     ):
         try:
             for x in (json.loads(r["item_ids_json"]) or []):
-                if isinstance(x, int):
-                    out.add(x)
+                if x is not None:
+                    out.add(int(x))
         except Exception:
             continue
     return out
 
 
-def save_digest(conn: sqlite3.Connection, date_label: str, content: str, item_ids: list[int]) -> int:
+def save_digest(conn: sqlite3.Connection, date_label: str, content: str, item_ids: list[int], *,
+                force: bool = False) -> int:
+    """Persist a digest.  If a digest already exists for `date_label` and
+    `force` is False (the default), the existing id is returned unchanged so
+    the scheduler never creates duplicate rows for the same day."""
+    if not force:
+        existing = conn.execute(
+            "SELECT id FROM digests WHERE date_label = ? ORDER BY id DESC LIMIT 1",
+            (date_label,),
+        ).fetchone()
+        if existing:
+            return existing["id"]
     cur = conn.execute(
         """
         INSERT INTO digests(composed_at, date_label, content, item_ids_json, item_count)
@@ -774,7 +785,7 @@ def latest_digest(conn: sqlite3.Connection) -> dict | None:
     """Return the most recently composed digest (id, date_label, content, item_ids, composed_at), or None."""
     row = conn.execute(
         "SELECT id, composed_at, date_label, content, item_ids_json "
-        "FROM digests ORDER BY composed_at DESC LIMIT 1"
+        "FROM digests ORDER BY composed_at DESC, id DESC LIMIT 1"
     ).fetchone()
     if not row:
         return None
@@ -1059,9 +1070,8 @@ def count_reviewed_24h(conn, as_of: datetime | None = None) -> int:
     q_params = (since_utc.isoformat(), as_of_utc.isoformat())
     # Return count of items ingested in this window.
     row = conn.execute(
-        """SELECT COUNT(*) FROM items 
-           WHERE datetime(ingested_at) >= datetime(?) 
-             AND datetime(ingested_at) <= datetime(?)""",
+        """SELECT COUNT(*) FROM items
+           WHERE ingested_at >= ? AND ingested_at <= ?""",
         q_params
     ).fetchone()
     count = row[0] if row else 0

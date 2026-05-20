@@ -65,7 +65,8 @@ def _ingest_job() -> None:
     cfg = get_config()
     interval = 5 if is_breaking_active else cfg.ingest_interval_minutes
     
-    if _last_full_ingest_time and (now - _last_full_ingest_time).total_seconds() < interval * 60 - 10:
+    elapsed = (now - _last_full_ingest_time).total_seconds() if _last_full_ingest_time else None
+    if elapsed is not None and abs(elapsed) < interval * 60 - 10:
         return
         
     _last_full_ingest_time = now
@@ -104,8 +105,12 @@ def _classify_job() -> None:
 
 async def _digest_job(app: Application) -> None:
     log.info("scheduler: digest job firing")
-    # Make sure we've classified anything still pending before composing
-    run_classify(limit=200)
+    # Flush classify backlog only if the classifier isn't currently paused due
+    # to a rate limit — bypassing _classify_paused_until here would fire into
+    # an active rate-limit window and produce a misleading error.
+    now = datetime.now(timezone.utc)
+    if not (_classify_paused_until and now < _classify_paused_until):
+        run_classify(limit=200)
     try:
         digest_id, content = run_compose_digest()
     except Exception:
@@ -199,6 +204,13 @@ def _publish_site_hook() -> None:
     except subprocess.CalledProcessError as exc:
         tail = ((exc.stderr or "") + (exc.stdout or "")).strip()[-500:]
         log.warning("publish-site: git failed (exit %d): %s", exc.returncode, tail)
+        # Unstage anything that was staged before the failure so the next run
+        # starts clean rather than accumulating a permanently dirty index.
+        try:
+            subprocess.run(["git", "reset", "HEAD", "--", str(rel_out)],
+                           cwd=repo, capture_output=True, text=True, timeout=15)
+        except Exception:
+            pass
     except subprocess.TimeoutExpired as exc:
         log.warning("publish-site: git timed out after %ss", exc.timeout)
     except Exception:
@@ -350,7 +362,6 @@ async def _convening_preflight_job(app: Application) -> None:
         if ev.get("url"):
             lines.append(ev["url"])
         lines.append("")
-        _preflighted_events.add(ev["id"])
 
     text = "\n".join(lines)
     with db.connect() as conn:
@@ -364,6 +375,11 @@ async def _convening_preflight_job(app: Application) -> None:
             )
         except Exception as exc:
             log.warning("convening preflight delivery failed for %s: %s", user["chat_id"], exc)
+
+    # Mark events as pre-flighted only AFTER the send loop so a mid-loop
+    # exception doesn't permanently suppress a never-delivered notification.
+    for ev in upcoming:
+        _preflighted_events.add(ev["id"])
 
 
 def _doctrine_job() -> None:

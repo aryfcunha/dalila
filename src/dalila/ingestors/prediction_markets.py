@@ -627,6 +627,9 @@ def get_market_signals(conn: sqlite3.Connection,
     cutoff_7d   = (now - timedelta(hours=167)).isoformat()
     cutoff_30m  = (now - timedelta(minutes=25)).isoformat()
 
+    # Use a two-step join (aggregate → history) so we always retrieve the
+    # probability from the exact row with MAX(recorded_at), not an arbitrary
+    # row as SQLite's bare-column aggregation would give.
     rows = conn.execute(
         """SELECT s.market_id, s.source, s.question, s.probability, s.volume, s.url,
                   h24.probability as p_24h,
@@ -634,22 +637,31 @@ def get_market_signals(conn: sqlite3.Connection,
                   h30m.probability as p_30m
            FROM prediction_market_snapshots s
            LEFT JOIN (
-               SELECT market_id, source, probability, MAX(recorded_at)
-               FROM prediction_market_history
-               WHERE recorded_at <= ?
-               GROUP BY market_id, source
+               SELECT h.market_id, h.source, h.probability
+               FROM prediction_market_history h
+               INNER JOIN (
+                   SELECT market_id, source, MAX(recorded_at) as max_at
+                   FROM prediction_market_history WHERE recorded_at <= ?
+                   GROUP BY market_id, source
+               ) m ON h.market_id = m.market_id AND h.source = m.source AND h.recorded_at = m.max_at
            ) h24 ON h24.market_id = s.market_id AND h24.source = s.source
            LEFT JOIN (
-               SELECT market_id, source, probability, MAX(recorded_at)
-               FROM prediction_market_history
-               WHERE recorded_at <= ?
-               GROUP BY market_id, source
+               SELECT h.market_id, h.source, h.probability
+               FROM prediction_market_history h
+               INNER JOIN (
+                   SELECT market_id, source, MAX(recorded_at) as max_at
+                   FROM prediction_market_history WHERE recorded_at <= ?
+                   GROUP BY market_id, source
+               ) m ON h.market_id = m.market_id AND h.source = m.source AND h.recorded_at = m.max_at
            ) h7d ON h7d.market_id = s.market_id AND h7d.source = s.source
            LEFT JOIN (
-               SELECT market_id, source, probability, MAX(recorded_at)
-               FROM prediction_market_history
-               WHERE recorded_at <= ?
-               GROUP BY market_id, source
+               SELECT h.market_id, h.source, h.probability
+               FROM prediction_market_history h
+               INNER JOIN (
+                   SELECT market_id, source, MAX(recorded_at) as max_at
+                   FROM prediction_market_history WHERE recorded_at <= ?
+                   GROUP BY market_id, source
+               ) m ON h.market_id = m.market_id AND h.source = m.source AND h.recorded_at = m.max_at
            ) h30m ON h30m.market_id = s.market_id AND h30m.source = s.source""",
         (cutoff_24h, cutoff_7d, cutoff_30m),
     ).fetchall()

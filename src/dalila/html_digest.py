@@ -796,14 +796,16 @@ def _masthead(*, on_page: str, tag: str = "DAILY BRIEF", link_prefix: str = "") 
 """
 
 
-def _footer(*, contact_email: str, telegram_bot: str | None) -> str:
+def _footer(*, contact_email: str, telegram_bot: str | None, link_prefix: str = "") -> str:
+    """link_prefix mirrors _masthead: '' for root pages, '../' for digests/."""
+    p = link_prefix
     parts = [
         f'<span>© {datetime.now().year} Dalila</span>',
-        f'<span><a href="index.html">Home</a></span>',
-        f'<span><a href="archive.html">Archive</a></span>',
-        f'<span><a href="markets.html">Markets</a></span>',
-        f'<span><a href="build.html">Build</a></span>',
-        f'<span><a href="about.html">About</a></span>',
+        f'<span><a href="{p or "./"}">Home</a></span>',
+        f'<span><a href="{p}archive.html">Archive</a></span>',
+        f'<span><a href="{p}markets.html">Markets</a></span>',
+        f'<span><a href="{p}build.html">Build</a></span>',
+        f'<span><a href="{p}about.html">About</a></span>',
     ]
     if telegram_bot:
         parts.append(f'<span><a href="https://t.me/{telegram_bot}">Telegram</a></span>')
@@ -911,7 +913,7 @@ def render_digest(
             body.append(_section_block(label, rows))
     if market_signals:
         body.append(_market_signals_block(market_signals))
-    body.append(_footer(contact_email=contact_email, telegram_bot=telegram_bot))
+    body.append(_footer(contact_email=contact_email, telegram_bot=telegram_bot, link_prefix=link_prefix))
 
     return _doc(f"Dalila — {date_label.title()}", "\n".join(body))
 

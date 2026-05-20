@@ -83,15 +83,17 @@ def _run_claude(
         success = True
         return LLMResponse(text=text, duration_ms=int((time.monotonic() - start) * 1000))
 
-    except (FileNotFoundError, LLMError) as exc:
-        # Fallback to DeepSeek if CLI is missing or failed (and we have a key)
+    except FileNotFoundError as exc:
+        # Claude CLI binary is missing — fall back to DeepSeek if configured.
+        # LLMError (rate-limits, bad output) must NOT fall through here: the
+        # rate-limit signal needs to reach the scheduler's back-off logic.
         ds_key = os.getenv("DEEPSEEK_API_KEY")
         if ds_key:
-            log.info("Falling back to DeepSeek for %s", purpose)
+            log.info("Claude CLI not found — falling back to DeepSeek for %s", purpose)
             resp = _call_deepseek(model, system_prompt, user_prompt, purpose, timeout)
             success = True
             return resp
-        raise LLMError(f"Claude CLI failed and no DeepSeek fallback available: {exc}")
+        raise LLMError(f"Claude CLI not found and no DeepSeek fallback available: {exc}")
     except Exception as exc:
         error = str(exc)
         raise
