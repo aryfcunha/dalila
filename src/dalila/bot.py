@@ -17,7 +17,7 @@ from telegram.ext import (
 
 from dalila import db
 from dalila.config import get_config
-from dalila.pipeline import run_compose_digest, run_deep_dive
+from dalila.pipeline import run_compose_digest, run_deep_dive, run_publish_site
 
 log = logging.getLogger(__name__)
 
@@ -596,6 +596,62 @@ USER_MENU_COMMANDS: list[tuple[str, str]] = [
 ]
 
 
+async def cmd_publish(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Regenerate the static site and push to GitHub. Operator-only, hidden command."""
+    import asyncio, os, subprocess
+    from pathlib import Path
+    await update.message.reply_text("Publishing site…")
+
+    # 1. Render
+    try:
+        out_dir = Path(os.getenv("DALILA_SITE_OUT_DIR") or (Path.home() / "dalila" / "docs"))
+        result = await asyncio.to_thread(run_publish_site, out_dir)
+        await update.message.reply_text(
+            f"Site rendered — {result.get('digests', 0)} digest(s) on disk."
+        )
+    except Exception as exc:
+        log.exception("publish: render failed")
+        await update.message.reply_text(f"Render failed: {exc}")
+        return
+
+    # 2. Git push
+    await update.message.reply_text("Pushing to GitHub…")
+    try:
+        repo = out_dir.resolve()
+        for _ in range(8):
+            if (repo / ".git").exists():
+                break
+            if repo.parent == repo:
+                await update.message.reply_text("Could not find git repo above docs dir.")
+                return
+            repo = repo.parent
+        rel_out = out_dir.resolve().relative_to(repo)
+
+        def _push():
+            subprocess.run(["git", "add", "--", str(rel_out)],
+                           cwd=repo, check=True, capture_output=True, text=True, timeout=30)
+            diff = subprocess.run(["git", "diff", "--cached", "--quiet"],
+                                  cwd=repo, text=True, timeout=15)
+            if diff.returncode == 0:
+                return "No changes to push."
+            from datetime import datetime, timezone
+            stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+            subprocess.run(["git", "commit", "-m", f"Publish site — {stamp}"],
+                           cwd=repo, check=True, capture_output=True, text=True, timeout=30)
+            subprocess.run(["git", "push", "origin", "main"],
+                           cwd=repo, check=True, capture_output=True, text=True, timeout=120)
+            return f"Pushed to GitHub ({stamp})."
+
+        msg = await asyncio.to_thread(_push)
+        await update.message.reply_text(msg)
+    except subprocess.CalledProcessError as exc:
+        tail = ((exc.stderr or "") + (exc.stdout or "")).strip()[-300:]
+        await update.message.reply_text(f"Git push failed:\n{tail}")
+    except Exception as exc:
+        log.exception("publish: git push failed")
+        await update.message.reply_text(f"Git push failed: {exc}")
+
+
 async def sync_bot_commands(app: Application) -> None:
     """Push the user-visible command menu to Telegram.
 
@@ -677,6 +733,7 @@ def build_application() -> Application:
     app.add_handler(CommandHandler("region", cmd_region))
     app.add_handler(CommandHandler("country", cmd_country))
     app.add_handler(CommandHandler("status", cmd_status))
+    app.add_handler(CommandHandler("publish", cmd_publish))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
     return app
 

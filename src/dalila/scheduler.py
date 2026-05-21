@@ -165,8 +165,10 @@ def _publish_site_hook() -> None:
         log.exception("publish-site: render failed")
         return
 
-    # 2. Stop here unless explicitly opted in to git push
-    if os.getenv("DALILA_SITE_GIT_PUSH") != "1":
+    # 2. Stop here if explicitly opted OUT of git push.
+    # Default is to push — set DALILA_SITE_GIT_PUSH=0 on dev boxes that
+    # should not commit to the repo automatically.
+    if os.getenv("DALILA_SITE_GIT_PUSH", "1") == "0":
         return
 
     # 3. Find the git repo that contains the output directory
