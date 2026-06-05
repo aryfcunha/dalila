@@ -112,15 +112,37 @@ def _seed_sources(conn: sqlite3.Connection) -> None:
 import re
 
 def clean_title(title: str) -> str:
-    # Remove 'Opt:' prefix (common in some sources)
-    new_title = re.sub(r'^Opt:\s*', '', title, flags=re.IGNORECASE)
-    
-    # Remove random numbers like 1.500538495 or similar long floats/identifiers
+    from dalila.models import title_case_clean
+
+    new_title = (title or "").strip()
+
+    # OCHA/ReliefWeb geo-prefix: "oPt:" = occupied Palestinian territory
+    new_title = re.sub(r'^[Oo][Pp][Tt]\s*[-:–—]\s*', '', new_title)
+
+    # Generic "Opt:" prefix (some feeds use it as a content-type tag)
+    new_title = re.sub(r'^Opt:\s*', '', new_title, flags=re.IGNORECASE)
+
+    # GDELT article-ID tokens that leak into slug-derived titles.
+    # Format 1: "by[4-8 alphanumeric] " (e.g. "byftehv", "by2pv0t")
+    # Format 2: "[digit][4-7 alphanumeric] " (e.g. "1705hyd", "175byuy")
+    new_title = re.sub(r'^by[a-z0-9]{4,8}\s+', '', new_title, flags=re.IGNORECASE)
+    new_title = re.sub(r'^\d[a-z0-9]{4,7}\s+', '', new_title, flags=re.IGNORECASE)
+
+    # Trailing numeric noise (scores, GDELT IDs, floats)
+    new_title = re.sub(r'[\s\-–—]+\d+\.\d+\s*$', '', new_title)   # trailing float
+    new_title = re.sub(r'[\s\-–—]+\d{4,}\s*$', '', new_title)      # trailing long int
+
+    # Long floats / hex identifiers anywhere mid-title
     new_title = re.sub(r'\b\d+\.\d{5,}\b', '', new_title)
     new_title = re.sub(r'\b\d{8,}\b', '', new_title)
+    new_title = re.sub(r'\b[a-f0-9]{12,}\b', '', new_title, flags=re.IGNORECASE)
+
     new_title = re.sub(r'\s+', ' ', new_title).strip()
+
+    # Full title-case when the title opens in lowercase
     if new_title and new_title[0].islower():
-        new_title = new_title[0].upper() + new_title[1:]
+        new_title = title_case_clean(new_title)
+
     return new_title
 
 def insert_item(conn: sqlite3.Connection, item: RawItem, prefilter_passed: bool) -> int | None:
@@ -366,14 +388,25 @@ def previously_digested_item_ids(
     ):
         try:
             for x in (json.loads(r["item_ids_json"]) or []):
-                if isinstance(x, int):
-                    out.add(x)
+                if x is not None:
+                    out.add(int(x))
         except Exception:
             continue
     return out
 
 
-def save_digest(conn: sqlite3.Connection, date_label: str, content: str, item_ids: list[int]) -> int:
+def save_digest(conn: sqlite3.Connection, date_label: str, content: str, item_ids: list[int], *,
+                force: bool = False) -> int:
+    """Persist a digest.  If a digest already exists for `date_label` and
+    `force` is False (the default), the existing id is returned unchanged so
+    the scheduler never creates duplicate rows for the same day."""
+    if not force:
+        existing = conn.execute(
+            "SELECT id FROM digests WHERE date_label = ? ORDER BY id DESC LIMIT 1",
+            (date_label,),
+        ).fetchone()
+        if existing:
+            return existing["id"]
     cur = conn.execute(
         """
         INSERT INTO digests(composed_at, date_label, content, item_ids_json, item_count)
@@ -752,7 +785,7 @@ def latest_digest(conn: sqlite3.Connection) -> dict | None:
     """Return the most recently composed digest (id, date_label, content, item_ids, composed_at), or None."""
     row = conn.execute(
         "SELECT id, composed_at, date_label, content, item_ids_json "
-        "FROM digests ORDER BY composed_at DESC LIMIT 1"
+        "FROM digests ORDER BY composed_at DESC, id DESC LIMIT 1"
     ).fetchone()
     if not row:
         return None
@@ -1037,9 +1070,8 @@ def count_reviewed_24h(conn, as_of: datetime | None = None) -> int:
     q_params = (since_utc.isoformat(), as_of_utc.isoformat())
     # Return count of items ingested in this window.
     row = conn.execute(
-        """SELECT COUNT(*) FROM items 
-           WHERE datetime(ingested_at) >= datetime(?) 
-             AND datetime(ingested_at) <= datetime(?)""",
+        """SELECT COUNT(*) FROM items
+           WHERE ingested_at >= ? AND ingested_at <= ?""",
         q_params
     ).fetchone()
     count = row[0] if row else 0

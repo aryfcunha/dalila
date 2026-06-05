@@ -40,23 +40,35 @@ SETTINGS_PATH = Path(__file__).parents[3] / "prediction_markets.yaml"
 
 _UA = {"User-Agent": "Dalila/0.1 (UAE intelligence digest; +https://github.com/aryfcunha/dalila)"}
 
-# Domain fallback seeds — used when digest history is sparse.
+# Permanent anchor seeds — always searched regardless of news cycle.
+# These keep discovery anchored to the UAE / humanitarian / development lens.
+# Edit prediction_markets.yaml → discovery.domain_seeds to override at runtime.
 _DOMAIN_SEEDS = [
-    "UAE foreign policy",
-    "humanitarian crisis 2026",
-    "Gaza ceasefire",
-    "Iran nuclear",
+    # Israel / Gaza / Iran axis
+    "Gaza Hamas",
+    "Israel ceasefire",
+    "Iran war",
+    "Iran nuclear deal",
     "Strait of Hormuz",
-    "global recession 2026",
-    "Sudan famine",
-    "GCC economy",
-    "Red Sea shipping",
-    "Hezbollah Israel",
-    "BRICS UAE",
-    "artificial intelligence safety",
-    "climate change migration",
+    "Lebanon Hezbollah",
+    # Gulf / Arabian Peninsula
+    "Saudi Arabia Israel normalization",
+    "Yemen Houthi",
+    "OPEC production",
     "oil price 2026",
+    # Broader MENA & conflict
+    "Syria",
+    "Sudan civil war",
+    "Red Sea shipping",
+    "Russia Ukraine ceasefire",
+    # UAE direct signal
+    "UAE",
 ]
+
+# Token-level exclusion set — news seeds that duplicate anchor coverage are dropped.
+_ANCHOR_TOKENS: frozenset[str] = frozenset(
+    tok.lower() for seed in _DOMAIN_SEEDS for tok in seed.split()
+)
 
 
 # ── settings loader ────────────────────────────────────────────────────────────
@@ -98,7 +110,7 @@ def _search_manifold(query: str, limit: int = 5, min_vol: float | None = None) -
         data = _http_get(url, timeout=8)
         results = []
         if min_vol is None:
-            min_vol = float(_s("discovery.min_volume", 300))
+            min_vol = float(_s("discovery.min_volume", 500))
         for m in (data if isinstance(data, list) else []):
             question = m.get("question", "")
             prob = m.get("probability")
@@ -369,58 +381,85 @@ def _recent_digest_entities(conn: sqlite3.Connection) -> list[str]:
     return [term for term, _ in ranked[:entity_limit]]
 
 
+# ── News-derived seed extraction ──────────────────────────────────────────────
+def _extract_news_seeds(
+    conn: sqlite3.Connection, *, lookback_days: int = 14, limit: int = 8
+) -> list[str]:
+    """Derive market search seeds from recent UAE-relevant classified news.
+
+    Pulls named entities from classified items with uae_relevance >= 0.5 over
+    the last `lookback_days`. Only proper nouns (first char uppercase, ≥ 4 chars)
+    that don't overlap with the permanent anchor seeds are returned.
+
+    This lets the market watchlist evolve with the news cycle — new crises,
+    summits, and aid commitments surface automatically — while the anchor seeds
+    guarantee baseline UAE / humanitarian / development coverage.
+    """
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=lookback_days)).isoformat()
+    rows = conn.execute(
+        """SELECT entities_json FROM items
+           WHERE ingested_at >= ?
+             AND classified_at IS NOT NULL
+             AND uae_relevance >= 0.5
+           ORDER BY ingested_at DESC
+           LIMIT 1000""",
+        (cutoff,),
+    ).fetchall()
+
+    freq: dict[str, int] = {}
+    for row in rows:
+        try:
+            for ent in (json.loads(row[0] or "[]") or []):
+                name = (ent.get("name") or "").strip()
+                if (
+                    len(name) >= 4
+                    and name[0].isupper()
+                    # drop anything whose tokens fully overlap with anchors
+                    and not all(tok.lower() in _ANCHOR_TOKENS for tok in name.split())
+                ):
+                    freq[name] = freq.get(name, 0) + 1
+        except Exception:
+            pass
+
+    ranked = sorted(freq.items(), key=lambda x: x[1], reverse=True)
+    return [term for term, _ in ranked[:limit]]
+
+
 # ── Market discovery ──────────────────────────────────────────────────────────
 def discover_markets(conn: sqlite3.Connection) -> list[dict]:
-    """Build a fresh market set by searching Manifold for digest entities.
+    """Discover markets by searching anchor seeds + dynamic news-derived seeds.
 
-    Falls back to domain seeds when digest history is thin.
-    Returns a deduplicated list of market dicts, ranked by volume.
+    Permanent anchor seeds keep results grounded in the UAE / humanitarian /
+    development lens. Dynamic seeds are extracted from recent high-UAE-relevance
+    classified items so the watchlist evolves with the news cycle (new crises,
+    summits, aid programmes) without drifting toward unrelated US-political noise.
     """
-    entities = _recent_digest_entities(conn)
+    anchor_seeds: list[str] = _s("discovery.domain_seeds", _DOMAIN_SEEDS)
+    news_seeds = _extract_news_seeds(conn)
 
-    # Always include a selection of domain seeds to ensure regional consistency
-    seeds = _s("discovery.domain_seeds", _DOMAIN_SEEDS)
-    for seed in seeds:
-        if seed not in entities:
-            entities.append(seed)
-
-    log.info("prediction markets: discovering markets for %d search terms", len(entities))
+    anchor_lower = {s.lower() for s in anchor_seeds}
+    extra_seeds = [s for s in news_seeds if s.lower() not in anchor_lower]
+    seeds = list(anchor_seeds) + extra_seeds
 
     max_markets = int(_s("discovery.max_markets", 50))
+
+    log.info(
+        "prediction markets: discovering markets for %d seeds "
+        "(%d anchors + %d from recent news)",
+        len(seeds), len(anchor_seeds), len(extra_seeds),
+    )
+
     seen: dict[str, dict] = {}  # market_id -> dict
 
-    for term in entities[:20]:  # cap API calls
-        for m in _search_manifold(term, limit=6):
+    for seed in seeds:
+        for m in _search_manifold(seed, limit=5, min_vol=500.0):
             mid = m["market_id"]
             if mid not in seen:
                 seen[mid] = m
             else:
                 seen[mid]["_relevance_score"] = seen[mid].get("_relevance_score", 1) + 1
 
-    # Search for priority seeds with a LOWER volume threshold (100) to catch niche signal
-    for seed in seeds:
-        # 1. Manifold
-        for m in _search_manifold(seed, limit=3, min_vol=100.0):
-            mid = m["market_id"]
-            if mid not in seen:
-                m["_relevance_score"] = 2.0 # Artificial boost for domain seeds
-                seen[mid] = m
-        
-        # 2. Metaculus (via Metaforecast)
-        for m in _search_metaforecast(seed, limit=2):
-            mid = m["market_id"]
-            if mid not in seen:
-                m["_relevance_score"] = 2.0
-                seen[mid] = m
-
-        # 3. Polymarket
-        for m in _search_polymarket(seed, limit=2):
-            mid = m["market_id"]
-            if mid not in seen:
-                m["_relevance_score"] = 2.0
-                seen[mid] = m
-
-    # Rank: relevance_score first, then volume
+    # Rank: markets matching multiple seeds first, then by volume
     ranked = sorted(
         seen.values(),
         key=lambda x: (x.get("_relevance_score", 1), x.get("volume", 0)),
@@ -518,6 +557,14 @@ def poll_markets(conn: sqlite3.Connection) -> list[dict]:
                 (d1h or 0) * 100, (d24h or 0) * 100,
             )
 
+    # Evict snapshots not refreshed in the last 48 hours — they are no longer
+    # being discovered by the current seed set and should age out quietly.
+    cutoff_48h = (datetime.now(timezone.utc) - timedelta(hours=48)).isoformat()
+    conn.execute(
+        "DELETE FROM prediction_market_snapshots WHERE recorded_at < ?",
+        (cutoff_48h,),
+    )
+
     return alerts
 
 
@@ -569,10 +616,20 @@ def _is_duplicate_topic(m1: dict, m2: dict) -> bool:
 
 
 def get_market_signals(conn: sqlite3.Connection,
-                       digest_items: list[dict] | None = None) -> list[dict]:
+                       digest_items: list[dict] | None = None,
+                       top_n: int | None = None) -> list[dict]:
     """Return top N market signals scored for today's digest content."""
-    top_n = int(_s("digest.top_n", 9))
+    if top_n is None:
+        top_n = int(_s("digest.top_n", 9))
 
+    now = datetime.now(timezone.utc)
+    cutoff_24h  = (now - timedelta(hours=23)).isoformat()
+    cutoff_7d   = (now - timedelta(hours=167)).isoformat()
+    cutoff_30m  = (now - timedelta(minutes=25)).isoformat()
+
+    # Use a two-step join (aggregate → history) so we always retrieve the
+    # probability from the exact row with MAX(recorded_at), not an arbitrary
+    # row as SQLite's bare-column aggregation would give.
     rows = conn.execute(
         """SELECT s.market_id, s.source, s.question, s.probability, s.volume, s.url,
                   h24.probability as p_24h,
@@ -580,23 +637,33 @@ def get_market_signals(conn: sqlite3.Connection,
                   h30m.probability as p_30m
            FROM prediction_market_snapshots s
            LEFT JOIN (
-               SELECT market_id, source, probability, MAX(recorded_at)
-               FROM prediction_market_history
-               WHERE recorded_at <= datetime('now', '-23 hours')
-               GROUP BY market_id, source
+               SELECT h.market_id, h.source, h.probability
+               FROM prediction_market_history h
+               INNER JOIN (
+                   SELECT market_id, source, MAX(recorded_at) as max_at
+                   FROM prediction_market_history WHERE recorded_at <= ?
+                   GROUP BY market_id, source
+               ) m ON h.market_id = m.market_id AND h.source = m.source AND h.recorded_at = m.max_at
            ) h24 ON h24.market_id = s.market_id AND h24.source = s.source
            LEFT JOIN (
-               SELECT market_id, source, probability, MAX(recorded_at)
-               FROM prediction_market_history
-               WHERE recorded_at <= datetime('now', '-167 hours')
-               GROUP BY market_id, source
+               SELECT h.market_id, h.source, h.probability
+               FROM prediction_market_history h
+               INNER JOIN (
+                   SELECT market_id, source, MAX(recorded_at) as max_at
+                   FROM prediction_market_history WHERE recorded_at <= ?
+                   GROUP BY market_id, source
+               ) m ON h.market_id = m.market_id AND h.source = m.source AND h.recorded_at = m.max_at
            ) h7d ON h7d.market_id = s.market_id AND h7d.source = s.source
            LEFT JOIN (
-               SELECT market_id, source, probability, MAX(recorded_at)
-               FROM prediction_market_history
-               WHERE recorded_at <= datetime('now', '-25 minutes')
-               GROUP BY market_id, source
-           ) h30m ON h30m.market_id = s.market_id AND h30m.source = s.source"""
+               SELECT h.market_id, h.source, h.probability
+               FROM prediction_market_history h
+               INNER JOIN (
+                   SELECT market_id, source, MAX(recorded_at) as max_at
+                   FROM prediction_market_history WHERE recorded_at <= ?
+                   GROUP BY market_id, source
+               ) m ON h.market_id = m.market_id AND h.source = m.source AND h.recorded_at = m.max_at
+           ) h30m ON h30m.market_id = s.market_id AND h30m.source = s.source""",
+        (cutoff_24h, cutoff_7d, cutoff_30m),
     ).fetchall()
 
     scored = []

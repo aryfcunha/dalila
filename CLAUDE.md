@@ -229,6 +229,7 @@ The CAST ingestor (and any future monthly forecast ingestors) is currently invok
 - Don't render arc endpoints / dots into a separate SVG layer from the country paths. They MUST share the same SVG element so they share the same `viewBox → pixel` transform. The current implementation uses a `<g class="arcs-layer">` inside the main map SVG.
 - Don't make CAST or any future forecast ingestor emit items on the first run for a source. The baseline-establishment behaviour is part of the public methodology contract.
 - Don't pass `next_run_time=None` when adding interval/cron jobs in `scheduler.attach_jobs` unless you explicitly intend to register them in a paused state. In APScheduler 3.x, this prevents them from ever executing. Omit it to let APScheduler schedule the first run automatically after the first interval has elapsed.
+- **`docs/digests/*.html` files are immutable once written.** `run_publish_site` only writes today's digest from the DB; all past digest pages are left exactly as they are on disk. The archive list is built by scanning existing files, not by re-querying the DB. Never add logic that re-renders old digest pages — it produces massive git diffs for zero user-visible benefit and defeats the purpose of the skip-if-exists invariant. When committing after `publish-site`, only `docs/index.html`, `docs/archive.html`, and the other root-level pages (+ today's digest) should show up as changed.
 
 ## Glossary
 

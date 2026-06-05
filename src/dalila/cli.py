@@ -171,7 +171,7 @@ def main(argv: list[str] | None = None) -> int:
         from dalila.pipeline import run_publish_site
         db.init_db()
         result = run_publish_site(Path(args.out).resolve())
-        print(f"Published {result['digests']} digest page(s) to {result['out_dir']}")
+        print(f"Site updated — {result['digests']} digest(s) on disk, {len(result['wrote'])} page(s) written:")
         for p in result["wrote"]:
             print(f"  · {p}")
         return 0

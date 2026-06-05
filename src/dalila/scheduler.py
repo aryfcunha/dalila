@@ -24,6 +24,9 @@ _RATE_LIMIT_BACKOFF = timedelta(hours=1)
 # Small cushion added on top of the parsed reset time so we don't fire the very
 # instant the window opens (server clock skew, gradual roll-out).
 _RATE_LIMIT_BUFFER = timedelta(seconds=60)
+# Hard ceiling on any rate-limit pause — prevents a malformed reset timestamp
+# from stalling the classifier permanently across restarts.
+_MAX_PAUSE = timedelta(hours=2)
 _classify_paused_until: datetime | None = None
 
 
@@ -62,7 +65,8 @@ def _ingest_job() -> None:
     cfg = get_config()
     interval = 5 if is_breaking_active else cfg.ingest_interval_minutes
     
-    if _last_full_ingest_time and (now - _last_full_ingest_time).total_seconds() < interval * 60 - 10:
+    elapsed = (now - _last_full_ingest_time).total_seconds() if _last_full_ingest_time else None
+    if elapsed is not None and abs(elapsed) < interval * 60 - 10:
         return
         
     _last_full_ingest_time = now
@@ -88,19 +92,25 @@ def _classify_job() -> None:
     if result.get("rate_limited"):
         reset_at = result.get("rate_limit_reset_at")
         if reset_at:
-            _classify_paused_until = reset_at + _RATE_LIMIT_BUFFER
-            log.warning("rate-limited — pausing scheduled classify until %s (parsed from error)",
-                        _classify_paused_until.isoformat())
+            proposed = reset_at + _RATE_LIMIT_BUFFER
+            _classify_paused_until = min(proposed, now + _MAX_PAUSE)
+            log.warning("rate-limited — pausing scheduled classify until %s%s",
+                        _classify_paused_until.isoformat(),
+                        " (capped at 2h)" if proposed > _classify_paused_until else " (parsed from error)")
         else:
-            _classify_paused_until = now + _RATE_LIMIT_BACKOFF
+            _classify_paused_until = now + min(_RATE_LIMIT_BACKOFF, _MAX_PAUSE)
             log.warning("rate-limited (no reset time in error) — pausing scheduled classify until %s (fallback)",
                         _classify_paused_until.isoformat())
 
 
 async def _digest_job(app: Application) -> None:
     log.info("scheduler: digest job firing")
-    # Make sure we've classified anything still pending before composing
-    run_classify(limit=200)
+    # Flush classify backlog only if the classifier isn't currently paused due
+    # to a rate limit — bypassing _classify_paused_until here would fire into
+    # an active rate-limit window and produce a misleading error.
+    now = datetime.now(timezone.utc)
+    if not (_classify_paused_until and now < _classify_paused_until):
+        run_classify(limit=200)
     try:
         digest_id, content = run_compose_digest()
     except Exception:
@@ -155,8 +165,10 @@ def _publish_site_hook() -> None:
         log.exception("publish-site: render failed")
         return
 
-    # 2. Stop here unless explicitly opted in to git push
-    if os.getenv("DALILA_SITE_GIT_PUSH") != "1":
+    # 2. Stop here if explicitly opted OUT of git push.
+    # Default is to push — set DALILA_SITE_GIT_PUSH=0 on dev boxes that
+    # should not commit to the repo automatically.
+    if os.getenv("DALILA_SITE_GIT_PUSH", "1") == "0":
         return
 
     # 3. Find the git repo that contains the output directory
@@ -194,6 +206,13 @@ def _publish_site_hook() -> None:
     except subprocess.CalledProcessError as exc:
         tail = ((exc.stderr or "") + (exc.stdout or "")).strip()[-500:]
         log.warning("publish-site: git failed (exit %d): %s", exc.returncode, tail)
+        # Unstage anything that was staged before the failure so the next run
+        # starts clean rather than accumulating a permanently dirty index.
+        try:
+            subprocess.run(["git", "reset", "HEAD", "--", str(rel_out)],
+                           cwd=repo, capture_output=True, text=True, timeout=15)
+        except Exception:
+            pass
     except subprocess.TimeoutExpired as exc:
         log.warning("publish-site: git timed out after %ss", exc.timeout)
     except Exception:
@@ -285,6 +304,14 @@ def _markets_job() -> None:
     except Exception:
         log.exception("markets job failed")
 
+    # Regenerate markets.html so the website always reflects the latest
+    # probabilities and deltas — not just what was current at digest time.
+    try:
+        from dalila.pipeline import run_regenerate_markets_page
+        run_regenerate_markets_page()
+    except Exception:
+        log.exception("markets page regeneration failed")
+
 
 # Tracks event-ids we've already pre-flighted so we don't spam the user
 # with the same heads-up every day in the 7-day window. Cleared on
@@ -337,7 +364,6 @@ async def _convening_preflight_job(app: Application) -> None:
         if ev.get("url"):
             lines.append(ev["url"])
         lines.append("")
-        _preflighted_events.add(ev["id"])
 
     text = "\n".join(lines)
     with db.connect() as conn:
@@ -352,6 +378,11 @@ async def _convening_preflight_job(app: Application) -> None:
         except Exception as exc:
             log.warning("convening preflight delivery failed for %s: %s", user["chat_id"], exc)
 
+    # Mark events as pre-flighted only AFTER the send loop so a mid-loop
+    # exception doesn't permanently suppress a never-delivered notification.
+    for ev in upcoming:
+        _preflighted_events.add(ev["id"])
+
 
 def _doctrine_job() -> None:
     global _doctrine_paused_until
@@ -363,6 +394,6 @@ def _doctrine_job() -> None:
     result = doctrine_module.run_pass(limit=10)
     log.info("doctrine done: %s", result)
     if result.get("rate_limited"):
-        _doctrine_paused_until = now + _RATE_LIMIT_BACKOFF
+        _doctrine_paused_until = now + min(_RATE_LIMIT_BACKOFF, _MAX_PAUSE)
         log.warning("doctrine rate-limited — paused until %s",
                     _doctrine_paused_until.isoformat())

@@ -206,6 +206,9 @@ _TITLE_ACRONYMS = {
     "mp", "mps", "hq", "tv", "bbc", "cnn", "ap", "afp", "wam",
     "adia", "adq", "adnoc", "mbz", "mbs", "mbr", "abu", "iaea",
     "icrc", "ngo", "ngos", "ip", "phd", "wto", "dpr", "drc",
+    # UAE-ecosystem acronyms
+    "gcc", "ihc", "ihpc", "oda", "erc", "ezp", "ihi", "rcrc",
+    "sdg", "sdgs", "cop", "ldc", "ldcs", "oda's",
 }
 
 # Lowercase-stays-lowercase (mid-sentence connectors). First word still gets capitalised regardless.
