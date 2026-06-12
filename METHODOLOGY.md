@@ -132,6 +132,7 @@ section is built only from observations that crossed a change threshold.
 | Delivery time | **06:30 Gulf Standard Time** | Reaches readers before the working day&rsquo;s first meeting. |
 | Minimum relevance to qualify | **0.4 on the UAE-relevance scale** | Below this, items are about humanitarian topics but lack a UAE-specific angle. The brief is UAE-lensed, so they do not earn a slot. |
 | Per-outlet candidate cap | **4 items per publisher per brief** | High-volume publishers would otherwise crowd out every other voice. The cap is applied in rank order, so an outlet still leads with its strongest items. |
+| Outlet interleaving | **Every publisher&rsquo;s best item is considered before any publisher&rsquo;s second item** | The candidate list is re-ordered breadth-first across outlets (quality still ranks within each round), so the brief draws on the full breadth of gathered sources rather than the few highest-volume ones. |
 | Items per brief | **Up to 25** | A ceiling, not a target. The editor prunes harder in practice. |
 | Foresight section cap | **Top 5 movers** by magnitude of change | Foresight items earn the spotlight only when their movement is genuinely large; surplus changes are dropped. |
 | Empty-brief fallback | **&lt; 3 items above threshold** | Rather than publish a thin brief, Dalila says: &ldquo;Quiet news cycle. *N* items reviewed, none above threshold.&rdquo; |

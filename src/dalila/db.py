@@ -377,8 +377,8 @@ def items_for_digest(
     out = []
     outlet_counts: dict[str, int] = {}
     for r in rows:
+        domain = _outlet_domain(r["url"]) or r["source_name"]
         if per_outlet_cap:
-            domain = _outlet_domain(r["url"]) or r["source_name"]
             if outlet_counts.get(domain, 0) >= per_outlet_cap:
                 continue
             outlet_counts[domain] = outlet_counts.get(domain, 0) + 1
@@ -394,8 +394,38 @@ def items_for_digest(
             "entities": json.loads(r["entities_json"]) if r["entities_json"] else [],
             "doctrine_relation": r["doctrine_relation"],
             "title_simhash": r["title_simhash"],
+            "_outlet": domain,
         })
-    return out
+    return _interleave_by_outlet(out)
+
+
+def _interleave_by_outlet(ranked: list[dict]) -> list[dict]:
+    """Breadth-first re-order: every outlet's best item before any outlet's
+    second item, then every second item, and so on. Within a round, outlets
+    keep the order their item earned by score — so quality still decides who
+    leads, but the top of the candidate list spans as many publishers as the
+    pool offers instead of letting two or three high-volume outlets fill the
+    editor's window."""
+    by_outlet: dict[str, list[dict]] = {}
+    outlet_order: list[str] = []
+    for item in ranked:
+        key = item.pop("_outlet", "") or item.get("source", "")
+        if key not in by_outlet:
+            by_outlet[key] = []
+            outlet_order.append(key)
+        by_outlet[key].append(item)
+    out: list[dict] = []
+    round_i = 0
+    while True:
+        added = False
+        for key in outlet_order:
+            bucket = by_outlet[key]
+            if round_i < len(bucket):
+                out.append(bucket[round_i])
+                added = True
+        if not added:
+            return out
+        round_i += 1
 
 
 def _outlet_domain(url: str | None) -> str:
