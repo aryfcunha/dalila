@@ -137,11 +137,22 @@ def clean_title(title: str) -> str:
     new_title = re.sub(r'\b\d{8,}\b', '', new_title)
     new_title = re.sub(r'\b[a-f0-9]{12,}\b', '', new_title, flags=re.IGNORECASE)
 
+    # CMS path-suffixes that survive slug extraction (".cms" = Times of India
+    # family, ".ece" = Escenic). Seen verbatim as whole titles in digests.
+    new_title = re.sub(r'\.(cms|ece|shtml|amp)\b', '', new_title, flags=re.IGNORECASE)
+
     new_title = re.sub(r'\s+', ' ', new_title).strip()
 
     # Full title-case when the title opens in lowercase
     if new_title and new_title[0].islower():
         new_title = title_case_clean(new_title)
+
+    # Final gate: a usable headline has at least two alphabetic words. Bare
+    # article ids ("1396974"), leftover extensions, or empty husks become ""
+    # — items_for_digest() already excludes empty titles, so such items are
+    # stored (for dedup/audit) but can never reach a digest or the site.
+    if len(re.findall(r'[A-Za-z]{2,}', new_title)) < 2:
+        return ""
 
     return new_title
 
@@ -303,6 +314,7 @@ def items_for_digest(
     *,
     as_of: datetime | None = None,
     exclude_ids: set[int] | None = None,
+    per_outlet_cap: int = 4,
 ) -> list[dict]:
     """Items classified within the [as_of − since_hours, as_of] window.
 
@@ -313,6 +325,12 @@ def items_for_digest(
         wastes a slot on them).
       * Items in `exclude_ids` are dropped — used by run_backfill_digests
         so the same item never appears in two consecutive briefs.
+
+    `per_outlet_cap` bounds how many candidates a single publisher (by URL
+    domain — NOT source_id, since all of GDELT shares one source_id) may
+    contribute, in rank order. Without it the highest-volume papers (e.g.
+    the Indian dailies that dominate GDELT's English feed) crowd out every
+    other outlet. 0 or None disables the cap.
 
     `as_of` defaults to "now" (UTC). Set it to a past datetime for backfill —
     e.g. to compose yesterday's digest, pass `as_of=yesterday-06:30-utc`.
@@ -357,7 +375,13 @@ def items_for_digest(
         params,
     ).fetchall()
     out = []
+    outlet_counts: dict[str, int] = {}
     for r in rows:
+        if per_outlet_cap:
+            domain = _outlet_domain(r["url"]) or r["source_name"]
+            if outlet_counts.get(domain, 0) >= per_outlet_cap:
+                continue
+            outlet_counts[domain] = outlet_counts.get(domain, 0) + 1
         out.append({
             "id": r["id"],
             "title": r["title"],
@@ -372,6 +396,18 @@ def items_for_digest(
             "title_simhash": r["title_simhash"],
         })
     return out
+
+
+def _outlet_domain(url: str | None) -> str:
+    """Publisher domain for the outlet-diversity cap ("www."/port stripped)."""
+    if not url:
+        return ""
+    try:
+        from urllib.parse import urlparse
+        host = (urlparse(url).hostname or "").lower()
+    except ValueError:
+        return ""
+    return host[4:] if host.startswith("www.") else host
 
 
 def previously_digested_item_ids(

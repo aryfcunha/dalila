@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
@@ -197,19 +198,30 @@ POLICY_SECTORS = {
 }
 
 # Acronyms that should stay UPPERCASE even after title-casing the slug.
+# NOTE: do NOT add words that are also proper-noun name parts — "abu" was
+# here once and produced "ABU Dhabi" in every slug-derived title.
 _TITLE_ACRONYMS = {
     "uae", "us", "usa", "uk", "un", "eu", "nato", "oecd", "imf",
     "who", "wfp", "fao", "iom", "unicef", "unhcr", "ohchr", "ocha",
     "icc", "icj", "g7", "g20", "g77", "asean", "ecowas", "ecb", "fed",
     "cia", "fbi", "nsa", "mi6", "mi5", "fco", "fcdo", "kgb", "isis",
-    "uss", "uae's", "us's", "uk's", "ai", "vp", "ceo", "cfo", "pm",
+    "uss", "uae's", "us's", "uk's", "un's", "eu's", "ai", "vp", "ceo", "cfo", "pm",
     "mp", "mps", "hq", "tv", "bbc", "cnn", "ap", "afp", "wam",
-    "adia", "adq", "adnoc", "mbz", "mbs", "mbr", "abu", "iaea",
+    "adia", "adq", "adnoc", "mbz", "mbs", "mbr", "iaea",
     "icrc", "ngo", "ngos", "ip", "phd", "wto", "dpr", "drc",
+    # Conflict / humanitarian actors and terms that appear in slugs
+    "rsf", "irc", "unrwa", "msf", "ipc", "idp", "idps", "gdp",
     # UAE-ecosystem acronyms
     "gcc", "ihc", "ihpc", "oda", "erc", "ezp", "ihi", "rcrc",
     "sdg", "sdgs", "cop", "ldc", "ldcs", "oda's",
 }
+
+# Multi-word fixups applied AFTER per-word casing. Per-word logic cannot know
+# that "dr" in "dr congo" is the country abbreviation, not a person's title.
+_TITLE_MULTIWORD_FIXES = (
+    (re.compile(r"\bDr\.? Congo\b"), "DR Congo"),
+    (re.compile(r"\bAbu Dhabi\b", re.IGNORECASE), "Abu Dhabi"),
+)
 
 # Lowercase-stays-lowercase (mid-sentence connectors). First word still gets capitalised regardless.
 _TITLE_LOWER = {
@@ -221,12 +233,11 @@ def title_case_clean(title: str) -> str:
     s = (title or "").strip()
     if not s:
         return s
-    
+
     # Strip trailing numeric or decimal numbers to fix weird ID endings
-    import re
     s = re.sub(r'\s+[\d\.]+$', '', s).strip()
     s = re.sub(r'\s+[a-f0-9]{6,32}$', '', s, flags=re.IGNORECASE).strip()
-    
+
     words = s.split()
     if not words: return ""
     last_i = len(words) - 1
@@ -242,4 +253,7 @@ def title_case_clean(title: str) -> str:
             out.append(head.capitalize() + "'" + tail.lower())
         else:
             out.append(word.capitalize())
-    return " ".join(out)
+    result = " ".join(out)
+    for pat, repl in _TITLE_MULTIWORD_FIXES:
+        result = pat.sub(repl, result)
+    return result

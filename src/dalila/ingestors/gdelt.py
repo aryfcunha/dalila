@@ -94,6 +94,41 @@ def _is_trusted_url(url: str, allowlist: frozenset[str]) -> bool:
             return True
     return False
 
+# URL path-suffix extensions seen on news CMSes. ".cms" is Times of India /
+# Economic Times; ".ece" is Escenic (several Indian + European papers).
+_SLUG_EXTS = (".html", ".htm", ".php", ".aspx", ".jsp", ".cms", ".ece",
+              ".shtml", ".asp", ".amp")
+
+
+def _slug_title(doc_url: str) -> str:
+    """Fabricate a readable title from a URL's wordiest path segment.
+
+    GDELT GKG carries no article title, only the URL. The old logic blindly
+    took the LAST path segment, which on many CMSes is a numeric article id
+    ("gdnonline.com/Details/1396337", "theportugalnews.com/.../1020266") or
+    an id+extension ("economictimes.com/...articleshow/123.cms") — producing
+    digest titles like "1396974" and ".cms". Walk the path from the end and
+    use the first segment that contains at least two alphabetic words; if no
+    segment qualifies, return "" so the caller skips the item entirely (a
+    placeholder title with no words is worse than no item).
+    """
+    try:
+        path = urlparse(doc_url).path or ""
+    except ValueError:
+        path = doc_url
+    for seg in reversed([s for s in path.split("/") if s]):
+        seg = seg.split("?")[0].split("#")[0]
+        low = seg.lower()
+        for ext in _SLUG_EXTS:
+            if low.endswith(ext):
+                seg = seg[: -len(ext)]
+                break
+        seg = seg.replace("-", " ").replace("_", " ").strip()
+        if len(re.findall(r"[A-Za-z]{2,}", seg)) >= 2:
+            return title_case_clean(seg)
+    return ""
+
+
 # GDELT GKG rows have THEMES / ORGS / PERSONS columns that can easily exceed
 # Python's default csv field cap (131072 chars). Raise it to ~10MB once at
 # import time; a single GKG zip is <10MB total, so this is a generous ceiling.
@@ -195,16 +230,10 @@ def fetch(src: dict) -> list[RawItem]:
         persons = row[11]
         orgs = row[13]
         # GDELT doesn't carry article title in GKG. Fabricate a placeholder
-        # from the URL slug. title_case_clean strips trailing tracking-hash
-        # suffixes (e.g. "...defend-country-ef796d64") and applies readable
-        # title-casing with acronym preservation (UAE / US / UN / WFP, etc.).
-        slug = doc_url.split("/")[-1] or doc_url
-        # Strip path-suffix extensions and split words on dashes / underscores.
-        for ext in (".html", ".htm", ".php", ".aspx", ".jsp"):
-            if slug.lower().endswith(ext):
-                slug = slug[: -len(ext)]
-        slug = slug.replace("-", " ").replace("_", " ").strip()
-        title_seed = title_case_clean(slug)
+        # from the URL's wordiest path segment (see _slug_title — handles
+        # numeric-id tails and CMS suffixes like .cms). Items whose URL has
+        # no usable words are skipped outright.
+        title_seed = _slug_title(doc_url)
         if not title_seed:
             continue
         body_parts = []
@@ -301,12 +330,7 @@ def _parse_slice(zip_bytes: bytes, source_id: str, *, cap: int) -> list[RawItem]
         persons = row[11]
         orgs = row[13]
         # Title synthesis (mirrors the live fetch() path).
-        slug = doc_url.split("/")[-1] or doc_url
-        for ext in (".html", ".htm", ".php", ".aspx", ".jsp"):
-            if slug.lower().endswith(ext):
-                slug = slug[: -len(ext)]
-        slug = slug.replace("-", " ").replace("_", " ").strip()
-        title_seed = title_case_clean(slug)
+        title_seed = _slug_title(doc_url)
         if not title_seed:
             continue
         body_parts = []

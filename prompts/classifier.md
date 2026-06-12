@@ -47,6 +47,18 @@ Common codes: AE (UAE), SD (Sudan), SO (Somalia), PS (Palestine/Gaza), YE (Yemen
   - 0.4 = a topic UAE cares about but no direct UAE link
   - 0.0 = no UAE relevance
 
+**Hard negatives.** The digest serves humanitarian / development / philanthropy
+monitoring. Unless an item has a direct angle on one of those (or on UAE policy),
+score `uae_relevance` **0.2 or lower** and use category `other` for:
+sports (including World Cup previews and fixtures), entertainment and celebrity
+news, tourism and travel pieces, lifestyle/awards items ("best beach in Europe",
+"world record gathering"), routine corporate governance (board appointments,
+earnings, branch openings) outside the aid/development sector, local crime
+stories with no humanitarian dimension, and weather without disaster impact.
+A country merely being *mentioned* or being the *location* of such an item
+(e.g. Portugal, India) does NOT make it relevant — relevance comes from the
+substance, not the dateline.
+
 - `severity` — float 0.0 to 1.0, for categories 1, 5, 6
   - 1.0 = major crisis, doctrinal shift, or hostile foreign statement
   - 0.5 = significant but not headline-grade

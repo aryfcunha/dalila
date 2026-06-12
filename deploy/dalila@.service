@@ -20,8 +20,8 @@ Environment="PATH=/home/%i/.local/bin:/home/%i/dalila/.venv/bin:/usr/local/bin:/
 ExecStart=/home/%i/dalila/.venv/bin/python -m dalila bot
 
 # Auto-restart on crash (give it 10s to avoid restart loops)
-Restart=on-failure
-RestartSec=10
+Restart=always
+RestartSec=30
 StartLimitBurst=5
 StartLimitIntervalSec=300
 

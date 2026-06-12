@@ -589,6 +589,26 @@ sources:
     tags: [wire, francophone]
     enabled: true
 
+  - id: lemonde_en
+    name: Le Monde — English edition
+    kind: rss
+    # English-language edition feed. Le Monde was already on the GDELT
+    # trusted-outlet allowlist but GDELT's English crawl rarely surfaces it;
+    # a direct feed gives continental-European coverage actual presence.
+    url: https://www.lemonde.fr/en/rss/une.xml
+    quality: 4
+    tags: [press, francophone]
+    enabled: true
+
+  - id: elpais_en
+    name: El País — English edition
+    kind: rss
+    # Same rationale as lemonde_en. Verify with `dalila verify-sources`.
+    url: https://feeds.elpais.com/mrss-s/pages/ep/site/english.elpais.com/portada
+    quality: 4
+    tags: [press, hispanophone]
+    enabled: true
+
   - id: deutsche_welle
     name: Deutsche Welle — Top stories
     kind: rss
