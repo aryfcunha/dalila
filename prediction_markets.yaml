@@ -44,7 +44,12 @@ discovery:
   # in ingestors/prediction_markets.py:_EXCLUDE_DEFAULTS. Add regex or
   # plain substrings (case-insensitive) to exclude more, e.g. US-domestic
   # culture-war questions.
-  exclude_terms: []
+  exclude_terms:
+    - "christian affiliation"
+    - "gay marriage"
+    - "worst us president"
+    - "impeach"
+    - "illegal to move"
 
 alerts:
   # Minimum absolute probability move (0–1) over 1h to trigger a breaking signal
