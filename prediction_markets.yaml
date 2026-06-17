@@ -39,6 +39,13 @@ discovery:
     - "UAE aid"
     - "humanitarian funding"
 
+  # Off-topic categories dropped at discovery. These are ADDED to the
+  # built-in defaults (sports / entertainment / celebrity health & death)
+  # in ingestors/prediction_markets.py:_EXCLUDE_DEFAULTS. Add regex or
+  # plain substrings (case-insensitive) to exclude more, e.g. US-domestic
+  # culture-war questions.
+  exclude_terms: []
+
 alerts:
   # Minimum absolute probability move (0–1) over 1h to trigger a breaking signal
   threshold_1h: 0.05

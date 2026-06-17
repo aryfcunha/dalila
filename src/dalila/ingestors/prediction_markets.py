@@ -91,6 +91,54 @@ def _s(key_path: str, default):
     return cfg if cfg is not None else default
 
 
+# -- Relevance gate --------------------------------------------------------------
+# Off-topic markets (sports, entertainment, celebrity health/death/personal life)
+# have no place in a UAE humanitarian / development / geopolitics digest. They are
+# dropped at discovery so they never reach the snapshots table, the website, or the
+# daily brief. Extend at runtime via prediction_markets.yaml -> discovery.exclude_terms
+# (those entries are ADDED to these built-in defaults).
+_EXCLUDE_DEFAULTS = [
+    # sports
+    r"\bolympics?\b", r"\bworld cup\b", r"\bfifa\b", r"\buefa\b",
+    r"\bpremier league\b", r"\bchampions league\b", r"\bnba\b", r"\bnfl\b",
+    r"\bmlb\b", r"\bnhl\b", r"\bsuper bowl\b", r"\bcricket\b", r"\btwenty20\b",
+    r"\bt20\b", r"\bipl\b", r"\bformula\s*1\b", r"\bf1\b", r"\bgrand prix\b",
+    r"\bverstappen\b", r"\bwimbledon\b", r"\btennis\b", r"\bgolf\b",
+    r"\bboxing\b", r"\bufc\b", r"\bgold medal\b", r"\bballon d'?or\b",
+    r"\bplayoffs?\b", r"\bchampionship\b",
+    # entertainment / awards
+    r"\bgrammy", r"\boscars?\b", r"\bemmy", r"\beurovision\b",
+    r"\bbox office\b", r"\bbillboard\b", r"\btaylor swift\b",
+    # celebrity health / death / personal life
+    r"\bbe alive\b", r"\bstill alive\b", r"\bremain alive\b", r"\bstay alive\b",
+    r"\bbe dead\b", r"\bpass away\b", r"\bdie\b", r"\bdeath of\b",
+    r"\bseriously ill\b", r"\bhave sex\b",
+]
+
+_EXCL_RE = None
+
+
+def _excl_patterns():
+    global _EXCL_RE
+    if _EXCL_RE is not None:
+        return _EXCL_RE
+    extra = _s("discovery.exclude_terms", []) or []
+    compiled = []
+    for _p in list(_EXCLUDE_DEFAULTS) + [str(t) for t in extra]:
+        try:
+            compiled.append(re.compile(_p, re.IGNORECASE))
+        except re.error:
+            compiled.append(re.compile(re.escape(_p), re.IGNORECASE))
+    _EXCL_RE = compiled
+    return _EXCL_RE
+
+
+def _is_relevant_question(question: str) -> bool:
+    """False if the market question is off-topic (sports/entertainment/celebrity)."""
+    q = question or ""
+    return not any(rx.search(q) for rx in _excl_patterns())
+
+
 # ── HTTP helper ────────────────────────────────────────────────────────────────
 def _http_get(url: str, timeout: int = 10) -> dict | list:
     req = urllib.request.Request(url, headers=_UA)
@@ -119,6 +167,9 @@ def _search_manifold(query: str, limit: int = 5, min_vol: float | None = None) -
             if prob is None or vol < min_vol:
                 continue
             
+            if not _is_relevant_question(question):
+                continue
+
             # Filter out very long-term markets (e.g., 2035, 2050)
             years = re.findall(r"\b20[3-9][0-9]\b", question)
             if years:
@@ -514,6 +565,8 @@ def poll_markets(conn: sqlite3.Connection) -> list[dict]:
     alerts: list[dict] = []
 
     for m in markets:
+        if not _is_relevant_question(m.get("question", "")):
+            continue
         mid = m["market_id"]
         src = m["source"]
 
