@@ -48,6 +48,28 @@ def _run_claude(
     purpose: str,
     timeout: int = 120,
 ) -> LLMResponse:
+    # Backend override: route the live LLM path through DeepSeek when the
+    # Claude Code subscription is unavailable (org-disabled) or otherwise not
+    # wanted. Enable with DALILA_LLM_BACKEND=deepseek in the environment/.env.
+    if os.getenv("DALILA_LLM_BACKEND", "").strip().lower() == "deepseek" and os.getenv("DEEPSEEK_API_KEY"):
+        _start = time.monotonic()
+        _ok, _err = False, None
+        try:
+            _resp = _call_deepseek(model, system_prompt, user_prompt, purpose, timeout)
+            _ok = True
+            return _resp
+        except Exception as _exc:
+            _err = str(_exc)
+            raise
+        finally:
+            try:
+                with connect() as _conn:
+                    record_llm_call(_conn, model=model, purpose=purpose,
+                                    duration_ms=int((time.monotonic() - _start) * 1000),
+                                    success=_ok, error=_err)
+            except Exception:
+                pass
+
     cfg = get_config()
     bin_path = _resolve_claude_bin() or cfg.claude_bin
     
