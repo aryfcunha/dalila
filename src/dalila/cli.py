@@ -64,6 +64,10 @@ def main(argv: list[str] | None = None) -> int:
                         help="Max items to classify in the pre-pass when --classify-first is set (default 2000).")
     p_back.add_argument("--classify-workers", type=int, default=1,
                         help="Parallel batches in the classify pre-pass (DeepSeek only; default 1).")
+    p_back.add_argument("--only-missing", action="store_true",
+                        help="Skip days that already have a brief (no LLM call) — only compose the gaps. Use for retroactive backlog fills.")
+    p_back.add_argument("--publish", action="store_true",
+                        help="After composing, write each backfilled day's HTML page, regenerate index/archive, and (if DALILA_SITE_GIT_PUSH=1) commit + push docs/ so the new briefs appear on the website.")
     p_bf = sub.add_parser("backfill", help="Historical archive backfill via XML sitemaps + GDELT/ACLED date ranges (does NOT classify — run `dalila classify` after)")
     p_bf.add_argument("--since", required=True, help="ISO date YYYY-MM-DD (inclusive)")
     p_bf.add_argument("--until", default=None, help="ISO date YYYY-MM-DD (inclusive; default today)")
@@ -185,10 +189,50 @@ def main(argv: list[str] | None = None) -> int:
                                 workers=args.classify_workers)
             print(f"  → classified={cres.get('classified')} errors={cres.get('errors')} "
                   f"rate_limited={cres.get('rate_limited')}")
-        results = run_backfill_digests(days=args.days, min_relevance=args.min_relevance)
-        print(f"Backfilled {len(results)} brief(s):")
+        results = run_backfill_digests(days=args.days, min_relevance=args.min_relevance,
+                                       only_missing=args.only_missing)
+        composed = [r for r in results if not r.get("skipped")]
+        print(f"Backfill over {len(results)} day(s) — {len(composed)} brief(s) composed:")
         for r in results:
-            print(f"  · #{r['digest_id']:>3d}  {r['date_label']:>25s}  {r['char_count']:>5d} chars")
+            if r.get("already_present"):
+                print(f"  · ---  {r['date_label']:>25s}  (already present, skipped)")
+            elif r.get("skipped"):
+                print(f"  · ---  {r['date_label']:>25s}  (no items above threshold)")
+            else:
+                print(f"  · #{r['digest_id']:>3d}  {r['date_label']:>25s}  {r['char_count']:>5d} chars")
+
+        if args.publish:
+            from pathlib import Path
+            import os
+            from dalila.pipeline import (
+                run_publish_backfilled_pages, run_publish_site, _git_commit_and_push,
+            )
+            out_dir = Path(
+                os.getenv("DALILA_SITE_OUT_DIR") or (Path.home() / "dalila" / "docs")
+            ).resolve()
+            wrote = run_publish_backfilled_pages(out_dir)
+            run_publish_site(out_dir)
+            print(f"Published site: wrote {wrote} backfilled digest page(s); index/archive regenerated.")
+            if os.getenv("DALILA_SITE_GIT_PUSH") == "1":
+                repo = out_dir
+                for _ in range(8):
+                    if (repo / ".git").exists():
+                        break
+                    if repo.parent == repo:
+                        repo = None
+                        break
+                    repo = repo.parent
+                if repo is not None:
+                    try:
+                        rel = out_dir.relative_to(repo)
+                    except ValueError:
+                        rel = out_dir
+                    from datetime import datetime, timezone
+                    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+                    _git_commit_and_push(repo, [rel], f"Backfill briefs — {stamp}")
+                    print("Committed + pushed docs/ to origin/main.")
+            else:
+                print("Set DALILA_SITE_GIT_PUSH=1 to also commit + push docs/ automatically.")
         return 0
 
     if args.cmd == "backfill":

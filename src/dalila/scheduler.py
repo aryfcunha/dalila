@@ -286,6 +286,22 @@ def attach_jobs(scheduler: AsyncIOScheduler, app: Application) -> None:
         misfire_grace_time=3600,
     )
 
+    # Daily site publish: 30 min after the digest, regenerate the static site
+    # and push it — unconditionally. The digest job publishes the site too, but
+    # it returns *before* publishing on days with too few items (digest_id==0),
+    # so without this a low-news day would leave the website stale. A 6h misfire
+    # grace + coalesce means a restart still gets the day's publish out once.
+    pub_total = hour * 60 + minute + 30
+    pub_hour, pub_minute = (pub_total // 60) % 24, pub_total % 60
+    scheduler.add_job(
+        _publish_site_hook,
+        trigger=CronTrigger(hour=pub_hour, minute=pub_minute, timezone=tz),
+        id="publish_site_daily",
+        replace_existing=True,
+        coalesce=True,
+        misfire_grace_time=6 * 3600,
+    )
+
     # Convening pre-flight: once a day at 08:00 GST. Quiet on most days;
     # broadcasts a heads-up message when a tracked event starts within 7 days.
     scheduler.add_job(
@@ -316,8 +332,9 @@ def attach_jobs(scheduler: AsyncIOScheduler, app: Application) -> None:
 
     log.info(
         "jobs scheduled: ingest every 5m (dynamic), classify every 5m, "
-        "doctrine every 15m, markets every 30m, digest daily at %s %s",
-        cfg.digest_time, cfg.timezone,
+        "doctrine every 15m, markets every 30m, digest daily at %s %s, "
+        "site publish daily at %02d:%02d %s",
+        cfg.digest_time, cfg.timezone, pub_hour, pub_minute, cfg.timezone,
     )
 
 
