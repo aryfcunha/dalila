@@ -77,6 +77,14 @@ def run_ingest() -> dict:
                 "prefilter_passed": passed_count,
                 "error": error,
             }
+            # Flush the WAL between sources. Like classify, this connection is
+            # held open across every source's (network-bound, multi-second)
+            # fetch, which blocks SQLite's auto-checkpoint and lets the -wal
+            # file grow. Best-effort TRUNCATE between sources keeps it bounded.
+            try:
+                conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            except Exception:
+                pass
     return stats
 
 
@@ -321,6 +329,19 @@ def run_classify(
                 classified += 1
             batches_done += 1
             log.info("batch %d done (%d items classified so far)", batches_done, classified)
+            # Flush the WAL back into the main DB between batches. This
+            # connection stays open across every multi-second LLM call for the
+            # whole (minutes-long) run, so SQLite can't auto-checkpoint and the
+            # -wal file grows without bound — it reached ~400 MB / 35k pages on
+            # the VM and filled the disk. We're in autocommit, so each
+            # save_classification above is already committed; TRUNCATE flushes
+            # those frames into the DB and resets the WAL file to empty. If a
+            # concurrent ingest/doctrine write holds the lock it returns busy
+            # and we just retry after the next batch. Best-effort.
+            try:
+                conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            except Exception:
+                pass
             # Re-check daily cap after each batch so a large single call can't
             # blow past the limit set by the operator.
             if db.todays_classifier_call_count(conn) >= cfg.daily_classifier_call_cap:
