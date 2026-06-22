@@ -410,7 +410,20 @@ def _cmd_bot() -> int:
     from dalila.scheduler import attach_jobs
 
     app = bot.build_application()
-    scheduler = AsyncIOScheduler(timezone=pytz.timezone(cfg.timezone))
+    # job_defaults make every job resilient to process restarts (the bot runs
+    # under systemd Restart=always). Without these, APScheduler's default
+    # misfire_grace_time of 1s means any job whose fire time is missed by more
+    # than a second during a restart is silently skipped — which is how daily
+    # briefs went missing. coalesce collapses a backlog of missed interval
+    # ticks into a single catch-up run rather than a thundering burst.
+    scheduler = AsyncIOScheduler(
+        timezone=pytz.timezone(cfg.timezone),
+        job_defaults={
+            "coalesce": True,
+            "max_instances": 1,
+            "misfire_grace_time": 300,
+        },
+    )
     attach_jobs(scheduler, app)
 
     async def runner() -> None:

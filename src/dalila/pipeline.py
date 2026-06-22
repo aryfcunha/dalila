@@ -902,6 +902,59 @@ def run_publish_site(out_dir: "Path") -> dict:
     }
 
 
+def _git_commit_and_push(repo, rel_paths: list, message: str) -> None:
+    """Stage `rel_paths`, commit if anything changed, and push to origin/main.
+
+    Pulls `--rebase --autostash` and retries once if the first push is rejected.
+    The bot is not the only writer to origin/main — the sync_site cron and any
+    manual pushes advance it too — so without a rebase-on-rejection the bot's
+    market-signal and publish pushes pile up locally as non-fast-forward
+    failures, only draining when the cron next rebases. That produced the
+    bursty, irregular market-update cadence on the site.
+
+    Best-effort: every failure is logged, none propagate. On a failed commit
+    the staged paths are reset so the index doesn't stay dirty across calls.
+    """
+    import subprocess
+
+    add_cmd = ["git", "add", "--"] + [str(p) for p in rel_paths]
+    try:
+        subprocess.run(add_cmd, cwd=repo, check=True, capture_output=True, text=True, timeout=30)
+        staged = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=repo, timeout=15)
+        if staged.returncode == 0:
+            log.info("git push: no changes to commit in %s", repo)
+            return
+        subprocess.run(["git", "commit", "-m", message],
+                       cwd=repo, check=True, capture_output=True, text=True, timeout=30)
+    except Exception:
+        log.exception("git commit failed in %s", repo)
+        try:
+            subprocess.run(["git", "reset", "HEAD", "--"] + [str(p) for p in rel_paths],
+                           cwd=repo, capture_output=True, text=True, timeout=15)
+        except Exception:
+            pass
+        return
+
+    for attempt in (1, 2):
+        push = subprocess.run(["git", "push", "origin", "main"],
+                              cwd=repo, capture_output=True, text=True, timeout=120)
+        if push.returncode == 0:
+            log.info("git push: pushed to origin/main from %s", repo)
+            return
+        tail = ((push.stderr or "") + (push.stdout or "")).strip()[-300:]
+        log.warning("git push attempt %d failed: %s", attempt, tail)
+        if attempt == 1:
+            pull = subprocess.run(
+                ["git", "pull", "--rebase", "--autostash", "origin", "main"],
+                cwd=repo, capture_output=True, text=True, timeout=120,
+            )
+            if pull.returncode != 0:
+                ptail = ((pull.stderr or "") + (pull.stdout or "")).strip()[-300:]
+                log.warning("git pull --rebase before retry failed: %s", ptail)
+                return
+    log.error("git push failed even after rebase retry in %s", repo)
+
+
 def run_regenerate_markets_page(out_dir: "Path | None" = None) -> bool:
     """Regenerate markets.html and git-push it if DALILA_SITE_GIT_PUSH=1.
 
@@ -910,7 +963,6 @@ def run_regenerate_markets_page(out_dir: "Path | None" = None) -> bool:
     Returns True on success.
     """
     import os
-    import subprocess
     from pathlib import Path as _Path
     from datetime import datetime, timezone
     from dalila.html_digest import render_markets
@@ -951,21 +1003,11 @@ def run_regenerate_markets_page(out_dir: "Path | None" = None) -> bool:
 
     try:
         rel_path = markets_path.resolve().relative_to(repo)
-        subprocess.run(["git", "add", "--", str(rel_path)],
-                       cwd=repo, check=True, capture_output=True, text=True, timeout=30)
-        diff = subprocess.run(["git", "diff", "--cached", "--quiet"],
-                              cwd=repo, text=True, timeout=15)
-        if diff.returncode == 0:
-            log.info("markets push: no changes to commit")
-            return True
-        stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-        subprocess.run(["git", "commit", "-m", f"Update market signals — {stamp}"],
-                       cwd=repo, check=True, capture_output=True, text=True, timeout=30)
-        subprocess.run(["git", "push", "origin", "main"],
-                       cwd=repo, check=True, capture_output=True, text=True, timeout=60)
-        log.info("markets push: pushed markets.html to origin/main")
-    except Exception:
-        log.exception("markets push: git failed")
+    except ValueError:
+        log.warning("markets push: %s not inside repo %s; skipping push", markets_path, repo)
+        return True
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    _git_commit_and_push(repo, [rel_path], f"Update market signals — {stamp}")
 
     return True
 
