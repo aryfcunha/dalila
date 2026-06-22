@@ -864,6 +864,18 @@ def latest_digest(conn: sqlite3.Connection) -> dict | None:
     }
 
 
+def digest_exists_for_label(conn: sqlite3.Connection, date_label: str) -> bool:
+    """True if a digest has already been persisted for this human date_label.
+
+    Used by the scheduler's startup catch-up to decide whether today's brief
+    still needs composing — without this guard the catch-up would re-broadcast
+    a brief the daily cron job already sent."""
+    row = conn.execute(
+        "SELECT 1 FROM digests WHERE date_label = ? LIMIT 1", (date_label,)
+    ).fetchone()
+    return row is not None
+
+
 def get_url_for_item(conn: sqlite3.Connection, item_id: int) -> str | None:
     row = conn.execute("SELECT url FROM items WHERE id = ?", (item_id,)).fetchone()
     return row["url"] if row else None

@@ -35,6 +35,13 @@ class Config:
     acaps_api_key: str | None
     iati_api_key: str | None
     daily_classifier_call_cap: int
+    # One-shot startup backfill: if > 0, the bot composes any of the last N
+    # days that lack a brief, writes their pages, and publishes — once, ~2 min
+    # after boot, without broadcasting the historical briefs to Telegram. 0 =
+    # off (default). Set DALILA_BACKFILL_DAYS_ON_BOOT=14 and restart to recover
+    # a backlog automatically; safe to leave on (only_missing → no redundant
+    # LLM calls for days that already have a brief).
+    backfill_days_on_boot: int
     sources_path: Path
     entities_path: Path
     prompts_dir: Path
@@ -64,6 +71,7 @@ def get_config() -> Config:
         acaps_api_key=os.getenv("ACAPS_API_KEY") or None,
         iati_api_key=os.getenv("IATI_API_KEY") or None,
         daily_classifier_call_cap=int(os.getenv("DALILA_DAILY_CLASSIFIER_CALL_CAP", "2000")),
+        backfill_days_on_boot=int(os.getenv("DALILA_BACKFILL_DAYS_ON_BOOT", "0")),
         sources_path=ROOT / "sources.yaml",
         entities_path=ROOT / "entities.yaml",
         prompts_dir=ROOT / "prompts",

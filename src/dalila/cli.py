@@ -64,6 +64,10 @@ def main(argv: list[str] | None = None) -> int:
                         help="Max items to classify in the pre-pass when --classify-first is set (default 2000).")
     p_back.add_argument("--classify-workers", type=int, default=1,
                         help="Parallel batches in the classify pre-pass (DeepSeek only; default 1).")
+    p_back.add_argument("--only-missing", action="store_true",
+                        help="Skip days that already have a brief (no LLM call) — only compose the gaps. Use for retroactive backlog fills.")
+    p_back.add_argument("--publish", action="store_true",
+                        help="After composing, write each backfilled day's HTML page, regenerate index/archive, and (if DALILA_SITE_GIT_PUSH=1) commit + push docs/ so the new briefs appear on the website.")
     p_bf = sub.add_parser("backfill", help="Historical archive backfill via XML sitemaps + GDELT/ACLED date ranges (does NOT classify — run `dalila classify` after)")
     p_bf.add_argument("--since", required=True, help="ISO date YYYY-MM-DD (inclusive)")
     p_bf.add_argument("--until", default=None, help="ISO date YYYY-MM-DD (inclusive; default today)")
@@ -177,7 +181,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.cmd == "backfill-digests":
-        from dalila.pipeline import run_backfill_digests, run_classify
+        import os
+        from dalila.pipeline import run_backfill_digests, run_classify, run_backfill_and_publish
         db.init_db()
         if args.classify_first:
             print(f"pre-pass: classifying up to {args.classify_limit} pending items (backend={args.backend})…")
@@ -185,10 +190,34 @@ def main(argv: list[str] | None = None) -> int:
                                 workers=args.classify_workers)
             print(f"  → classified={cres.get('classified')} errors={cres.get('errors')} "
                   f"rate_limited={cres.get('rate_limited')}")
-        results = run_backfill_digests(days=args.days, min_relevance=args.min_relevance)
-        print(f"Backfilled {len(results)} brief(s):")
+
+        if args.publish:
+            summary = run_backfill_and_publish(
+                days=args.days, min_relevance=args.min_relevance,
+                only_missing=args.only_missing,
+            )
+            results = summary["results"]
+        else:
+            results = run_backfill_digests(days=args.days, min_relevance=args.min_relevance,
+                                           only_missing=args.only_missing)
+
+        composed = [r for r in results if not r.get("skipped")]
+        print(f"Backfill over {len(results)} day(s) — {len(composed)} brief(s) composed:")
         for r in results:
-            print(f"  · #{r['digest_id']:>3d}  {r['date_label']:>25s}  {r['char_count']:>5d} chars")
+            if r.get("already_present"):
+                print(f"  · ---  {r['date_label']:>25s}  (already present, skipped)")
+            elif r.get("skipped"):
+                print(f"  · ---  {r['date_label']:>25s}  (no items above threshold)")
+            else:
+                print(f"  · #{r['digest_id']:>3d}  {r['date_label']:>25s}  {r['char_count']:>5d} chars")
+
+        if args.publish:
+            print(f"Published site: wrote {summary['pages_written']} backfilled digest page(s); "
+                  f"index/archive regenerated.")
+            if summary["pushed"]:
+                print("Committed + pushed docs/ to origin/main.")
+            elif os.getenv("DALILA_SITE_GIT_PUSH") != "1":
+                print("Set DALILA_SITE_GIT_PUSH=1 to also commit + push docs/ automatically.")
         return 0
 
     if args.cmd == "backfill":
@@ -410,7 +439,20 @@ def _cmd_bot() -> int:
     from dalila.scheduler import attach_jobs
 
     app = bot.build_application()
-    scheduler = AsyncIOScheduler(timezone=pytz.timezone(cfg.timezone))
+    # job_defaults make every job resilient to process restarts (the bot runs
+    # under systemd Restart=always). Without these, APScheduler's default
+    # misfire_grace_time of 1s means any job whose fire time is missed by more
+    # than a second during a restart is silently skipped — which is how daily
+    # briefs went missing. coalesce collapses a backlog of missed interval
+    # ticks into a single catch-up run rather than a thundering burst.
+    scheduler = AsyncIOScheduler(
+        timezone=pytz.timezone(cfg.timezone),
+        job_defaults={
+            "coalesce": True,
+            "max_instances": 1,
+            "misfire_grace_time": 300,
+        },
+    )
     attach_jobs(scheduler, app)
 
     async def runner() -> None:

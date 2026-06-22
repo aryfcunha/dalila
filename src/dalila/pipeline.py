@@ -578,12 +578,19 @@ def run_compose_digest(
     return digest_id, content
 
 
-def run_backfill_digests(days: int = 5, min_relevance: float = 0.4) -> list[dict]:
+def run_backfill_digests(days: int = 5, min_relevance: float = 0.4,
+                         *, only_missing: bool = False) -> list[dict]:
     """Compose `days` daily briefs, one per day for the past N days at 06:30 GST.
 
     Iterates from oldest to newest. Each composed brief's item_ids are added
     to an in-run exclusion set so the same item never appears in two briefs.
     Day boundaries are at 06:30 in cfg.timezone.
+
+    When `only_missing` is True, days that already have a persisted digest are
+    skipped without an LLM call — so re-running a backfill over a wide window
+    only spends tokens on the genuinely-missing days. Their item_ids are still
+    folded into the dedup set so a freshly-composed neighbouring day doesn't
+    reuse stories already published.
     """
     import pytz
     cfg = get_config()
@@ -602,9 +609,39 @@ def run_backfill_digests(days: int = 5, min_relevance: float = 0.4) -> list[dict
         if as_of_local > datetime.now(tz):
             continue
         as_of_utc = as_of_local.astimezone(timezone.utc)
+        date_label = as_of_local.strftime("%A %d %B %Y")
+
+        # Skip days that already have a brief — but still feed their item_ids
+        # into the dedup set so newer days don't repeat already-published stories.
+        if only_missing:
+            with db.connect() as conn:
+                if db.digest_exists_for_label(conn, date_label):
+                    import json as _json
+                    row = conn.execute(
+                        "SELECT item_ids_json FROM digests WHERE date_label = ? "
+                        "ORDER BY id DESC LIMIT 1", (date_label,),
+                    ).fetchone()
+                    try:
+                        for x in (_json.loads(row["item_ids_json"]) or []):
+                            if isinstance(x, int):
+                                used_ids.add(x)
+                    except Exception:
+                        pass
+                    log.info("backfill: %s already has a brief — skipping", date_label)
+                    results.append({
+                        "as_of": as_of_utc.isoformat(),
+                        "digest_id": None,
+                        "char_count": 0,
+                        "date_label": date_label,
+                        "items_used": 0,
+                        "skipped": True,
+                        "already_present": True,
+                    })
+                    continue
+
         log.info(
             "backfill: composing brief for %s (excluding %d already-used IDs)",
-            as_of_local.strftime("%A %d %B %Y"), len(used_ids),
+            date_label, len(used_ids),
         )
         try:
             digest_id, content = run_compose_digest(
@@ -902,6 +939,197 @@ def run_publish_site(out_dir: "Path") -> dict:
     }
 
 
+def run_publish_backfilled_pages(out_dir: "Path") -> int:
+    """Write digest HTML pages for any persisted brief whose page is missing.
+
+    `run_publish_site` deliberately only (re)writes *today's* digest page and
+    leaves all existing past pages untouched (the immutability invariant). That
+    means a brief composed by a backfill run — for a past date — gets a row in
+    the DB but never a page on disk, so it never shows up in the archive (which
+    is built by scanning digests/*.html).
+
+    This closes that gap: for every persisted digest (latest row per date_label)
+    that has NO page on disk yet, it renders and writes one. Pages that already
+    exist are never rewritten, so the immutability invariant still holds.
+
+    Returns the number of new pages written.
+    """
+    from pathlib import Path
+    import json as _json
+    from dalila.html_digest import render_digest
+
+    out_dir = Path(out_dir)
+    digests_dir = out_dir / "digests"
+    digests_dir.mkdir(parents=True, exist_ok=True)
+
+    written = 0
+    with db.connect() as conn:
+        rows = conn.execute(
+            """SELECT d.id, d.composed_at, d.date_label, d.item_ids_json
+               FROM digests d
+               WHERE d.id IN (SELECT MAX(id) FROM digests GROUP BY date_label)
+               ORDER BY d.id DESC""",
+        ).fetchall()
+
+        for row in rows:
+            label = (row["date_label"] or "").strip()
+            if not label:
+                continue
+            try:
+                slug_dt = datetime.strptime(label, "%A %d %B %Y").replace(tzinfo=timezone.utc)
+            except Exception:
+                continue
+            slug = slug_dt.strftime("%Y-%m-%d")
+            page = digests_dir / f"{slug}.html"
+            if page.exists():
+                continue  # immutable — never rewrite an existing page
+
+            try:
+                item_ids = _json.loads(row["item_ids_json"]) or []
+            except Exception:
+                item_ids = []
+            items = _items_by_ids(conn, [int(x) for x in item_ids if isinstance(x, int)])
+            if not items:
+                continue
+
+            items_deduped = _dedupe_by_simhash(items, threshold=16)
+            total = db.count_reviewed_24h(conn, as_of=slug_dt) or len(items_deduped)
+            html_str = render_digest(items_deduped, when=slug_dt, total_ingested=total)
+            page.write_text(html_str, encoding="utf-8")
+            written += 1
+            log.info("backfill-pages: wrote missing digest page → %s", slug)
+
+    log.info("backfill-pages: wrote %d missing digest page(s)", written)
+    return written
+
+
+def _git_commit_and_push(repo, rel_paths: list, message: str) -> None:
+    """Stage `rel_paths`, commit if anything changed, and push to origin/main.
+
+    Pulls `--rebase --autostash` and retries once if the first push is rejected.
+    The bot is not the only writer to origin/main — the sync_site cron and any
+    manual pushes advance it too — so without a rebase-on-rejection the bot's
+    market-signal and publish pushes pile up locally as non-fast-forward
+    failures, only draining when the cron next rebases. That produced the
+    bursty, irregular market-update cadence on the site.
+
+    Best-effort: every failure is logged, none propagate. On a failed commit
+    the staged paths are reset so the index doesn't stay dirty across calls.
+    """
+    import subprocess
+
+    add_cmd = ["git", "add", "--"] + [str(p) for p in rel_paths]
+    try:
+        subprocess.run(add_cmd, cwd=repo, check=True, capture_output=True, text=True, timeout=30)
+        staged = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=repo, timeout=15)
+        if staged.returncode == 0:
+            log.info("git push: no changes to commit in %s", repo)
+            return
+        subprocess.run(["git", "commit", "-m", message],
+                       cwd=repo, check=True, capture_output=True, text=True, timeout=30)
+    except Exception:
+        log.exception("git commit failed in %s", repo)
+        try:
+            subprocess.run(["git", "reset", "HEAD", "--"] + [str(p) for p in rel_paths],
+                           cwd=repo, capture_output=True, text=True, timeout=15)
+        except Exception:
+            pass
+        return
+
+    for attempt in (1, 2):
+        push = subprocess.run(["git", "push", "origin", "main"],
+                              cwd=repo, capture_output=True, text=True, timeout=120)
+        if push.returncode == 0:
+            log.info("git push: pushed to origin/main from %s", repo)
+            return
+        tail = ((push.stderr or "") + (push.stdout or "")).strip()[-300:]
+        log.warning("git push attempt %d failed: %s", attempt, tail)
+        if attempt == 1:
+            pull = subprocess.run(
+                ["git", "pull", "--rebase", "--autostash", "origin", "main"],
+                cwd=repo, capture_output=True, text=True, timeout=120,
+            )
+            if pull.returncode != 0:
+                ptail = ((pull.stderr or "") + (pull.stdout or "")).strip()[-300:]
+                log.warning("git pull --rebase before retry failed: %s", ptail)
+                return
+    log.error("git push failed even after rebase retry in %s", repo)
+
+
+def _find_repo_root(path: "Path"):
+    """Walk up from `path` to find the enclosing git work-tree root, or None."""
+    repo = path.resolve()
+    for _ in range(8):
+        if (repo / ".git").exists():
+            return repo
+        if repo.parent == repo:
+            return None
+        repo = repo.parent
+    return None
+
+
+def run_backfill_and_publish(
+    days: int,
+    *,
+    only_missing: bool = True,
+    min_relevance: float = 0.4,
+    out_dir: "Path | None" = None,
+    push: bool | None = None,
+) -> dict:
+    """Compose missing daily briefs over the last `days`, write their pages,
+    regenerate the site, and optionally push.
+
+    This is the one place that ties backfill → website together. Shared by the
+    CLI (`backfill-digests --publish`) and the bot's one-shot startup backfill
+    so both behave identically.
+
+    `push` defaults to the `DALILA_SITE_GIT_PUSH=1` convention used elsewhere.
+    Does NOT broadcast anything to Telegram — backfilled briefs are historical
+    and only belong on the website/archive.
+    """
+    import os
+    from pathlib import Path as _Path
+    from datetime import datetime, timezone
+
+    results = run_backfill_digests(days=days, min_relevance=min_relevance,
+                                   only_missing=only_missing)
+
+    if out_dir is None:
+        out_dir = _Path(
+            os.getenv("DALILA_SITE_OUT_DIR") or (_Path.home() / "dalila" / "docs")
+        )
+    out_dir = _Path(out_dir).resolve()
+
+    pages_written = run_publish_backfilled_pages(out_dir)
+    run_publish_site(out_dir)
+
+    if push is None:
+        push = os.getenv("DALILA_SITE_GIT_PUSH") == "1"
+
+    pushed = False
+    if push:
+        repo = _find_repo_root(out_dir)
+        if repo is None:
+            log.warning("backfill-publish: no .git above %s; skipping push", out_dir)
+        else:
+            try:
+                rel = out_dir.relative_to(repo)
+            except ValueError:
+                rel = out_dir
+            stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+            _git_commit_and_push(repo, [rel], f"Backfill briefs — {stamp}")
+            pushed = True
+
+    composed = [r for r in results if not r.get("skipped")]
+    return {
+        "results": results,
+        "composed": len(composed),
+        "pages_written": pages_written,
+        "pushed": pushed,
+        "out_dir": str(out_dir),
+    }
+
+
 def run_regenerate_markets_page(out_dir: "Path | None" = None) -> bool:
     """Regenerate markets.html and git-push it if DALILA_SITE_GIT_PUSH=1.
 
@@ -910,7 +1138,6 @@ def run_regenerate_markets_page(out_dir: "Path | None" = None) -> bool:
     Returns True on success.
     """
     import os
-    import subprocess
     from pathlib import Path as _Path
     from datetime import datetime, timezone
     from dalila.html_digest import render_markets
@@ -951,21 +1178,11 @@ def run_regenerate_markets_page(out_dir: "Path | None" = None) -> bool:
 
     try:
         rel_path = markets_path.resolve().relative_to(repo)
-        subprocess.run(["git", "add", "--", str(rel_path)],
-                       cwd=repo, check=True, capture_output=True, text=True, timeout=30)
-        diff = subprocess.run(["git", "diff", "--cached", "--quiet"],
-                              cwd=repo, text=True, timeout=15)
-        if diff.returncode == 0:
-            log.info("markets push: no changes to commit")
-            return True
-        stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-        subprocess.run(["git", "commit", "-m", f"Update market signals — {stamp}"],
-                       cwd=repo, check=True, capture_output=True, text=True, timeout=30)
-        subprocess.run(["git", "push", "origin", "main"],
-                       cwd=repo, check=True, capture_output=True, text=True, timeout=60)
-        log.info("markets push: pushed markets.html to origin/main")
-    except Exception:
-        log.exception("markets push: git failed")
+    except ValueError:
+        log.warning("markets push: %s not inside repo %s; skipping push", markets_path, repo)
+        return True
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    _git_commit_and_push(repo, [rel_path], f"Update market signals — {stamp}")
 
     return True
 

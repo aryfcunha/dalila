@@ -133,6 +133,74 @@ async def _digest_job(app: Application) -> None:
         log.exception("publish-site hook failed")
 
 
+async def run_digest_if_missing(app: Application) -> None:
+    """Catch-up safety net: compose today's brief if the cron job missed it.
+
+    The daily digest is composed by exactly one cron job at digest_time. Under
+    `Restart=always`, a process restart straddling that instant — beyond the
+    cron job's misfire grace — would lose the day's brief permanently. This
+    runs ~90s after every boot: if we're already past today's digest_time and
+    no brief exists for today's date_label yet, it composes and broadcasts one.
+
+    Idempotent and non-spammy:
+      - Skips entirely if it's before today's digest_time (the cron handles it).
+      - Skips if a brief already exists for today (the cron already ran).
+      - Delegates to _digest_job, which itself broadcasts nothing when there
+        aren't enough items above threshold (digest_id == 0).
+    """
+    import pytz
+    cfg = get_config()
+    tz = pytz.timezone(cfg.timezone)
+    now_local = datetime.now(tz)
+    try:
+        hour, minute = (int(x) for x in cfg.digest_time.split(":"))
+    except Exception:
+        log.warning("digest catch-up: unparseable digest_time %r; skipping", cfg.digest_time)
+        return
+    fire_today = now_local.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    if now_local < fire_today:
+        # Before today's scheduled fire — the cron job will handle it on time.
+        return
+    date_label = now_local.strftime("%A %d %B %Y")
+    with db.connect() as conn:
+        if db.digest_exists_for_label(conn, date_label):
+            return
+    log.info(
+        "digest catch-up: no brief for %s and it's past %s %s — composing now",
+        date_label, cfg.digest_time, cfg.timezone,
+    )
+    await _digest_job(app)
+
+
+def run_boot_backfill() -> None:
+    """One-shot startup backfill of the website's missing daily briefs.
+
+    Gated by `config.backfill_days_on_boot` (env DALILA_BACKFILL_DAYS_ON_BOOT,
+    default 0 = off). When > 0, composes any of the last N days that lack a
+    brief, writes their digest pages, regenerates the site, and pushes — WITHOUT
+    broadcasting the backfilled briefs to Telegram (they're historical; a burst
+    of old briefs in the chat would be noise).
+
+    Idempotent: `only_missing=True` means a day that already has a brief costs
+    no LLM call, so this is safe to leave enabled across the bot's frequent
+    restarts — after the first successful run there's nothing left to compose.
+    """
+    cfg = get_config()
+    days = cfg.backfill_days_on_boot
+    if days <= 0:
+        return
+    log.info("boot backfill: filling missing briefs over the last %d day(s)", days)
+    try:
+        from dalila.pipeline import run_backfill_and_publish
+        summary = run_backfill_and_publish(days=days, only_missing=True)
+        log.info(
+            "boot backfill: composed %d brief(s), wrote %d page(s), pushed=%s",
+            summary["composed"], summary["pages_written"], summary["pushed"],
+        )
+    except Exception:
+        log.exception("boot backfill failed")
+
+
 def _publish_site_hook() -> None:
     """Regenerate static site + optionally git-push to GitHub.
 
@@ -147,7 +215,6 @@ def _publish_site_hook() -> None:
     side-effect of digest delivery, not a precondition for it.
     """
     import os
-    import subprocess
     from pathlib import Path
 
     from dalila.pipeline import run_publish_site
@@ -187,36 +254,13 @@ def _publish_site_hook() -> None:
         log.warning("publish-site: out_dir %s not inside repo %s; skipping push", out_dir, repo)
         return
 
-    # 4. Stage, commit (only if changed), push
-    try:
-        subprocess.run(["git", "add", "--", str(rel_out)],
-                       cwd=repo, check=True, capture_output=True, text=True, timeout=30)
-        # Check if anything is staged (exit 0 == no changes)
-        diff = subprocess.run(["git", "diff", "--cached", "--quiet"],
-                              cwd=repo, text=True, timeout=15)
-        if diff.returncode == 0:
-            log.info("publish-site: no site changes to commit")
-            return
-        stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-        subprocess.run(["git", "commit", "-m", f"Publish site — {stamp}"],
-                       cwd=repo, check=True, capture_output=True, text=True, timeout=30)
-        subprocess.run(["git", "push", "origin", "main"],
-                       cwd=repo, check=True, capture_output=True, text=True, timeout=120)
-        log.info("publish-site: pushed to origin/main")
-    except subprocess.CalledProcessError as exc:
-        tail = ((exc.stderr or "") + (exc.stdout or "")).strip()[-500:]
-        log.warning("publish-site: git failed (exit %d): %s", exc.returncode, tail)
-        # Unstage anything that was staged before the failure so the next run
-        # starts clean rather than accumulating a permanently dirty index.
-        try:
-            subprocess.run(["git", "reset", "HEAD", "--", str(rel_out)],
-                           cwd=repo, capture_output=True, text=True, timeout=15)
-        except Exception:
-            pass
-    except subprocess.TimeoutExpired as exc:
-        log.warning("publish-site: git timed out after %ss", exc.timeout)
-    except Exception:
-        log.exception("publish-site: unexpected error during git push")
+    # 4. Stage, commit (only if changed), push — via the shared helper that
+    # rebases-and-retries on a non-fast-forward rejection. The bot never used
+    # to pull, so once the sync_site cron advanced origin/main the bot's
+    # pushes failed and accumulated locally; the rebase retry fixes that.
+    from dalila.pipeline import _git_commit_and_push
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    _git_commit_and_push(repo, [rel_out], f"Publish site — {stamp}")
 
 
 def attach_jobs(scheduler: AsyncIOScheduler, app: Application) -> None:
@@ -239,7 +283,12 @@ def attach_jobs(scheduler: AsyncIOScheduler, app: Application) -> None:
         replace_existing=True,
     )
 
-    # Daily digest
+    # Daily digest. misfire_grace_time is deliberately huge (6h): the bot runs
+    # under systemd `Restart=always`, so a crash/restart straddling the 06:30
+    # GST fire would otherwise be skipped (APScheduler's default grace is 1s)
+    # and that day's brief lost forever. With a 6h grace + coalesce, a restart
+    # any time before ~12:30 GST still fires the missed digest exactly once.
+    # The startup catch-up job below covers outages longer than the grace.
     hour, minute = (int(x) for x in cfg.digest_time.split(":"))
     scheduler.add_job(
         _digest_job,
@@ -247,6 +296,51 @@ def attach_jobs(scheduler: AsyncIOScheduler, app: Application) -> None:
         args=[app],
         id="digest",
         replace_existing=True,
+        coalesce=True,
+        misfire_grace_time=6 * 3600,
+    )
+
+    # Startup catch-up: a one-shot, ~90s after boot. If today's brief is still
+    # missing and we're already past digest_time, compose+broadcast it now.
+    # This is the safety net that makes the daily brief resilient to restarts
+    # beyond the cron job's misfire window. Idempotent — guarded by a
+    # date_label existence check so it never double-sends.
+    from apscheduler.triggers.date import DateTrigger
+    scheduler.add_job(
+        run_digest_if_missing,
+        trigger=DateTrigger(run_date=datetime.now(timezone.utc) + timedelta(seconds=90)),
+        args=[app],
+        id="digest_catchup",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+
+    # One-shot boot backfill (only does work when DALILA_BACKFILL_DAYS_ON_BOOT>0).
+    # Fires ~2 min after boot — after the catch-up — so a freshly deployed VM
+    # fills any backlog of missing past briefs onto the website automatically,
+    # without broadcasting the historical briefs to Telegram.
+    scheduler.add_job(
+        run_boot_backfill,
+        trigger=DateTrigger(run_date=datetime.now(timezone.utc) + timedelta(seconds=120)),
+        id="boot_backfill",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+
+    # Daily site publish: 30 min after the digest, regenerate the static site
+    # and push it — unconditionally. The digest job publishes the site too, but
+    # it returns *before* publishing on days with too few items (digest_id==0),
+    # so without this a low-news day would leave the website stale. A 6h misfire
+    # grace + coalesce means a restart still gets the day's publish out once.
+    pub_total = hour * 60 + minute + 30
+    pub_hour, pub_minute = (pub_total // 60) % 24, pub_total % 60
+    scheduler.add_job(
+        _publish_site_hook,
+        trigger=CronTrigger(hour=pub_hour, minute=pub_minute, timezone=tz),
+        id="publish_site_daily",
+        replace_existing=True,
+        coalesce=True,
+        misfire_grace_time=6 * 3600,
     )
 
     # Convening pre-flight: once a day at 08:00 GST. Quiet on most days;
@@ -279,8 +373,9 @@ def attach_jobs(scheduler: AsyncIOScheduler, app: Application) -> None:
 
     log.info(
         "jobs scheduled: ingest every 5m (dynamic), classify every 5m, "
-        "doctrine every 15m, markets every 30m, digest daily at %s %s",
-        cfg.digest_time, cfg.timezone,
+        "doctrine every 15m, markets every 30m, digest daily at %s %s, "
+        "site publish daily at %02d:%02d %s",
+        cfg.digest_time, cfg.timezone, pub_hour, pub_minute, cfg.timezone,
     )
 
 
