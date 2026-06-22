@@ -1016,29 +1016,41 @@ def _git_commit_and_push(repo, rel_paths: list, message: str) -> None:
     Best-effort: every failure is logged, none propagate. On a failed commit
     the staged paths are reset so the index doesn't stay dirty across calls.
     """
+    import os
     import subprocess
+
+    # Never let git block on an interactive credential / askpass prompt. On a
+    # headless VM a missing-or-expired token turns `git push` into an indefinite
+    # hang: the credential helper waits on /dev/tty, which stalls even the
+    # subprocess timeout's pipe-drain cleanup. Forcing non-interactive mode makes
+    # git fail fast and loudly (logged below) instead of freezing the publish.
+    env = {
+        **os.environ,
+        "GIT_TERMINAL_PROMPT": "0",  # git's own prompt (HTTPS username/password)
+        "GCM_INTERACTIVE": "Never",  # Git Credential Manager, if installed
+    }
 
     add_cmd = ["git", "add", "--"] + [str(p) for p in rel_paths]
     try:
-        subprocess.run(add_cmd, cwd=repo, check=True, capture_output=True, text=True, timeout=30)
-        staged = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=repo, timeout=15)
+        subprocess.run(add_cmd, cwd=repo, check=True, capture_output=True, text=True, timeout=30, env=env)
+        staged = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=repo, timeout=15, env=env)
         if staged.returncode == 0:
             log.info("git push: no changes to commit in %s", repo)
             return
         subprocess.run(["git", "commit", "-m", message],
-                       cwd=repo, check=True, capture_output=True, text=True, timeout=30)
+                       cwd=repo, check=True, capture_output=True, text=True, timeout=30, env=env)
     except Exception:
         log.exception("git commit failed in %s", repo)
         try:
             subprocess.run(["git", "reset", "HEAD", "--"] + [str(p) for p in rel_paths],
-                           cwd=repo, capture_output=True, text=True, timeout=15)
+                           cwd=repo, capture_output=True, text=True, timeout=15, env=env)
         except Exception:
             pass
         return
 
     for attempt in (1, 2):
         push = subprocess.run(["git", "push", "origin", "main"],
-                              cwd=repo, capture_output=True, text=True, timeout=120)
+                              cwd=repo, capture_output=True, text=True, timeout=120, env=env)
         if push.returncode == 0:
             log.info("git push: pushed to origin/main from %s", repo)
             return
@@ -1047,7 +1059,7 @@ def _git_commit_and_push(repo, rel_paths: list, message: str) -> None:
         if attempt == 1:
             pull = subprocess.run(
                 ["git", "pull", "--rebase", "--autostash", "origin", "main"],
-                cwd=repo, capture_output=True, text=True, timeout=120,
+                cwd=repo, capture_output=True, text=True, timeout=120, env=env,
             )
             if pull.returncode != 0:
                 ptail = ((pull.stderr or "") + (pull.stdout or "")).strip()[-300:]
