@@ -172,6 +172,35 @@ async def run_digest_if_missing(app: Application) -> None:
     await _digest_job(app)
 
 
+def run_boot_backfill() -> None:
+    """One-shot startup backfill of the website's missing daily briefs.
+
+    Gated by `config.backfill_days_on_boot` (env DALILA_BACKFILL_DAYS_ON_BOOT,
+    default 0 = off). When > 0, composes any of the last N days that lack a
+    brief, writes their digest pages, regenerates the site, and pushes — WITHOUT
+    broadcasting the backfilled briefs to Telegram (they're historical; a burst
+    of old briefs in the chat would be noise).
+
+    Idempotent: `only_missing=True` means a day that already has a brief costs
+    no LLM call, so this is safe to leave enabled across the bot's frequent
+    restarts — after the first successful run there's nothing left to compose.
+    """
+    cfg = get_config()
+    days = cfg.backfill_days_on_boot
+    if days <= 0:
+        return
+    log.info("boot backfill: filling missing briefs over the last %d day(s)", days)
+    try:
+        from dalila.pipeline import run_backfill_and_publish
+        summary = run_backfill_and_publish(days=days, only_missing=True)
+        log.info(
+            "boot backfill: composed %d brief(s), wrote %d page(s), pushed=%s",
+            summary["composed"], summary["pages_written"], summary["pushed"],
+        )
+    except Exception:
+        log.exception("boot backfill failed")
+
+
 def _publish_site_hook() -> None:
     """Regenerate static site + optionally git-push to GitHub.
 
@@ -282,6 +311,18 @@ def attach_jobs(scheduler: AsyncIOScheduler, app: Application) -> None:
         trigger=DateTrigger(run_date=datetime.now(timezone.utc) + timedelta(seconds=90)),
         args=[app],
         id="digest_catchup",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+
+    # One-shot boot backfill (only does work when DALILA_BACKFILL_DAYS_ON_BOOT>0).
+    # Fires ~2 min after boot — after the catch-up — so a freshly deployed VM
+    # fills any backlog of missing past briefs onto the website automatically,
+    # without broadcasting the historical briefs to Telegram.
+    scheduler.add_job(
+        run_boot_backfill,
+        trigger=DateTrigger(run_date=datetime.now(timezone.utc) + timedelta(seconds=120)),
+        id="boot_backfill",
         replace_existing=True,
         misfire_grace_time=3600,
     )

@@ -181,7 +181,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.cmd == "backfill-digests":
-        from dalila.pipeline import run_backfill_digests, run_classify
+        import os
+        from dalila.pipeline import run_backfill_digests, run_classify, run_backfill_and_publish
         db.init_db()
         if args.classify_first:
             print(f"pre-pass: classifying up to {args.classify_limit} pending items (backend={args.backend})…")
@@ -189,8 +190,17 @@ def main(argv: list[str] | None = None) -> int:
                                 workers=args.classify_workers)
             print(f"  → classified={cres.get('classified')} errors={cres.get('errors')} "
                   f"rate_limited={cres.get('rate_limited')}")
-        results = run_backfill_digests(days=args.days, min_relevance=args.min_relevance,
-                                       only_missing=args.only_missing)
+
+        if args.publish:
+            summary = run_backfill_and_publish(
+                days=args.days, min_relevance=args.min_relevance,
+                only_missing=args.only_missing,
+            )
+            results = summary["results"]
+        else:
+            results = run_backfill_digests(days=args.days, min_relevance=args.min_relevance,
+                                           only_missing=args.only_missing)
+
         composed = [r for r in results if not r.get("skipped")]
         print(f"Backfill over {len(results)} day(s) — {len(composed)} brief(s) composed:")
         for r in results:
@@ -202,36 +212,11 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  · #{r['digest_id']:>3d}  {r['date_label']:>25s}  {r['char_count']:>5d} chars")
 
         if args.publish:
-            from pathlib import Path
-            import os
-            from dalila.pipeline import (
-                run_publish_backfilled_pages, run_publish_site, _git_commit_and_push,
-            )
-            out_dir = Path(
-                os.getenv("DALILA_SITE_OUT_DIR") or (Path.home() / "dalila" / "docs")
-            ).resolve()
-            wrote = run_publish_backfilled_pages(out_dir)
-            run_publish_site(out_dir)
-            print(f"Published site: wrote {wrote} backfilled digest page(s); index/archive regenerated.")
-            if os.getenv("DALILA_SITE_GIT_PUSH") == "1":
-                repo = out_dir
-                for _ in range(8):
-                    if (repo / ".git").exists():
-                        break
-                    if repo.parent == repo:
-                        repo = None
-                        break
-                    repo = repo.parent
-                if repo is not None:
-                    try:
-                        rel = out_dir.relative_to(repo)
-                    except ValueError:
-                        rel = out_dir
-                    from datetime import datetime, timezone
-                    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-                    _git_commit_and_push(repo, [rel], f"Backfill briefs — {stamp}")
-                    print("Committed + pushed docs/ to origin/main.")
-            else:
+            print(f"Published site: wrote {summary['pages_written']} backfilled digest page(s); "
+                  f"index/archive regenerated.")
+            if summary["pushed"]:
+                print("Committed + pushed docs/ to origin/main.")
+            elif os.getenv("DALILA_SITE_GIT_PUSH") != "1":
                 print("Set DALILA_SITE_GIT_PUSH=1 to also commit + push docs/ automatically.")
         return 0
 

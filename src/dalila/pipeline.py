@@ -1056,6 +1056,80 @@ def _git_commit_and_push(repo, rel_paths: list, message: str) -> None:
     log.error("git push failed even after rebase retry in %s", repo)
 
 
+def _find_repo_root(path: "Path"):
+    """Walk up from `path` to find the enclosing git work-tree root, or None."""
+    repo = path.resolve()
+    for _ in range(8):
+        if (repo / ".git").exists():
+            return repo
+        if repo.parent == repo:
+            return None
+        repo = repo.parent
+    return None
+
+
+def run_backfill_and_publish(
+    days: int,
+    *,
+    only_missing: bool = True,
+    min_relevance: float = 0.4,
+    out_dir: "Path | None" = None,
+    push: bool | None = None,
+) -> dict:
+    """Compose missing daily briefs over the last `days`, write their pages,
+    regenerate the site, and optionally push.
+
+    This is the one place that ties backfill → website together. Shared by the
+    CLI (`backfill-digests --publish`) and the bot's one-shot startup backfill
+    so both behave identically.
+
+    `push` defaults to the `DALILA_SITE_GIT_PUSH=1` convention used elsewhere.
+    Does NOT broadcast anything to Telegram — backfilled briefs are historical
+    and only belong on the website/archive.
+    """
+    import os
+    from pathlib import Path as _Path
+    from datetime import datetime, timezone
+
+    results = run_backfill_digests(days=days, min_relevance=min_relevance,
+                                   only_missing=only_missing)
+
+    if out_dir is None:
+        out_dir = _Path(
+            os.getenv("DALILA_SITE_OUT_DIR") or (_Path.home() / "dalila" / "docs")
+        )
+    out_dir = _Path(out_dir).resolve()
+
+    pages_written = run_publish_backfilled_pages(out_dir)
+    run_publish_site(out_dir)
+
+    if push is None:
+        push = os.getenv("DALILA_SITE_GIT_PUSH") == "1"
+
+    pushed = False
+    if push:
+        repo = _find_repo_root(out_dir)
+        if repo is None:
+            log.warning("backfill-publish: no .git above %s; skipping push", out_dir)
+        else:
+            try:
+                rel = out_dir.relative_to(repo)
+            except ValueError:
+                rel = out_dir
+            stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+            _git_commit_and_push(repo, [rel], f"Backfill briefs — {stamp}")
+            pushed = True
+
+    composed = [r for r in results if not r.get("skipped")]
+    return {
+        "results": results,
+        "composed": len(composed),
+        "pages_written": pages_written,
+        "pushed": pushed,
+        "out_dir": str(out_dir),
+    }
+
+
 def run_regenerate_markets_page(out_dir: "Path | None" = None) -> bool:
     """Regenerate markets.html and git-push it if DALILA_SITE_GIT_PUSH=1.
 
