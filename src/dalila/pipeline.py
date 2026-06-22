@@ -1035,10 +1035,17 @@ def _git_commit_and_push(repo, rel_paths: list, message: str) -> None:
         subprocess.run(add_cmd, cwd=repo, check=True, capture_output=True, text=True, timeout=30, env=env)
         staged = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=repo, timeout=15, env=env)
         if staged.returncode == 0:
-            log.info("git push: no changes to commit in %s", repo)
-            return
-        subprocess.run(["git", "commit", "-m", message],
-                       cwd=repo, check=True, capture_output=True, text=True, timeout=30, env=env)
+            # Nothing new to stage. Do NOT return here: the local branch may
+            # still be AHEAD of origin/main from an earlier run whose push
+            # failed (e.g. the publish froze on a credential prompt *after*
+            # committing). Falling through to the push loop drains that pending
+            # commit — which is exactly the case that left the June backlog
+            # committed locally but never pushed. A plain push when already
+            # in sync is a harmless "Everything up-to-date".
+            log.info("git push: no new changes in %s; pushing in case the branch is ahead", repo)
+        else:
+            subprocess.run(["git", "commit", "-m", message],
+                           cwd=repo, check=True, capture_output=True, text=True, timeout=30, env=env)
     except Exception:
         log.exception("git commit failed in %s", repo)
         try:

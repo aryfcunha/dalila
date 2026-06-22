@@ -50,6 +50,14 @@ def connect() -> Iterator[sqlite3.Connection]:
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode = WAL")
     conn.execute("PRAGMA foreign_keys = ON")
+    # Wait up to 15s for a write lock instead of immediately raising
+    # "database is locked". The scheduler runs ingest, classify and doctrine
+    # concurrently against this single file; a long classify batch could hold
+    # the write lock just as an ingest tick tries to insert, which dropped that
+    # ingest batch with an OperationalError. WAL already lets readers run during
+    # a write — this lets a competing *writer* block briefly and retry rather
+    # than fail outright.
+    conn.execute("PRAGMA busy_timeout = 15000")
     try:
         yield conn
     finally:
