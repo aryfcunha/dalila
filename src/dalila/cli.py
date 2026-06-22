@@ -426,10 +426,25 @@ def _cmd_bot() -> int:
     if not cfg.telegram_bot_token:
         print("ERROR: TELEGRAM_BOT_TOKEN not set. Copy .env.example to .env and fill it in.", file=sys.stderr)
         return 1
+    log = logging.getLogger(__name__)
     ok, msg = check_cli_available()
     if not ok:
-        print(f"ERROR: {msg}", file=sys.stderr)
-        return 1
+        # Do NOT hard-exit here. The bot runs under systemd Restart=always, so
+        # returning non-zero on a failed/slow CLI probe (e.g. a wedged or slow
+        # `claude --version` on a resource-starved VM) crash-loops the service
+        # every RestartSec — which starves the box further and means the
+        # startup catch-up + boot-backfill jobs never get to run. Degrade
+        # gracefully instead: log loudly and bring the scheduler up anyway.
+        # Ingest and market polling don't need the CLI; the classify/digest/
+        # doctrine jobs will fail and back off until `claude` recovers, then
+        # self-heal. (A missing TELEGRAM_BOT_TOKEN above stays fatal — without
+        # it the bot genuinely cannot do anything.)
+        log.warning(
+            "claude CLI not usable at startup (%s) — starting anyway; "
+            "LLM-backed jobs will back off until it recovers.", msg,
+        )
+    else:
+        log.info("claude CLI check: %s", msg)
 
     db.init_db()
 

@@ -35,7 +35,11 @@ def check_cli_available() -> tuple[bool, str]:
     if not bin_path:
         return False, f"`{cfg.claude_bin}` not found on PATH."
     try:
-        result = subprocess.run([bin_path, "--version"], capture_output=True, text=True, timeout=10)
+        # 30s, not 10: on a resource-starved VM (low RAM + swap thrash) a cold
+        # node start for `claude --version` can legitimately take >10s. A tight
+        # timeout here previously made the bot's startup probe fail and, under
+        # systemd Restart=always, crash-loop the service.
+        result = subprocess.run([bin_path, "--version"], capture_output=True, text=True, timeout=30)
         return (True, f"claude CLI ok at {bin_path}") if result.returncode == 0 else (False, "claude CLI failed")
     except Exception as exc:
         return False, str(exc)
