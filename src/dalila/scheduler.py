@@ -224,13 +224,18 @@ def _publish_site_hook() -> None:
         or (Path.home() / "dalila" / "docs")
     )
 
-    # 1. Render the site
+    # 1. Render the site. A render failure must NOT skip the push: render
+    # writes pages incrementally (index, archive, countries, markets, …), so a
+    # mid-render exception can still leave several updated files on disk. We log
+    # the failure but fall through to commit/push whatever did get written —
+    # otherwise one locked-DB read (common on the resource-starved VM) silently
+    # strands an entire day's site update locally, which is the bug that left
+    # the website stale while Telegram briefs kept going out.
     try:
         result = run_publish_site(out_dir)
         log.info("site rendered to %s (%d digest pages)", out_dir, result.get("digests", 0))
     except Exception:
-        log.exception("publish-site: render failed")
-        return
+        log.exception("publish-site: render raised; pushing whatever was written")
 
     # 2. Stop here if explicitly opted OUT of git push.
     # Default is to push — set DALILA_SITE_GIT_PUSH=0 on dev boxes that

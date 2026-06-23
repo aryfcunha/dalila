@@ -773,12 +773,20 @@ def run_publish_site(out_dir: "Path") -> dict:
     latest_when: datetime | None = None
     latest_slug: str | None = None
     rendered_today = False
+    index_html = None
 
     # ── Step 1: find today's digest + the most-recently-dated digest ────────
     # We pull all unique-per-date rows and sort by the actual date encoded in
     # date_label (not composed_at, which is always the backfill run date and
     # therefore meaningless for ordering purposes).
-    with db.connect() as conn:
+    #
+    # Wrapped defensively: a `database is locked` here (common on the
+    # resource-starved VM under WAL contention) must not abort the whole
+    # publish. On failure we fall through with index_html=None and the archive
+    # list below — built purely from on-disk digest files — still rebuilds
+    # index.html, so the site keeps updating even when this DB read trips.
+    try:
+      with db.connect() as conn:
         rows = conn.execute(
             """SELECT d.id, d.composed_at, d.date_label, d.item_ids_json
                FROM digests d
@@ -840,6 +848,10 @@ def run_publish_site(out_dir: "Path") -> dict:
             index_html = render_index(latest_items, when=latest_when, total_ingested=total)
         else:
             index_html = None  # filled below after archive list is built
+    except Exception:
+        log.exception("publish-site: digest/index discovery failed; "
+                      "falling back to on-disk archive for index.html")
+        index_html = None
 
     # ── Step 3: build archive list entirely from files on disk ──────────────
     # Past digest HTML files are the source of truth; no DB query needed.
