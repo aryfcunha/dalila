@@ -368,6 +368,19 @@ def attach_jobs(scheduler: AsyncIOScheduler, app: Application) -> None:
         replace_existing=True,
     )
 
+    # Nightly maintenance at 04:00 GST (a quiet hour, before the 06:30 digest).
+    # Truncates the WAL, refreshes query-planner stats, and logs a disk-usage
+    # warning if the volume is filling — the upkeep that lets the bot run for
+    # months without an operator reclaiming space or unwedging the DB.
+    scheduler.add_job(
+        _maintenance_job,
+        trigger=CronTrigger(hour=4, minute=0, timezone=tz),
+        id="maintenance",
+        replace_existing=True,
+        coalesce=True,
+        misfire_grace_time=3 * 3600,
+    )
+
     # Prediction markets: poll every 30 minutes for probability deltas.
     scheduler.add_job(
         _markets_job,
@@ -379,13 +392,46 @@ def attach_jobs(scheduler: AsyncIOScheduler, app: Application) -> None:
     log.info(
         "jobs scheduled: ingest every 5m (dynamic), classify every 5m, "
         "doctrine every 15m, markets every 30m, digest daily at %s %s, "
-        "site publish daily at %02d:%02d %s",
-        cfg.digest_time, cfg.timezone, pub_hour, pub_minute, cfg.timezone,
+        "site publish daily at %02d:%02d %s, maintenance daily at 04:00 %s",
+        cfg.digest_time, cfg.timezone, pub_hour, pub_minute, cfg.timezone, cfg.timezone,
     )
 
 
 
 _doctrine_paused_until: datetime | None = None
+
+
+def _maintenance_job() -> None:
+    """Nightly upkeep: WAL truncate + planner stats + disk-usage watch.
+
+    Keeps the single SQLite file from accumulating WAL drift over months and
+    surfaces disk pressure in the logs *before* it wedges the `claude` CLI or
+    throws "database is locked". All best-effort — never raises."""
+    log.info("scheduler: maintenance tick")
+    try:
+        summary = db.maintain_database()
+        log.info("maintenance: db upkeep %s", summary)
+    except Exception:
+        log.exception("maintenance: db upkeep failed")
+
+    # Disk-usage watch on the DB volume. Logged loudly past 85% so the problem
+    # is visible in `journalctl` long before the disk is full enough to break
+    # the pipeline. We only warn — never delete — to stay safe unattended.
+    try:
+        import shutil
+        cfg = get_config()
+        target = cfg.db_path.parent if hasattr(cfg, "db_path") else __import__("pathlib").Path.home()
+        usage = shutil.disk_usage(target)
+        pct = usage.used / usage.total * 100
+        free_mb = usage.free / (1024 * 1024)
+        if pct >= 85:
+            log.warning("maintenance: DISK %.0f%% full (%.0f MB free) on %s — "
+                        "reclaim space or resize before it wedges the pipeline",
+                        pct, free_mb, target)
+        else:
+            log.info("maintenance: disk %.0f%% full (%.0f MB free)", pct, free_mb)
+    except Exception:
+        log.exception("maintenance: disk-usage check failed")
 
 
 def _markets_job() -> None:

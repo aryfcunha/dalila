@@ -884,6 +884,35 @@ def digest_exists_for_label(conn: sqlite3.Connection, date_label: str) -> bool:
     return row is not None
 
 
+def maintain_database() -> dict:
+    """Periodic upkeep so the DB stays healthy over months of unattended runs.
+
+    1. `wal_checkpoint(TRUNCATE)` — flush committed WAL frames back into the
+       main file and shrink the -wal to zero. Between-batch checkpoints already
+       run on the hot path, but a long-held reader (e.g. an in-flight publish)
+       can defer truncation; this nightly pass guarantees the WAL never carries
+       drift forward indefinitely, which is what filled the disk to 95%.
+    2. `PRAGMA optimize` — refresh the query planner's stats. Cheap, recommended
+       by SQLite to run periodically on long-lived databases.
+
+    Returns a small summary dict for logging. Never raises — maintenance is
+    best-effort and must not take the bot down.
+    """
+    import logging
+    log = logging.getLogger(__name__)
+    result = {"checkpoint": None, "optimized": False}
+    try:
+        with connect() as conn:
+            row = conn.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
+            # row = (busy, log_frames, checkpointed_frames); busy==0 means success
+            result["checkpoint"] = tuple(row) if row is not None else None
+            conn.execute("PRAGMA optimize")
+            result["optimized"] = True
+    except Exception:
+        log.exception("maintain_database: upkeep failed (non-fatal)")
+    return result
+
+
 def get_url_for_item(conn: sqlite3.Connection, item_id: int) -> str | None:
     row = conn.execute("SELECT url FROM items WHERE id = ?", (item_id,)).fetchone()
     return row["url"] if row else None

@@ -1036,6 +1036,27 @@ def run_publish_backfilled_pages(out_dir: "Path") -> int:
     return written
 
 
+def _git_clear_interrupted_state(repo, env: dict) -> None:
+    """Best-effort: clear a half-finished rebase/merge left by a killed run.
+
+    Aborts an in-progress rebase or merge so the work-tree is usable again.
+    Each call is a harmless no-op when nothing is in flight (git exits non-zero,
+    which we ignore). Never raises — this runs on the hot path before every
+    publish/market push and must not itself become a failure mode.
+    """
+    import subprocess
+
+    for args in (["git", "rebase", "--abort"], ["git", "merge", "--abort"]):
+        try:
+            r = subprocess.run(args, cwd=repo, capture_output=True, text=True, timeout=30, env=env)
+            if r.returncode == 0:
+                log.warning("git self-heal: cleared interrupted state via %s in %s",
+                            " ".join(args[1:]), repo)
+        except Exception:
+            # A timeout or missing-binary here should never block the publish.
+            pass
+
+
 def _git_commit_and_push(repo, rel_paths: list, message: str) -> None:
     """Stage `rel_paths`, commit if anything changed, and push to origin/main.
 
@@ -1062,6 +1083,16 @@ def _git_commit_and_push(repo, rel_paths: list, message: str) -> None:
         "GIT_TERMINAL_PROMPT": "0",  # git's own prompt (HTTPS username/password)
         "GCM_INTERACTIVE": "Never",  # Git Credential Manager, if installed
     }
+
+    # Self-heal a wedged work-tree before touching the index. If a previous run
+    # was killed mid `git pull --rebase` (systemd restart, OOM, manual stop),
+    # the repo is left with a `.git/rebase-merge` / `.git/rebase-apply` or a
+    # `MERGE_HEAD` in place. Every subsequent git command then fails with
+    # "you have unstaged changes" / "rebase in progress" — permanently, with no
+    # operator around to `git rebase --abort`. That is the single biggest threat
+    # to running for months unattended, so we clear it unconditionally here.
+    # Both aborts are no-ops (non-zero, ignored) when no operation is in flight.
+    _git_clear_interrupted_state(repo, env)
 
     add_cmd = ["git", "add", "--"] + [str(p) for p in rel_paths]
     try:

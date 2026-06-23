@@ -127,6 +127,28 @@ journalctl -u "dalila@$USER" -f          # live tail; Ctrl-C to exit
 In Telegram, message your bot `/start`. You should get a subscription
 confirmation. If you don't, look at the journalctl output for the cause.
 
+### 6b. Harden for unattended operation (run once)
+
+For a VM you want to leave alone for months, run the one-shot hardening
+script. It caps the system journal, guarantees swap, rotates the bot's log
+files, and installs a weekly `.git` re-shallow cron so the constant site
+commits can't grow the clone until the disk fills:
+
+```bash
+bash ~/dalila/deploy/harden-vm.sh
+```
+
+This is idempotent — safe to re-run after any redeploy. The bot also runs
+its own nightly maintenance at 04:00 GST (WAL truncate, query-planner stats,
+and a `journalctl`-visible warning if the disk passes 85%):
+
+```bash
+journalctl -u "dalila@$USER" -f | grep -i maintenance
+```
+
+If you see a `DISK …% full` warning, resize the boot disk — the Always-Free
+tier allows up to 30 GB at $0 (Console → VM → Disk → Edit → Size).
+
 ### 7. Migrating your local SQLite DB (optional)
 
 If you want to keep the ~1300 items you've already ingested locally,
