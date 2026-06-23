@@ -53,6 +53,8 @@ def main(argv: list[str] | None = None) -> int:
     p_html.add_argument("--out", type=str, default="digest.html", help="Output path (default ./digest.html)")
     p_site = sub.add_parser("publish-site", help="Generate the full static site (index, archive, about, digests/) — ready for GitHub Pages")
     p_site.add_argument("--out", type=str, default="docs", help="Output directory (default ./docs, matches GitHub Pages source)")
+    p_site.add_argument("--push", action="store_true",
+                        help="After rendering, commit + push docs/ to origin/main (self-healing git, rebase-on-reject). Use to force an immediate site update outside the scheduler.")
     p_back = sub.add_parser("backfill-digests", help="Compose a brief for each of the past N days (one LLM call per day)")
     p_back.add_argument("--days", type=int, default=5, help="How many days back to backfill (default 5)")
     p_back.add_argument("--min-relevance", type=float, default=0.4)
@@ -174,10 +176,25 @@ def main(argv: list[str] | None = None) -> int:
         from pathlib import Path
         from dalila.pipeline import run_publish_site
         db.init_db()
-        result = run_publish_site(Path(args.out).resolve())
+        out_dir = Path(args.out).resolve()
+        result = run_publish_site(out_dir)
         print(f"Site updated — {result['digests']} digest(s) on disk, {len(result['wrote'])} page(s) written:")
         for p in result["wrote"]:
             print(f"  · {p}")
+        if args.push:
+            from datetime import datetime, timezone
+            from dalila.pipeline import _find_repo_root, _git_commit_and_push
+            repo = _find_repo_root(out_dir)
+            if repo is None:
+                print("  ! no git repo found above output dir — skipping push")
+                return 1
+            try:
+                rel = out_dir.relative_to(repo)
+            except ValueError:
+                rel = out_dir
+            stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+            _git_commit_and_push(repo, [rel], f"Publish site — {stamp}")
+            print(f"  · pushed {rel} to origin/main")
         return 0
 
     if args.cmd == "backfill-digests":
