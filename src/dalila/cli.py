@@ -320,8 +320,25 @@ def _cmd_check() -> int:
     print(f"ACAPS creds:        {'set' if cfg.acaps_api_key else 'unset (INFORM ingestion skipped — set ACAPS_API_KEY)'}")
     ok, msg = check_cli_available()
     print(f"Claude CLI:         {'OK' if ok else 'FAIL'} — {msg}")
+
+    import os as _os
+    from dalila.llm import _auto_fallback_enabled, _fallback_cooldown_seconds
+    ds_key = bool(_os.getenv("DEEPSEEK_API_KEY"))
+    if _os.getenv("DALILA_LLM_BACKEND", "").strip().lower() == "deepseek" and ds_key:
+        print("LLM backend:        DeepSeek (forced via DALILA_LLM_BACKEND=deepseek)")
+    elif _auto_fallback_enabled():
+        cd = _fallback_cooldown_seconds() // 60
+        print(f"DeepSeek fallback:  ON — auto-routes on Claude quota/rate-limit (cooldown {cd}m)")
+    elif ds_key:
+        print("DeepSeek fallback:  OFF (key set but DALILA_DEEPSEEK_FALLBACK=0) — Claude-only")
+    else:
+        print("DeepSeek fallback:  unavailable (set DEEPSEEK_API_KEY to enable live redundancy)")
     print()
-    if not ok:
+
+    # The CLI being down is not fatal when a DeepSeek path can serve the live
+    # calls — the bot can still produce briefs.
+    if not ok and not (ds_key and (_auto_fallback_enabled()
+                                   or _os.getenv("DALILA_LLM_BACKEND", "").strip().lower() == "deepseek")):
         return 1
     return 0
 

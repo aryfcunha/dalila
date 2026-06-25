@@ -299,3 +299,134 @@ def test_doctrine_fact_lifecycle_new_then_append(tmp_path, monkeypatch):
     assert len(f["evolution_log"]) == 2
     assert f["source_item_ids"] == [i1, i2]
     assert abs(f["confidence"] - 0.6) < 1e-9, f"expected 0.5 + 0.1 = 0.6, got {f['confidence']}"
+
+
+# ── DeepSeek automatic fallback (Claude quota/rate-limit redundancy) ─────────
+
+def _completed(returncode, stdout="", stderr=""):
+    from types import SimpleNamespace
+    return SimpleNamespace(returncode=returncode, stdout=stdout, stderr=stderr)
+
+
+def _patch_llm(monkeypatch, *, cli_result=None, cli_exc=None,
+               key="ds-key", fallback=None, backend=None, cooldown=None):
+    """Wire llm so no real CLI / DB / network is touched. Drives behaviour
+    through env vars (matching the real env-driven implementation)."""
+    import contextlib
+    from dalila import llm
+
+    # Env knobs
+    if key is None:
+        monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    else:
+        monkeypatch.setenv("DEEPSEEK_API_KEY", key)
+    if fallback is None:
+        monkeypatch.delenv("DALILA_DEEPSEEK_FALLBACK", raising=False)
+    else:
+        monkeypatch.setenv("DALILA_DEEPSEEK_FALLBACK", fallback)
+    if backend is None:
+        monkeypatch.delenv("DALILA_LLM_BACKEND", raising=False)
+    else:
+        monkeypatch.setenv("DALILA_LLM_BACKEND", backend)
+    if cooldown is not None:
+        monkeypatch.setenv("DALILA_DEEPSEEK_FALLBACK_COOLDOWN_MINUTES", cooldown)
+
+    # Stub get_config so its load_dotenv() can't repopulate env vars we just
+    # cleared (the dev .env may carry a real DEEPSEEK_API_KEY).
+    from types import SimpleNamespace
+    monkeypatch.setattr(llm, "get_config", lambda: SimpleNamespace(claude_bin="claude"))
+    monkeypatch.setattr(llm, "_resolve_claude_bin", lambda: "claude")
+    monkeypatch.setattr(llm, "_claude_cooldown_until", 0.0, raising=False)
+
+    calls = {"deepseek": 0, "cli": 0}
+
+    def fake_run(*a, **k):
+        calls["cli"] += 1
+        if cli_exc is not None:
+            raise cli_exc
+        return cli_result
+    monkeypatch.setattr(llm.subprocess, "run", fake_run)
+
+    def fake_deepseek(model, sysp, userp, purpose, timeout):
+        calls["deepseek"] += 1
+        return llm.LLMResponse(text="DEEPSEEK_OUTPUT", duration_ms=1)
+    monkeypatch.setattr(llm, "_call_deepseek", fake_deepseek)
+
+    monkeypatch.setattr(llm, "connect", lambda: contextlib.nullcontext(None))
+    monkeypatch.setattr(llm, "record_llm_call", lambda *a, **k: None)
+    return llm, calls
+
+
+def test_is_capacity_error_classification():
+    from dalila.llm import _is_capacity_error
+    assert _is_capacity_error("You've hit your limit — resets 5:30pm (Asia/Dubai)")
+    assert _is_capacity_error("Error: 429 Too Many Requests")
+    assert _is_capacity_error("rate_limit_error: quota exceeded")
+    assert _is_capacity_error("Service overloaded (529)")
+    assert not _is_capacity_error("401 Unauthorized: invalid API key")
+    assert not _is_capacity_error("invalid model name")
+
+
+def test_quota_error_auto_falls_back(monkeypatch):
+    result = _completed(1, stderr="You've hit your limit — resets 5:30pm (Asia/Dubai)")
+    llm, calls = _patch_llm(monkeypatch, cli_result=result)  # fallback defaults ON
+    out = llm.call(model=llm.HAIKU, system_prompt="s", user_prompt="u", purpose="editor")
+    assert out == "DEEPSEEK_OUTPUT"
+    assert calls["deepseek"] == 1
+
+
+def test_missing_binary_falls_back(monkeypatch):
+    llm, calls = _patch_llm(monkeypatch, cli_exc=FileNotFoundError("claude"))
+    out = llm.call(model=llm.HAIKU, system_prompt="s", user_prompt="u", purpose="classify")
+    assert out == "DEEPSEEK_OUTPUT"
+    assert calls["deepseek"] == 1
+
+
+def test_auth_error_does_not_fall_back(monkeypatch):
+    from dalila.llm import LLMError
+    result = _completed(1, stderr="401 Unauthorized: invalid API key")
+    llm, calls = _patch_llm(monkeypatch, cli_result=result)
+    with pytest.raises(LLMError):
+        llm.call(model=llm.HAIKU, system_prompt="s", user_prompt="u", purpose="editor")
+    assert calls["deepseek"] == 0
+
+
+def test_fallback_disabled_raises_on_quota(monkeypatch):
+    from dalila.llm import LLMError
+    result = _completed(1, stderr="You've hit your limit, resets at 17:30 (UTC)")
+    llm, calls = _patch_llm(monkeypatch, cli_result=result, fallback="0")
+    with pytest.raises(LLMError):
+        llm.call(model=llm.HAIKU, system_prompt="s", user_prompt="u", purpose="editor")
+    assert calls["deepseek"] == 0
+
+
+def test_no_key_means_no_fallback(monkeypatch):
+    from dalila.llm import LLMError
+    result = _completed(1, stderr="rate limit reached")
+    llm, calls = _patch_llm(monkeypatch, cli_result=result, key=None)
+    with pytest.raises(LLMError):
+        llm.call(model=llm.HAIKU, system_prompt="s", user_prompt="u", purpose="editor")
+    assert calls["deepseek"] == 0
+
+
+def test_manual_backend_override_skips_cli(monkeypatch):
+    llm, calls = _patch_llm(monkeypatch, backend="deepseek")
+    out = llm.call(model=llm.HAIKU, system_prompt="s", user_prompt="u", purpose="editor")
+    assert out == "DEEPSEEK_OUTPUT"
+    assert calls["deepseek"] == 1
+    assert calls["cli"] == 0   # CLI never spawned
+
+
+def test_cooldown_routes_straight_to_deepseek(monkeypatch):
+    result = _completed(1, stderr="rate limit reached")
+    llm, calls = _patch_llm(monkeypatch, cli_result=result, cooldown="30")
+    # First call trips the cooldown via a real CLI spawn + fallback.
+    llm.call(model=llm.HAIKU, system_prompt="s", user_prompt="u", purpose="editor")
+    assert calls["cli"] == 1 and calls["deepseek"] == 1
+    # Second call must skip the CLI entirely.
+    def boom(*a, **k):
+        raise AssertionError("CLI should not be spawned during cooldown")
+    monkeypatch.setattr(llm.subprocess, "run", boom)
+    out = llm.call(model=llm.HAIKU, system_prompt="s", user_prompt="u", purpose="classify")
+    assert out == "DEEPSEEK_OUTPUT"
+    assert calls["deepseek"] == 2
