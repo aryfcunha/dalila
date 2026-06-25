@@ -55,6 +55,13 @@ def main(argv: list[str] | None = None) -> int:
     p_site.add_argument("--out", type=str, default="docs", help="Output directory (default ./docs, matches GitHub Pages source)")
     p_site.add_argument("--push", action="store_true",
                         help="After rendering, commit + push docs/ to origin/main (self-healing git, rebase-on-reject). Use to force an immediate site update outside the scheduler.")
+    p_pc = sub.add_parser(
+        "publish-countries",
+        help="Render only docs/countries.html (heavy; publish-site runs this out-of-process with a hard timeout)",
+    )
+    p_pc.add_argument("--out", type=str, default="docs", help="Output directory (default ./docs)")
+    p_pc.add_argument("--timeline-days", type=int, default=180)
+    p_pc.add_argument("--window-days", type=int, default=90)
     p_back = sub.add_parser("backfill-digests", help="Compose a brief for each of the past N days (one LLM call per day)")
     p_back.add_argument("--days", type=int, default=5, help="How many days back to backfill (default 5)")
     p_back.add_argument("--min-relevance", type=float, default=0.4)
@@ -170,6 +177,27 @@ def main(argv: list[str] | None = None) -> int:
         out = Path(args.out).resolve()
         out.write_text(html_str, encoding="utf-8")
         print(f"Wrote {out}  ({len(items)} items, {len(html_str):,} bytes)")
+        return 0
+
+    if args.cmd == "publish-countries":
+        from pathlib import Path
+        from dalila.config import load_countries
+        from dalila.html_digest import render_countries
+        db.init_db()
+        out_dir = Path(args.out).resolve()
+        out_dir.mkdir(parents=True, exist_ok=True)
+        cat = load_countries()
+        with db.connect() as conn:
+            agg = db.country_aggregates(
+                conn, since_hours=args.timeline_days * 24, items_limit=30,
+            )
+        html_str = render_countries(
+            cat["countries"], cat["regions"], agg["counts"],
+            agg["items_by_country"], agg["cooccurrence"],
+            window_days=args.window_days, timeline=agg["timeline"],
+        )
+        (out_dir / "countries.html").write_text(html_str, encoding="utf-8")
+        print(f"Wrote {out_dir / 'countries.html'}  ({len(agg['counts'])} countries)")
         return 0
 
     if args.cmd == "publish-site":
