@@ -989,13 +989,25 @@ def get_market_signals(conn: sqlite3.Connection,
         live_threshold = float(_s("display.live_threshold", 0.005))
 
     now = datetime.now(timezone.utc)
-    cutoff_24h  = (now - timedelta(hours=23)).isoformat()
-    cutoff_7d   = (now - timedelta(hours=167)).isoformat()
-    cutoff_30m  = (now - timedelta(minutes=25)).isoformat()
+    # Each window's baseline must be BRACKETED near its nominal age, not merely
+    # "the most recent row at least N old". Without a lower bound, when polling
+    # has been down (e.g. the 2026-05-14→06-25 history gap), the only row that
+    # exists is an ancient pre-gap snapshot — and that single row satisfies the
+    # `recorded_at <= cutoff` test for ALL THREE windows, so p_30m == p_24h ==
+    # p_7d and the deltas collapse to three identical numbers mislabelled as
+    # 30m/24h/1w. The lower bound rejects a baseline that's far older than the
+    # window; if nothing qualifies the delta is reported as None ("--") rather
+    # than computed against stale data. Slack on each side absorbs missed polls.
+    hi_30m = (now - timedelta(minutes=25)).isoformat()
+    lo_30m = (now - timedelta(hours=2)).isoformat()
+    hi_24h = (now - timedelta(hours=23)).isoformat()
+    lo_24h = (now - timedelta(hours=36)).isoformat()
+    hi_7d  = (now - timedelta(hours=167)).isoformat()
+    lo_7d  = (now - timedelta(days=10)).isoformat()
 
     # Use a two-step join (aggregate → history) so we always retrieve the
-    # probability from the exact row with MAX(recorded_at), not an arbitrary
-    # row as SQLite's bare-column aggregation would give.
+    # probability from the exact row with MAX(recorded_at) inside the window's
+    # [lo, hi] bracket, not an arbitrary row as a bare-column aggregation would.
     rows = conn.execute(
         """SELECT s.market_id, s.source, s.question, s.probability, s.volume, s.url,
                   h24.probability as p_24h,
@@ -1007,7 +1019,7 @@ def get_market_signals(conn: sqlite3.Connection,
                FROM prediction_market_history h
                INNER JOIN (
                    SELECT market_id, source, MAX(recorded_at) as max_at
-                   FROM prediction_market_history WHERE recorded_at <= ?
+                   FROM prediction_market_history WHERE recorded_at <= ? AND recorded_at >= ?
                    GROUP BY market_id, source
                ) m ON h.market_id = m.market_id AND h.source = m.source AND h.recorded_at = m.max_at
            ) h24 ON h24.market_id = s.market_id AND h24.source = s.source
@@ -1016,7 +1028,7 @@ def get_market_signals(conn: sqlite3.Connection,
                FROM prediction_market_history h
                INNER JOIN (
                    SELECT market_id, source, MAX(recorded_at) as max_at
-                   FROM prediction_market_history WHERE recorded_at <= ?
+                   FROM prediction_market_history WHERE recorded_at <= ? AND recorded_at >= ?
                    GROUP BY market_id, source
                ) m ON h.market_id = m.market_id AND h.source = m.source AND h.recorded_at = m.max_at
            ) h7d ON h7d.market_id = s.market_id AND h7d.source = s.source
@@ -1025,11 +1037,11 @@ def get_market_signals(conn: sqlite3.Connection,
                FROM prediction_market_history h
                INNER JOIN (
                    SELECT market_id, source, MAX(recorded_at) as max_at
-                   FROM prediction_market_history WHERE recorded_at <= ?
+                   FROM prediction_market_history WHERE recorded_at <= ? AND recorded_at >= ?
                    GROUP BY market_id, source
                ) m ON h.market_id = m.market_id AND h.source = m.source AND h.recorded_at = m.max_at
            ) h30m ON h30m.market_id = s.market_id AND h30m.source = s.source""",
-        (cutoff_24h, cutoff_7d, cutoff_30m),
+        (hi_24h, lo_24h, hi_7d, lo_7d, hi_30m, lo_30m),
     ).fetchall()
 
     scored = []
