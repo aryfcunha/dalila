@@ -11,14 +11,46 @@ discovery:
   # How many days of digest history to mine for entity extraction
   digest_lookback_days: 7
 
-  # Top N entity terms to use as Manifold search queries
+  # Top N entity terms to use as search queries
   entity_limit: 12
 
-  # Minimum Manifold volume (Mana) for a discovered market to qualify
+  # Minimum volume (Manifold Mana / Polymarket USD) for a discovered market to
+  # qualify. Does NOT apply to Kalshi (which is gated on open interest below).
   min_volume: 300
 
-  # Maximum number of discovered markets to track at once
+  # Maximum number of discovered markets to track at once (across all sources)
   max_markets: 25
+
+  # Which sources to query. Discovery is multi-source: Manifold (on-topic but
+  # low-liquidity), Polymarket (liquid + daily-moving, but geo-blocked on some
+  # networks), Kalshi (curated series), Metaforecast/Metaculus (forecasts).
+  # Each degrades gracefully when unreachable, so leaving them all on is safe.
+  sources:
+    manifold: true
+    polymarket: true
+    kalshi: true
+    metaforecast: true
+
+  # Kalshi has no full-text search and its open feed is swamped by elections +
+  # sports, so we pull markets by curated series ticker. These are the
+  # geopolitics / oil / macro series relevant to the UAE lens. Add tickers as
+  # new relevant series appear (find them at kalshi.com or via the events API).
+  kalshi_series:
+    - "KXWTI"          # WTI crude oil price (daily mover; OPEC/UAE signal)
+    - "KXFED"          # Fed funds rate
+    - "KXFEDDECISION"  # Fed rate decision
+    - "KXCPI"          # US CPI / inflation
+    - "KXISRAELPM"     # Prime Minister of Israel
+    - "KXU3MAX"        # US unemployment ceiling
+    - "KXGDPYEAR"      # US GDP growth
+
+  # Minimum Kalshi open interest (contracts) to qualify. 0 keeps the broad pool
+  # inclusive (the website's live-only filter decides what actually surfaces).
+  kalshi_min_open_interest: 0
+
+  # Keep at most this many markets per Kalshi series (most active by open
+  # interest) so one series can't flood the pool with dead strike-ladder rungs.
+  kalshi_per_series: 3
 
   # Permanent anchor seeds — always searched on every discovery cycle.
   # Dynamic seeds derived from recent high-UAE-relevance classified news are

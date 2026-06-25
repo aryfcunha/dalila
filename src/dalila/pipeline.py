@@ -941,10 +941,13 @@ def run_publish_site(out_dir: "Path") -> dict:
         log.exception("publish-site: countries page generation failed")
 
     try:
-        from dalila.ingestors.prediction_markets import get_market_signals
+        from dalila.ingestors.prediction_markets import (
+            get_market_signals, tracked_market_count,
+        )
         with db.connect() as conn:
-            markets_data = get_market_signals(conn, top_n=30)
-        markets_html = render_markets(markets_data)
+            markets_data = get_market_signals(conn, top_n=30, live_only=True)
+            tracked = tracked_market_count(conn)
+        markets_html = render_markets(markets_data, tracked_count=tracked)
         (out_dir / "markets.html").write_text(markets_html, encoding="utf-8")
     except Exception:
         log.exception("publish-site: markets page generation failed")
@@ -1224,7 +1227,9 @@ def run_regenerate_markets_page(out_dir: "Path | None" = None) -> bool:
     from pathlib import Path as _Path
     from datetime import datetime, timezone
     from dalila.html_digest import render_markets
-    from dalila.ingestors.prediction_markets import get_market_signals
+    from dalila.ingestors.prediction_markets import (
+        get_market_signals, tracked_market_count,
+    )
 
     if out_dir is None:
         out_dir = _Path(
@@ -1237,11 +1242,13 @@ def run_regenerate_markets_page(out_dir: "Path | None" = None) -> bool:
 
     try:
         with db.connect() as conn:
-            markets_data = get_market_signals(conn, top_n=30)
-        markets_html = render_markets(markets_data)
+            markets_data = get_market_signals(conn, top_n=30, live_only=True)
+            tracked = tracked_market_count(conn)
+        markets_html = render_markets(markets_data, tracked_count=tracked)
         markets_path = out_dir / "markets.html"
         markets_path.write_text(markets_html, encoding="utf-8")
-        log.info("markets page regenerated (%d signals)", len(markets_data))
+        log.info("markets page regenerated (%d live of %d tracked)",
+                 len(markets_data), tracked)
     except Exception:
         log.exception("run_regenerate_markets_page failed")
         return False
