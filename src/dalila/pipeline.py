@@ -16,7 +16,7 @@ from dalila.config import (
     load_prefilter_keywords,
 )
 from dalila.editor import compose_deep_dive, compose_digest
-from dalila.ingestors.base import ingest_source, iter_enabled_sources
+from dalila.ingestors.base import SourceSkipped, ingest_source, iter_enabled_sources
 from dalila.models import RawItem, title_case_clean
 from dalila.simhash import is_near_duplicate
 
@@ -49,6 +49,13 @@ def run_ingest() -> dict:
             error: str | None = None
             try:
                 items = ingest_source(src)
+            except SourceSkipped as exc:
+                # Deliberate no-op (e.g. no API key) — record a distinguishing
+                # status so it isn't mistaken for a healthy quiet source or a
+                # real break in `status` / `verify-sources`.
+                error = f"skipped: {exc}"
+                log.info("ingest skipped for %s: %s", sid, exc)
+                items = []
             except Exception as exc:
                 error = f"{type(exc).__name__}: {exc}"
                 log.exception("ingest failed for %s", sid)

@@ -184,7 +184,10 @@ Benchmark script: `benchmark_batch.py`. Re-run if you switch hosts or upgrade Cl
 
 Some sources from the original spec are disabled for live ingest in `sources.yaml`:
 
-- **WAM, MoFA UAE, ERC, UAE Aid Agency** — JS-rendered pages; static HTML has no article cards. Need a headless browser (Playwright) for live polling. The historical backfill via sitemap walker DOES work for WAM (the sitemap XML is static).
+- **WAM** — FIXED (2026-06-25). No public RSS, but WAM publishes a real-time Google-News sitemap (`wam.ae/sitemap/news/en/{year}/{month}/english.xml`) whose `<url>` entries carry `<news:title>` + `<news:publication_date>`. Now live via the **`sitemap`** ingestor kind (`ingestors/sitemap.py::fetch`) — one GET/poll, no per-article fetch, `recent_hours`-bounded.
+- **MoFA UAE** — FIXED (2026-06-25). Re-platformed to server-rendered HTML; article cards are `<a href="/en/MediaHub/News/YYYY/M/D/...">` anchors. Live via `scrape` with selector `a[href*='/MediaHub/News/2']` (scrape.py now handles a selector that matches the `<a>` directly).
+- **ERC, UAE Aid Agency** — still JS SPAs with no static cards. ERC has a JSON API (`emiratesrc.ae/api/news_list?language=2`) but it currently returns `[]`; not worth wiring until it's populated. ERC stays covered via the entity watchlist.
+- **Silent-skip instrumentation** (2026-06-25): creds-gated ingestors (ACLED, CAST, INFORM, IATI, Gmail) now `raise ingestors.base.SourceSkipped(reason)` instead of returning `[]`; `run_ingest` records it as `last_error="skipped: <reason>"` so a keyless skip is distinguishable from a real failure and from a healthy quiet source. ACLED token-mint failure (creds set but auth fails) raises a real error, not a skip.
 - **Reuters** — `feeds.reuters.com` retired ~2020; no free RSS exists. Reuters wire copy reaches Dalila via aggregator redistribution and via the GDELT pipeline (reuters.com is on the trusted-outlet allowlist).
 - **Devex, The New Humanitarian** — anti-bot protection (DataDome / Cloudflare). Disabled for now.
 - **Erth Zayed Philanthropies** — splash page only. EZP mentions reach Dalila via the entity watchlist instead.

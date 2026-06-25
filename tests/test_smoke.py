@@ -553,3 +553,94 @@ def test_country_aggregates_dedupes_within_row_and_drops_junk():
         agg = db.country_aggregates(conn, since_hours=24 * 180)
     assert agg["counts"] == {"SD": 1, "AE": 1}              # SD counted once; junk dropped
     assert agg["cooccurrence"]["SD"] == {"AE": 1}           # no SD->SD self-pair
+
+
+# ── Batch 2: source re-wiring (WAM sitemap, MoFA scrape, skip instrumentation) ─
+
+def test_sitemap_fetch_reads_news_title_and_filters_old(monkeypatch):
+    """WAM-style Google-News sitemap: headline from <news:title>, date from
+    <news:publication_date>, entries older than recent_hours dropped."""
+    from datetime import datetime, timezone, timedelta
+    from dalila.ingestors import sitemap
+    now = datetime.now(timezone.utc)
+    recent = (now - timedelta(hours=1)).isoformat()
+    old = (now - timedelta(days=10)).isoformat()
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
+        'xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">'
+        '<url><loc>https://www.wam.ae/en/article/recent</loc>'
+        f'<lastmod>{recent}</lastmod>'
+        f'<news:news><news:publication_date>{recent}</news:publication_date>'
+        '<news:title>UAE announces aid package for Sudan</news:title></news:news></url>'
+        '<url><loc>https://www.wam.ae/en/article/old</loc>'
+        f'<news:news><news:publication_date>{old}</news:publication_date>'
+        '<news:title>Old headline</news:title></news:news></url>'
+        '</urlset>'
+    ).encode("utf-8")
+    monkeypatch.setattr(sitemap, "_http_get", lambda url, **k: xml)
+    items = sitemap.fetch({
+        "id": "wam_en",
+        "url": "https://www.wam.ae/sitemap/news/en/{year}/{month}/english.xml",
+        "recent_hours": 48,
+    })
+    titles = [it.title for it in items]
+    assert "UAE announces aid package for Sudan" in titles
+    assert "Old headline" not in titles  # filtered by recent_hours
+    assert items[0].url == "https://www.wam.ae/en/article/recent"
+    assert items[0].source_id == "wam_en"
+
+
+def test_scrape_selects_anchor_cards_directly(monkeypatch):
+    """MoFA card: headline in <h2>, URL in a separate 'View Details' link.
+    Title must come from the heading (not the generic link text)."""
+    from dalila.ingestors import scrape
+    html = (
+        "<html><body>"
+        "<div class='card-content'>"
+        "  <h2 class='line-clamp-3'>UAE and Venezuela discuss cooperation</h2>"
+        "  <a href='/en/MediaHub/News/2026/6/25/UAE-Venezuela'>View Details</a>"
+        "</div>"
+        "<div class='card-content'>"
+        "  <h2 class='line-clamp-3'>Abdullah bin Zayed receives British counterpart</h2>"
+        "  <a href='/en/MediaHub/News/2026/6/25/UAE-UK'>View Details</a>"
+        "</div>"
+        "</body></html>"
+    )
+
+    class _Resp:
+        text = html
+        def raise_for_status(self):
+            pass
+
+    monkeypatch.setattr(scrape.httpx, "get", lambda *a, **k: _Resp())
+    items = scrape.fetch({
+        "id": "mofa_uae",
+        "url": "https://www.mofa.gov.ae/en/mediahub/news",
+        "selector": ".card-content",
+    })
+    titles = [it.title for it in items]
+    assert any("Venezuela" in t for t in titles)
+    # title is the headline, NOT the "View Details" CTA text
+    assert "View Details" not in titles
+    assert all("MediaHub/News/2026" in it.url for it in items)
+    assert len(items) == 2
+
+
+def test_run_ingest_records_skipped_status(monkeypatch):
+    """A keyless creds-gated ingestor surfaces as last_error='skipped: ...',
+    not as a healthy 0-item poll."""
+    from dalila import db
+    from dalila.ingestors.base import SourceSkipped
+    from dalila import pipeline
+    db.init_db()
+    monkeypatch.setattr(pipeline, "iter_enabled_sources",
+                        lambda: iter([{"id": "acled", "kind": "acled", "tags": []}]))
+
+    def _skip(src):
+        raise SourceSkipped("ACLED_USERNAME / ACLED_PASSWORD not set")
+
+    monkeypatch.setattr(pipeline, "ingest_source", _skip)
+    stats = pipeline.run_ingest()
+    assert stats["acled"]["error"].startswith("skipped:")
+    assert "ACLED" in stats["acled"]["error"]

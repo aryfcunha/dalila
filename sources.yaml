@@ -6,6 +6,7 @@
 #   acled     — ACLED v3 API (requires ACLED_API_KEY + ACLED_EMAIL)
 #   idmc      — IDMC RSS/reports
 #   scrape    — generic HTML scraper (BeautifulSoup) — used as fallback for sites without RSS
+#   sitemap   — live Google-News sitemap reader (e.g. WAM); url may template {year}/{month}
 #
 # `quality` is a 1–5 score used in the editor to weight which items reach the digest.
 # `enabled: false` skips the source without removing it.
@@ -16,25 +17,30 @@ sources:
   # =====================================================================
   - id: wam_en
     name: Emirates News Agency (WAM)
-    # WAM has no public RSS (verified 2026-05-12; /feed and /en/rss return HTML).
-    # Their news pages are React-rendered — static HTML contains no article cards,
-    # so the current scraper finds 0 items. Re-enable when v0.2 adds Playwright.
-    kind: scrape
-    url: https://wam.ae/en/section/news
-    selector: "article, .news-item, .post, .card, a[href*='/details/']"
+    # The React news pages have no article cards, but WAM publishes a real-time
+    # Google-News sitemap (verified 2026-06-25): each <url> carries <news:title>
+    # + <news:publication_date>, so the `sitemap` ingestor gets headlines with
+    # ONE GET per poll and no per-article fetch. {year}/{month} expand to the
+    # current month at fetch time; recent_hours bounds each poll.
+    kind: sitemap
+    url: https://www.wam.ae/sitemap/news/en/{year}/{month}/english.xml
+    recent_hours: 48
     quality: 5
     tags: [uae, state, wire]
-    enabled: false
+    enabled: true
 
   - id: mofa_uae
     name: UAE Ministry of Foreign Affairs
-    # Also JS-rendered. Disabled until Playwright support lands.
+    # Re-platformed: mofa.gov.ae is now SERVER-rendered (not React). Each news
+    # card is a div.card-content holding an <h2.line-clamp-3> headline + a dated
+    # "View Details" link (/en/MediaHub/News/YYYY/M/D/...) — verified 2026-06-25.
+    # The scraper takes the headline from the <h2> and the URL from the link.
     kind: scrape
     url: https://www.mofa.gov.ae/en/mediahub/news
-    selector: "article, .news-item, .card"
+    selector: ".card-content"
     quality: 5
     tags: [uae, state, mofa]
-    enabled: false
+    enabled: true
 
   # =====================================================================
   # UAE local press
