@@ -138,6 +138,10 @@ except OverflowError:
     csv.field_size_limit(sys.maxsize // 2)
 
 LASTUPDATE_URL = "http://data.gdeltproject.org/gdeltv2/lastupdate.txt"
+# Translingual GKG: GDELT machine-translates non-English coverage into the same
+# English-themed GKG schema, lighting up the ~200 foreign-language outlets on
+# the allowlist. Same format as the English feed → same parser.
+LASTUPDATE_TRANSLATION_URL = "http://data.gdeltproject.org/gdeltv2/lastupdate-translation.txt"
 
 # GDELT v2 emits one GKG slice every 15 minutes. URL format:
 #   http://data.gdeltproject.org/gdeltv2/{YYYYMMDDHHMMSS}.gkg.csv.zip
@@ -151,14 +155,15 @@ GDELT_MAX_ITEMS_PER_POLL = 300
 # Order doesn't matter; we substring-replace word-by-word.
 # Lowercase-stays-lowercase (mid-sentence connectors). First word still
 # gets capitalised regardless.
-def fetch(src: dict) -> list[RawItem]:
+def _download_gkg_text(lastupdate_url: str) -> str | None:
+    """Resolve a GDELT lastupdate index → its GKG zip → decoded TSV text.
+    Returns None on any failure (logged). Shared by the English + translingual
+    feeds, which have identical GKG schema."""
     try:
-        index = httpx.get(LASTUPDATE_URL, timeout=20).text.strip().splitlines()
+        index = httpx.get(lastupdate_url, timeout=20).text.strip().splitlines()
     except Exception as exc:
-        log.warning("GDELT lastupdate fetch failed: %s", exc)
-        return []
-
-    # Pick the GKG entry (third line). Format: "<size> <hash> <url>"
+        log.warning("GDELT lastupdate fetch failed (%s): %s", lastupdate_url, exc)
+        return None
     gkg_url = None
     for line in index:
         parts = line.split()
@@ -166,24 +171,39 @@ def fetch(src: dict) -> list[RawItem]:
             gkg_url = parts[-1]
             break
     if not gkg_url:
-        log.warning("GDELT lastupdate did not contain a GKG entry; got %r", index)
-        return []
-
+        log.warning("GDELT lastupdate had no GKG entry: %r", index)
+        return None
     try:
         zip_bytes = httpx.get(gkg_url, timeout=60).content
-    except Exception as exc:
-        log.warning("GDELT GKG download failed: %s", exc)
-        return []
-
-    try:
         with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
-            csv_name = zf.namelist()[0]
-            with zf.open(csv_name) as f:
-                text = f.read().decode("utf-8", errors="replace")
+            with zf.open(zf.namelist()[0]) as f:
+                return f.read().decode("utf-8", errors="replace")
     except Exception as exc:
-        log.warning("GDELT GKG zip parse failed: %s", exc)
-        return []
+        log.warning("GDELT GKG download/parse failed (%s): %s", gkg_url, exc)
+        return None
 
+
+def fetch(src: dict) -> list[RawItem]:
+    """Live GDELT GKG ingest: English feed plus (by default) the translingual
+    feed so foreign-language coverage from allowlisted outlets is captured.
+    Set `translingual: false` on the source to disable. url_hash dedup collapses
+    any overlap between the two feeds."""
+    allowlist = _load_trusted_outlets()
+    items: list[RawItem] = []
+    feeds = [(LASTUPDATE_URL, False)]
+    if src.get("translingual", True):
+        feeds.append((LASTUPDATE_TRANSLATION_URL, True))
+    for feed_url, _is_tr in feeds:
+        text = _download_gkg_text(feed_url)
+        if text:
+            items += _rows_to_items(text, src["id"], allowlist)
+    log.info("gdelt live: kept %d items (translingual=%s)",
+             len(items), src.get("translingual", True))
+    return items
+
+
+def _rows_to_items(text: str, source_id: str, allowlist) -> list[RawItem]:
+    """Parse GKG TSV text → allowlisted RawItems (shared by both feeds)."""
     # GKG schema: see http://data.gdeltproject.org/documentation/GDELT-Global_Knowledge_Graph_Codebook-V2.1.pdf
     # We need: V2.1DATE (col 1), DocumentIdentifier (URL, col 4), V2THEMES (col 7),
     # V2LOCATIONS (col 9), V2PERSONS (col 11), V2ORGANIZATIONS (col 13), V2.1EXTRASXML for title
@@ -199,7 +219,6 @@ def fetch(src: dict) -> list[RawItem]:
             log.debug("gdelt: skipping bad CSV row: %s", exc)
             continue
         rows.append(row)
-    allowlist = _load_trusted_outlets()
     # FILTER FIRST, THEN CAP. A 15-min GKG slice has 2,000–5,000 articles
     # in chronological order. The cap used to apply *before* the allowlist,
     # which meant we only looked at the most-recent 300 rows and dropped
@@ -251,7 +270,7 @@ def fetch(src: dict) -> list[RawItem]:
             published_at = None
 
         items.append(RawItem(
-            source_id=src["id"],
+            source_id=source_id,
             title=title_seed[:200],
             url=doc_url,
             body=body,

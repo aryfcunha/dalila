@@ -553,3 +553,51 @@ def test_country_aggregates_dedupes_within_row_and_drops_junk():
         agg = db.country_aggregates(conn, since_hours=24 * 180)
     assert agg["counts"] == {"SD": 1, "AE": 1}              # SD counted once; junk dropped
     assert agg["cooccurrence"]["SD"] == {"AE": 1}           # no SD->SD self-pair
+
+
+# ── #5 GDELT translingual ingestion ──────────────────────────────────────────
+
+def _gkg_row(url, date="20260625120000"):
+    cols = [""] * 15
+    cols[1] = date
+    cols[4] = url
+    cols[7] = "TAX_FNCACT;EPU_POLICY"   # themes (English regardless of article lang)
+    cols[11] = "Jane Doe"               # persons
+    cols[13] = "United Nations"         # orgs
+    return "\t".join(cols)
+
+
+def test_gdelt_rows_to_items_filters_by_allowlist():
+    from dalila.ingestors import gdelt
+    allow = gdelt._load_trusted_outlets()
+    text = "\n".join([
+        _gkg_row("https://www.reuters.com/world/middle-east/uae-aid-sudan-pledge"),
+        _gkg_row("https://obscure-local-paper-xyz.example/story-12345"),
+    ])
+    items = gdelt._rows_to_items(text, "gdelt_v2", allow)
+    urls = [i.url for i in items]
+    assert any("reuters.com" in u for u in urls)            # allowlisted kept
+    assert not any("obscure-local-paper" in u for u in urls)  # non-allowlisted dropped
+    assert items[0].title                                    # slug-derived title present
+    assert "Themes:" in (items[0].body or "")               # English GKG themes in body
+
+
+def test_gdelt_fetch_combines_english_and_translingual(monkeypatch):
+    from dalila.ingestors import gdelt
+    calls = []
+
+    def fake_dl(url):
+        calls.append(url)
+        tag = "tr" if "translation" in url else "en"
+        return _gkg_row(f"https://www.reuters.com/world/story-{tag}")
+
+    monkeypatch.setattr(gdelt, "_download_gkg_text", fake_dl)
+    items = gdelt.fetch({"id": "gdelt_v2", "translingual": True})
+    assert any("translation" in c for c in calls)   # translingual feed fetched
+    assert len(items) == 2                            # one item from each feed
+
+    # translingual: false → only the English feed
+    calls.clear()
+    items = gdelt.fetch({"id": "gdelt_v2", "translingual": False})
+    assert not any("translation" in c for c in calls)
+    assert len(items) == 1
