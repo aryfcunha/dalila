@@ -187,6 +187,7 @@ Some sources from the original spec are disabled for live ingest in `sources.yam
 - **WAM, MoFA UAE, ERC, UAE Aid Agency** — JS-rendered pages; static HTML has no article cards. Need a headless browser (Playwright) for live polling. The historical backfill via sitemap walker DOES work for WAM (the sitemap XML is static).
 - **Reuters** — `feeds.reuters.com` retired ~2020; no free RSS exists. Reuters wire copy reaches Dalila via aggregator redistribution and via the GDELT pipeline (reuters.com is on the trusted-outlet allowlist).
 - **Devex, The New Humanitarian** — anti-bot protection (DataDome / Cloudflare). Disabled for now.
+- **IMF** — `imf.org/en/News/RSS?Language=ENG` returns HTTP 403 (verified 2026-06-25); was silently yielding 0 items while `enabled: true`. Disabled; IMF coverage arrives via ReliefWeb + wire redistribution + GDELT allowlist. (Same 403 pattern as AfDB.)
 - **Erth Zayed Philanthropies** — splash page only. EZP mentions reach Dalila via the entity watchlist instead.
 
 When v0.2 adds Playwright, the fix is in `src/dalila/ingestors/scrape.py`: add a `renderer: playwright` option, branch on it in `fetch()`, and call Playwright's sync API.
@@ -262,6 +263,6 @@ The CAST ingestor (and any future monthly forecast ingestors) is currently invok
 - **Foresight**: brief section composed only from `RawItems` produced by a forecast/index ingestor that crossed a change threshold. Uses 🔴 (worsening), 🟢 (improving), 🆕 (newly tracked after baseline), 🟡 (categorical change).
 - **forecast_snapshots**: per-`(source, country, metric)` table that holds the last observed value. The change-detection helper compares each new observation against this row.
 - **CAPITALS (in html_digest.py)**: ISO-2 → [lon, lat] lookup of national capitals, used as the anchor point for co-mention arcs on the country map. ~170 entries; suffix-matched against country features by numeric id (`N3_TO_A2`).
-- **SimHash threshold**: 12 bits Hamming distance on 64-bit title hashes — empirically catches cross-outlet reposts (~6-10 bits apart) without merging unrelated stories (~28-40 bits apart).
+- **SimHash threshold**: Hamming distance on 64-bit title hashes. Live dedup uses **16** (`pipeline._dedupe_by_simhash` default, every pipeline call site) and **24** for archive render; `is_near_duplicate`'s standalone default is 12. Catches cross-outlet reposts (~6-10 bits) without merging unrelated stories (~28-40 bits). Same-event/different-wording pairs (~22-26 bits) are NOT caught here — see the semantic dedup pass.
 - **Trusted outlet**: a domain on `trusted_outlets.yaml`. GDELT items whose URL hostname does not match (suffix-wise) are dropped at ingestion.
 - **IHPC** vs **IHC**: easy to confuse and used to be aliased together in entities.yaml. **IHPC** = International Humanitarian and Philanthropic Council (policy coordination). **IHC** = International Humanitarian City Dubai (logistics warehousing). Now separate entities.

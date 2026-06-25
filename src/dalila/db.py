@@ -611,8 +611,33 @@ def recent_financial_commitments(conn: sqlite3.Connection, hours: int = 720, lim
     return [dict(r) for r in rows]
 
 
+def _norm_principal(s: str | None) -> str:
+    """Normalize a principal/country name for dedup keys: lower, punctuation→space
+    (so 'Al-Nahyan' == 'Al Nahyan'), collapse whitespace."""
+    import re
+    s = re.sub(r"[^\w\s]", " ", (s or "").strip().lower())
+    return re.sub(r"\s+", " ", s).strip()
+
+
 def recent_bilateral_meetings(conn: sqlite3.Connection, hours: int = 720, limit: int = 30) -> list[dict]:
+    """Recent bilateral meetings, DE-DUPLICATED at render time.
+
+    N outlets covering the same meeting create N near-identical rows (there is
+    no storage-level uniqueness, by design — the re-classify path deletes by
+    item_id). We collapse them on a canonical key
+    (norm uae_principal + norm foreign_principal + norm foreign_country +
+    meeting DATE) so each real meeting shows once, with `mention_count` and the
+    list of source articles.
+
+    Guards (per the audit's adversarial review):
+      - BOTH principals blank → keyed on row id, never merged (an unidentified
+        meeting is a real distinct event, not a duplicate of other blanks).
+      - The date component uses `when_iso` ONLY (not `created_at`), so two
+        outlets that left when_iso NULL but ingested on different days still
+        collapse — otherwise differing ingest dates would split a real dup.
+    """
     cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+    # Pull a generous superset (duplicates collapse below), newest first.
     rows = conn.execute(
         """
         SELECT bm.id, bm.uae_principal, bm.foreign_principal, bm.foreign_country,
@@ -622,16 +647,61 @@ def recent_bilateral_meetings(conn: sqlite3.Connection, hours: int = 720, limit:
         JOIN items i ON i.id = bm.item_id
         WHERE COALESCE(bm.when_iso, bm.created_at) >= ?
         ORDER BY COALESCE(bm.when_iso, bm.created_at) DESC, bm.id DESC
-        LIMIT ?
+        LIMIT 2000
         """,
-        (cutoff, limit),
+        (cutoff,),
     ).fetchall()
-    out: list[dict] = []
-    for r in rows:
-        d = dict(r)
-        d["topics"] = json.loads(d.pop("topics_json")) if d.get("topics_json") else []
-        out.append(d)
-    return out
+
+    by_key: dict = {}
+    order: list = []
+
+    def _principals(r):
+        """(uae, foreign, country) normalized, or None for blank-both."""
+        uae = _norm_principal(r["uae_principal"])
+        foreign = _norm_principal(r["foreign_principal"])
+        if not uae and not foreign:
+            return None
+        return (uae, foreign, _norm_principal(r["foreign_country"]))
+
+    def _add(r, key):
+        src = {"title": r["title"], "url": r["url"], "item_id": r["item_id"]}
+        if key in by_key:
+            by_key[key]["mention_count"] += 1
+            by_key[key]["sources"].append(src)
+        elif len(order) < limit:
+            d = dict(r)
+            d["topics"] = json.loads(d.pop("topics_json")) if d.get("topics_json") else []
+            d["mention_count"] = 1
+            d["sources"] = [src]
+            by_key[key] = d
+            order.append(key)
+        # else: already have `limit` distinct meetings — ignore new keys
+
+    # Two passes so a date-less report still collapses with dated reports of the
+    # same meeting: pass 1 buckets DATED rows by principals+day (newest first,
+    # so the first dated key per principal set is the representative); pass 2
+    # attaches NULL-date rows to that same-principals bucket, else makes their
+    # own. Blank-both rows are always distinct (keyed on row id).
+    principals_to_key: dict = {}
+    dated = [r for r in rows if (r["when_iso"] or "")[:10]]
+    undated = [r for r in rows if not (r["when_iso"] or "")[:10]]
+    for r in dated:
+        pk = _principals(r)
+        if pk is None:
+            _add(r, ("__blank__", r["id"]))
+        else:
+            key = pk + ((r["when_iso"] or "")[:10],)
+            principals_to_key.setdefault(pk, key)
+            _add(r, key)
+    for r in undated:
+        pk = _principals(r)
+        if pk is None:
+            _add(r, ("__blank__", r["id"]))
+        else:
+            key = principals_to_key.get(pk) or (pk + ("",))
+            principals_to_key.setdefault(pk, key)
+            _add(r, key)
+    return [by_key[k] for k in order]
 
 
 def items_by_country_codes(
@@ -955,6 +1025,14 @@ def _classified_window_rows(conn: sqlite3.Connection, since_hours: int) -> list[
              AND i.classified_at >= ?
              AND i.country_focus_json IS NOT NULL
              AND i.country_focus_json != '[]'
+             -- Development-relevance floor for the country page: the classifier
+             -- forces sports / celebrity / trivia hard-negatives to
+             -- category='other' (see prompts/classifier.md), so excluding
+             -- 'other' drops that junk from counts, the heatmap, the timeline,
+             -- co-occurrence and per-country news in one place. Legitimate dev
+             -- categories are never 'other', so this carries no false-negative
+             -- risk. (The digest path enforces its own relevance gate already.)
+             AND i.category != 'other'
              AND TRIM(COALESCE(i.title, '')) != ''
              AND COALESCE(i.title, '') NOT LIKE 'http://%'
              AND COALESCE(i.title, '') NOT LIKE 'https://%'
