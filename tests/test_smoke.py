@@ -430,3 +430,63 @@ def test_cooldown_routes_straight_to_deepseek(monkeypatch):
     out = llm.call(model=llm.HAIKU, system_prompt="s", user_prompt="u", purpose="classify")
     assert out == "DEEPSEEK_OUTPUT"
     assert calls["deepseek"] == 2
+
+
+# ── Markets: per-window deltas must not collapse onto a stale baseline ────────
+
+def _pm_seed(conn, *, mid, source="manifold", prob_now, history):
+    """history = list of (age_timedelta_kwargs, probability). Inserts a current
+    snapshot plus the given historical rows."""
+    from datetime import datetime, timedelta, timezone
+    now = datetime.now(timezone.utc)
+    conn.execute(
+        """INSERT INTO prediction_market_snapshots
+               (market_id, source, question, probability, volume, url, topic_tags, recorded_at)
+           VALUES (?,?,?,?,?,?,?,?)""",
+        (mid, source, f"Will {mid}?", prob_now, 1000.0, f"https://x/{mid}", None, now.isoformat()),
+    )
+    for age, prob in history:
+        conn.execute(
+            """INSERT INTO prediction_market_history
+                   (market_id, source, probability, delta_1h, delta_24h, recorded_at)
+               VALUES (?,?,?,?,?,?)""",
+            (mid, source, prob, None, None, (now - timedelta(**age)).isoformat()),
+        )
+
+
+def test_market_deltas_ignore_ancient_baseline():
+    """A market whose only history is a pre-gap snapshot must NOT report three
+    identical deltas — every window should be None (rendered as '--')."""
+    from dalila import db
+    from dalila.ingestors.prediction_markets import get_market_signals
+    db.init_db()
+    with db.connect() as conn:
+        _pm_seed(conn, mid="stale", prob_now=0.20, history=[({"days": 40}, 0.80)])
+        conn.commit()
+        sig = {m["market_id"]: m for m in get_market_signals(conn, top_n=30)}
+    m = sig["stale"]
+    assert m["delta_30m"] is None
+    assert m["delta_24h"] is None
+    assert m["delta_7d"] is None
+
+
+def test_market_deltas_distinct_per_window():
+    """With a real row in each window's bracket, the three deltas differ and are
+    each measured against the correct-age baseline."""
+    from dalila import db
+    from dalila.ingestors.prediction_markets import get_market_signals
+    db.init_db()
+    with db.connect() as conn:
+        _pm_seed(conn, mid="live", prob_now=0.50, history=[
+            ({"minutes": 40}, 0.48),   # ~30m window  → +0.02
+            ({"hours": 24},   0.40),   # ~24h window  → +0.10
+            ({"days": 7},     0.30),   # ~1w window   → +0.20
+        ])
+        conn.commit()
+        sig = {m["market_id"]: m for m in get_market_signals(conn, top_n=30)}
+    m = sig["live"]
+    assert abs(m["delta_30m"] - 0.02) < 1e-9
+    assert abs(m["delta_24h"] - 0.10) < 1e-9
+    assert abs(m["delta_7d"]  - 0.20) < 1e-9
+    # The whole point: they are NOT all equal.
+    assert len({round(m["delta_30m"],4), round(m["delta_24h"],4), round(m["delta_7d"],4)}) == 3
