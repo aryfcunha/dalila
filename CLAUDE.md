@@ -113,6 +113,7 @@ Storage: one SQLite file (`dalila.db`). Scheduling: APScheduler in-process. No R
 
 ## What was built when (recent shipping log)
 
+- **Prediction-market history backfill** (2026-06-25): `dalila backfill-markets [--days N] [--source manifold|kalshi] [--max-markets N]` recovers the 2026-05-14→06-25 history gap (the url-column crash, fixed by migration 007, froze `prediction_market_history`) so 30m/24h/1w deltas populate immediately instead of re-accumulating over a week. Pulls FREE, no-auth historical series for markets already in `prediction_market_snapshots`: Manifold via `/v0/bets?contractId=…` (`probAfter`+`createdTime`, paged newest-first via `before=`; slug→contractId resolved first), Kalshi via `/series/{s}/markets/{ticker}/candlesticks?period_interval=60` (`*_dollars` close; series = ticker prefix before first `-`). In `ingestors/prediction_markets.py` (`backfill_market_history` + `_backfill_manifold_market`/`_backfill_kalshi_market`/`_kalshi_candle_prob`). Idempotent (skips existing `(market_id, source, recorded_at)`); deltas stored NULL, recomputed on read. Live-verified from the UAE host. This is historical-gap recovery only — the ongoing crash was already fixed by 007.
 - **Countries-page publish hang fix** (2026-06-25): the countries render looped per-country (~190×) calling `items_for_country` + `country_cooccurrence`, each a full scan + per-row `json.loads` of the ~300k-row items window — ~2N+2 passes. At scale this hung `run_publish_site`, and because the bot (`scheduler._publish_site_hook`) and cron both call it **in-process**, the hang wedged the publisher and silently staled the whole site. Fix: `db.country_aggregates` does it in **one** pass (verified ~265× faster, output identical on current data); the legacy four functions stay for the `/country` bot command + tests. Migration `008_country_index.sql` adds a minor partial index. **Resilience:** countries now renders LAST and **out-of-process** via a new `dalila publish-countries` subcommand invoked with a hard `DALILA_COUNTRIES_TIMEOUT_SECS` (default 180s) timeout — a subprocess so a future hang is OS-killable (a thread would leak on the 1GB VM); `DALILA_PUBLISH_SKIP_COUNTRIES=1` is an operator kill-switch. Markets render moved before countries (it's cheap, items-table-independent). Also hardened `db.init_db()` to treat "duplicate column / already exists" migration errors as already-applied (the un-recorded 007 `ADD COLUMN url` otherwise makes init_db raise on every call, bricking bot boot + publish + all CLI).
 - **Original MVP**: bot + scheduler + ingestors + classifier + editor.
 - **Cross-platform CLI launch, batched classifier, smart rate-limit back-off**: early hardening.
@@ -213,6 +214,8 @@ dalila backfill --since 2026-01-01 --source gdelt_v2        # one source
 dalila classify --backend deepseek --workers 5 --limit 20000
 dalila backfill-digests --days 135                          # composes daily briefs
                                                             # for each past day
+dalila backfill-markets --days 14                           # Manifold + Kalshi history
+dalila backfill-markets --source manifold --max-markets 5   # one platform, capped
 
 # Website
 dalila publish-site                      # regenerate docs/*.html

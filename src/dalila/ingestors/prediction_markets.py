@@ -837,6 +837,161 @@ def _upsert(conn: sqlite3.Connection, m: dict, prob: float,
     )
 
 
+# ── Historical backfill ─────────────────────────────────────────────────────
+# Both APIs expose free, no-auth historical series (verified live from the UAE
+# host). This recovers the 2026-05-14→06-25 history gap (caused by the url-column
+# crash, fixed by migration 007) so 30m/24h/1w deltas populate immediately
+# instead of taking a week to re-accumulate. Deltas are stored NULL —
+# get_market_signals recomputes them on read.
+
+def _manifold_contract_id(slug: str) -> str | None:
+    """Resolve a Manifold slug → contractId (the /v0/bets cursor key)."""
+    try:
+        data = _http_get(f"{MANIFOLD_BASE}/slug/{urllib.parse.quote(slug)}", timeout=8)
+        return data.get("id") if isinstance(data, dict) else None
+    except Exception:
+        return None
+
+
+def _backfill_manifold_market(slug: str, since_ms: int) -> list[tuple[float, str]]:
+    """[(probability, recorded_at_iso)] from a market's bet history, back to
+    since_ms. /v0/bets returns newest-first; page older via before=<last id>."""
+    cid = _manifold_contract_id(slug)
+    if not cid:
+        return []
+    out: list[tuple[float, str]] = []
+    before: str | None = None
+    for _ in range(50):  # safety cap: 50 * 1000 bets
+        url = f"{MANIFOLD_BASE}/bets?contractId={urllib.parse.quote(cid)}&limit=1000"
+        if before:
+            url += f"&before={urllib.parse.quote(before)}"
+        try:
+            bets = _http_get(url, timeout=20)
+        except Exception as exc:
+            log.debug("manifold bets fetch failed for %s: %s", slug, exc)
+            break
+        if not isinstance(bets, list) or not bets:
+            break
+        for b in bets:
+            ts = b.get("createdTime")
+            pa = b.get("probAfter")
+            if ts is None or pa is None:
+                continue
+            if ts < since_ms:
+                return out  # newest-first → everything beyond here is older
+            out.append((float(pa), datetime.fromtimestamp(ts / 1000, tz=timezone.utc).isoformat()))
+        if len(bets) < 1000:
+            break
+        before = bets[-1].get("id")
+        if not before:
+            break
+    return out
+
+
+def _kalshi_candle_prob(c: dict) -> float | None:
+    """Implied YES probability (0–1) from a Kalshi candlestick. Prefers the
+    traded price close, falls back to the yes bid/ask midpoint (all *_dollars)."""
+    pc = (c.get("price") or {}).get("close_dollars")
+    if pc is not None:
+        try:
+            return float(pc)
+        except (TypeError, ValueError):
+            pass
+    vals = []
+    for side in ("yes_bid", "yes_ask"):
+        v = (c.get(side) or {}).get("close_dollars")
+        try:
+            if v is not None:
+                vals.append(float(v))
+        except (TypeError, ValueError):
+            continue
+    return sum(vals) / len(vals) if vals else None
+
+
+def _backfill_kalshi_market(ticker: str, start_ts: int, end_ts: int) -> list[tuple[float, str]]:
+    """[(probability, recorded_at_iso)] from hourly Kalshi candlesticks. The
+    series ticker is the prefix before the first '-' (e.g. KXWTI-26JUN... → KXWTI)."""
+    series = ticker.split("-")[0]
+    path = (
+        f"/series/{urllib.parse.quote(series)}/markets/{urllib.parse.quote(ticker)}"
+        f"/candlesticks?start_ts={start_ts}&end_ts={end_ts}&period_interval=60"
+    )
+    try:
+        data = _kalshi_get(path, timeout=20)
+    except Exception as exc:
+        log.debug("kalshi candlesticks failed for %s: %s", ticker, exc)
+        return []
+    out: list[tuple[float, str]] = []
+    for c in (data.get("candlesticks") or []):
+        ts = c.get("end_period_ts")
+        prob = _kalshi_candle_prob(c)
+        if ts is None or prob is None:
+            continue
+        out.append((prob, datetime.fromtimestamp(int(ts), tz=timezone.utc).isoformat()))
+    return out
+
+
+def backfill_market_history(
+    conn: sqlite3.Connection,
+    *,
+    days: int = 14,
+    source: str | None = None,
+    max_markets: int | None = None,
+) -> dict:
+    """Backfill prediction_market_history for the tracked snapshot markets.
+
+    Idempotent: skips (market_id, source, recorded_at) rows already present, so
+    re-runs are safe. Returns {"markets": n, "inserted": rows, "skipped": n}.
+    """
+    now = datetime.now(timezone.utc)
+    since = now - timedelta(days=days)
+    since_ms = int(since.timestamp() * 1000)
+    start_ts, end_ts = int(since.timestamp()), int(now.timestamp())
+
+    q = "SELECT market_id, source FROM prediction_market_snapshots"
+    params: tuple = ()
+    if source:
+        q += " WHERE source = ?"
+        params = (source,)
+    markets = conn.execute(q, params).fetchall()
+
+    stats = {"markets": 0, "inserted": 0, "skipped": 0}
+    for r in markets:
+        mid, src = r["market_id"], r["source"]
+        if src == "manifold":
+            series = _backfill_manifold_market(mid, since_ms)
+        elif src == "kalshi":
+            series = _backfill_kalshi_market(mid, start_ts, end_ts)
+        else:
+            stats["skipped"] += 1
+            continue
+        if not series:
+            continue
+        stats["markets"] += 1
+        existing = {
+            row["recorded_at"] for row in conn.execute(
+                "SELECT recorded_at FROM prediction_market_history WHERE market_id=? AND source=?",
+                (mid, src),
+            )
+        }
+        for prob, recorded_at in series:
+            if recorded_at in existing:
+                continue
+            conn.execute(
+                "INSERT INTO prediction_market_history "
+                "(market_id, source, probability, delta_1h, delta_24h, recorded_at) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (mid, src, prob, None, None, recorded_at),
+            )
+            existing.add(recorded_at)
+            stats["inserted"] += 1
+        if max_markets and stats["markets"] >= max_markets:
+            break
+        log.info("backfill-markets: %s/%s → %d total rows inserted so far",
+                 src, mid, stats["inserted"])
+    return stats
+
+
 # ── Main poll ─────────────────────────────────────────────────────────────────
 def poll_markets(conn: sqlite3.Connection) -> list[dict]:
     """Discover and poll markets. Returns list of large-move alert dicts."""

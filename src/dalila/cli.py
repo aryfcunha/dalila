@@ -90,6 +90,11 @@ def main(argv: list[str] | None = None) -> int:
                        help="Cap candidate URLs per sitemap source (default 4000).")
     p_bf.add_argument("--gdelt-step", type=int, default=60,
                        help="GDELT slice cadence in minutes — 60=one per hour (default), 15=full coverage 4x/hr, 240=light sample. Lower = more data, slower.")
+    p_bfm = sub.add_parser("backfill-markets", help="Backfill prediction_market_history from Manifold bet history + Kalshi candlesticks (free, no auth). Recovers real 30m/24h/1w deltas.")
+    p_bfm.add_argument("--days", type=int, default=14, help="How many days of history to pull (default 14)")
+    p_bfm.add_argument("--source", choices=("manifold", "kalshi"), default=None,
+                       help="Only backfill one platform (default: both)")
+    p_bfm.add_argument("--max-markets", type=int, default=None, help="Cap markets processed (default: all tracked)")
     p_doctrine = sub.add_parser("doctrine", help="Run the doctrine extraction pass over pending classified items")
     p_doctrine.add_argument("--limit", type=int, default=20, help="Max items to process this run")
     sub.add_parser("verify-sources", help="Probe every enabled source and report fetched count + sample title")
@@ -263,6 +268,18 @@ def main(argv: list[str] | None = None) -> int:
                 print("Committed + pushed docs/ to origin/main.")
             elif os.getenv("DALILA_SITE_GIT_PUSH") != "1":
                 print("Set DALILA_SITE_GIT_PUSH=1 to also commit + push docs/ automatically.")
+        return 0
+
+    if args.cmd == "backfill-markets":
+        from dalila.ingestors.prediction_markets import backfill_market_history
+        db.init_db()
+        with db.connect() as conn:
+            stats = backfill_market_history(
+                conn, days=args.days, source=args.source, max_markets=args.max_markets,
+            )
+        print(f"Market backfill: {stats['inserted']} history row(s) across "
+              f"{stats['markets']} market(s) ({stats['skipped']} unsupported source skipped). "
+              f"Deltas will appear on the next publish-site.")
         return 0
 
     if args.cmd == "backfill":
