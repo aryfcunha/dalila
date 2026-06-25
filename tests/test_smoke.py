@@ -553,3 +553,47 @@ def test_country_aggregates_dedupes_within_row_and_drops_junk():
         agg = db.country_aggregates(conn, since_hours=24 * 180)
     assert agg["counts"] == {"SD": 1, "AE": 1}              # SD counted once; junk dropped
     assert agg["cooccurrence"]["SD"] == {"AE": 1}           # no SD->SD self-pair
+
+
+# ── #4 commitment provenance (source -> beneficiary) ─────────────────────────
+
+def test_financial_commitment_from_dict_provenance():
+    from dalila.models import FinancialCommitment
+    fc = FinancialCommitment.from_dict({"amount": 50, "currency": "aed",
+                                        "beneficiary_entity": "Yemen"})
+    assert fc.recipient == "Yemen"          # recipient mirrors beneficiary
+    assert fc.beneficiary_entity == "Yemen"
+    fc2 = FinancialCommitment.from_dict({"recipient": "Gaza", "source_country": "ae"})
+    assert fc2.beneficiary_entity == "Gaza"  # beneficiary mirrors legacy recipient
+    assert fc2.source_country == "AE"        # ISO upper-cased
+
+
+def test_financial_commitment_provenance_roundtrip():
+    from dalila import db
+    from dalila.models import Classification
+    db.init_db()
+    c = Classification.from_dict({
+        "category": "humanitarian", "uae_relevance": 0.9, "severity": 0.3,
+        "is_breaking_candidate": False, "entities": [], "doctrine_relation": None,
+        "one_line_summary": "x", "rationale": "y",
+        "financial_commitments": [{
+            "amount": 100, "currency": "USD", "fund_name": "Global Fund",
+            "commitment_type": "pledge", "announced_at": "2026-06-20",
+            "source_country": "US", "source_entity": "USAID",
+            "beneficiary_country": "SD", "beneficiary_entity": "Sudan relief",
+        }],
+    })
+    with db.connect() as conn:
+        src = conn.execute("SELECT id FROM sources LIMIT 1").fetchone()["id"]
+        conn.execute(
+            "INSERT INTO items (id, source_id, url, url_hash, title, ingested_at, prefilter_passed) "
+            "VALUES (1,?,?,?,?,?,1)",
+            (src, "https://x/1", "h1", "T", db._now_iso()),
+        )
+        db.save_classification(conn, 1, c)
+        rows = db.recent_financial_commitments(conn, hours=24 * 60)
+    assert len(rows) == 1
+    r = rows[0]
+    assert r["source_country"] == "US" and r["source_entity"] == "USAID"
+    assert r["beneficiary_country"] == "SD" and r["beneficiary_entity"] == "Sudan relief"
+    assert r["recipient"] == "Sudan relief"   # back-compat mirror persisted

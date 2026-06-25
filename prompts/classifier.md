@@ -88,9 +88,9 @@ Return up to 8 entities mentioned, drawn from the watchlist where possible. Use 
 
 If the item is a UAE leadership statement, set `doctrine_relation` to one of `reinforcing | refining | evolving | contradicting | new`. Leave `null` for all other categories.
 
-## Financial commitments
+## Development financial commitments
 
-If the item describes one or more **concrete UAE financial commitments** (pledges, disbursements, signed MoUs, loans, grants — with a number attached), extract them into `financial_commitments`. Empty list `[]` if none.
+If the item describes one or more **concrete development / humanitarian / philanthropic financial commitments** (pledges, disbursements, signed MoUs, loans, grants — with a number attached), extract them into `financial_commitments`. Empty list `[]` if none. The donor does NOT have to be the UAE — capture commitments from any country, multilateral body, fund, or philanthropy, recording who gives and who receives.
 
 Each commitment object:
 ```json
@@ -98,9 +98,13 @@ Each commitment object:
   "amount": 350,
   "currency": "AED",
   "fund_name": "Loss and Damage Fund",
-  "recipient": "vulnerable nations",
   "commitment_type": "pledge",
   "announced_at": "2026-05-10",
+  "source_country": "AE",
+  "source_entity": "UAE government",
+  "beneficiary_country": null,
+  "beneficiary_entity": "vulnerable nations",
+  "recipient": "vulnerable nations",
   "rationale": "Multi-year commitment announced at COP28 follow-up"
 }
 ```
@@ -110,7 +114,10 @@ Rules:
 - `currency` is the ISO code (AED, USD, EUR, etc.).
 - `commitment_type` is one of: `pledge`, `disbursement`, `mou`, `loan`, `grant`.
 - `announced_at` is YYYY-MM-DD if the article gives a date; else null.
-- Only include commitments where UAE is the donor or signatory.
+- **Provenance** — record the directed flow:
+  - `source_country` / `source_entity`: who is committing the money (the donor/lender/signatory). `source_country` is an ISO-3166-1 alpha-2 code (AE, US, SA, …) or null if it's a multilateral/private body with no single country.
+  - `beneficiary_country` / `beneficiary_entity`: who receives it (the recipient country/org/fund). `beneficiary_country` is an ISO-2 code or null.
+  - Use null for any side the article doesn't make clear. Set `recipient` to the same value as `beneficiary_entity` for backward compatibility.
 - Do not extract recurring annual budgets or aspirational targets without a number.
 
 ## Bilateral meetings
