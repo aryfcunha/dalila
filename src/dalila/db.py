@@ -81,9 +81,27 @@ def init_db() -> None:
         for sql_path in sorted(cfg.migrations_dir.glob("*.sql")):
             if sql_path.name in applied:
                 continue
-            conn.executescript(sql_path.read_text(encoding="utf-8"))
+            try:
+                conn.executescript(sql_path.read_text(encoding="utf-8"))
+            except sqlite3.OperationalError as exc:
+                # The migration's change is already present — e.g. a column was
+                # added out-of-band, or schema_migrations lost this row after a
+                # DB snapshot/restore. Treat "already applied" as success and
+                # record it. Without this, ONE un-recorded ALTER (the live
+                # 007 `ADD COLUMN url` did exactly this) makes init_db raise on
+                # every call, which bricks the bot boot, publish-site, and every
+                # CLI command permanently — with no operator around to fix it.
+                msg = str(exc).lower()
+                if "duplicate column name" in msg or "already exists" in msg:
+                    import logging
+                    logging.getLogger(__name__).warning(
+                        "migration %s already applied (%s) — recording as done",
+                        sql_path.name, exc,
+                    )
+                else:
+                    raise
             conn.execute(
-                "INSERT INTO schema_migrations(filename, applied_at) VALUES(?, ?)",
+                "INSERT OR IGNORE INTO schema_migrations(filename, applied_at) VALUES(?, ?)",
                 (sql_path.name, _now_iso()),
             )
         _seed_sources(conn)
@@ -1044,6 +1062,104 @@ def items_for_country(
     # Sort by published_at desc when available, ingested_at otherwise
     out.sort(key=lambda x: x.get("published_at") or x.get("ingested_at") or "", reverse=True)
     return out[:limit]
+
+
+def country_aggregates(
+    conn: sqlite3.Connection,
+    since_hours: int = 24 * 180,
+    *,
+    items_limit: int = 30,
+) -> dict:
+    """Single-pass replacement for the per-country fan-out that hung publish-site.
+
+    The countries page used to call country_mention_counts (1x) plus
+    items_for_country + country_cooccurrence ONCE PER COUNTRY (~190 countries),
+    each re-scanning the full classified window and re-parsing every row's
+    country_focus_json — ~2N+2 full passes. On a 317k-row items table that is
+    minutes of pure json.loads and a memory storm on the 1GB VM, i.e. a hang.
+
+    This scans the window ONCE, parses each row's JSON ONCE, and fills every
+    structure the page needs in the same loop:
+
+        {
+          "counts":           {ISO: n},                  # == country_mention_counts
+          "timeline":         {YYYY-MM-DD: {ISO: n}},     # == country_timeline
+          "cooccurrence":     {ISO: {other_ISO: n}},      # == country_cooccurrence per ISO
+          "items_by_country": {ISO: [item dict, ...]},    # == items_for_country per ISO (top N)
+        }
+
+    Output matches the four legacy functions on all current data. It applies
+    slightly stricter per-row validation uniformly (2-letter alpha ISO codes,
+    de-duplicated within a row so a malformed row can't double-count
+    co-occurrence) — the legacy functions varied on this; the stricter rule is
+    a no-op today and more robust on future junk. The legacy functions are kept
+    for the /country bot command, the country-debug CLI, and tests.
+    """
+    counts: dict[str, int] = {}
+    timeline: dict[str, dict[str, int]] = {}
+    cooccurrence: dict[str, dict[str, int]] = {}
+    items_by_country: dict[str, list[dict]] = {}
+
+    for r in _classified_window_rows(conn, since_hours):
+        try:
+            raw = json.loads(r["country_focus_json"]) or []
+        except Exception:
+            continue
+        valid: list[str] = []
+        seen: set[str] = set()
+        for c in raw:
+            iso = str(c).strip().upper()
+            if len(iso) == 2 and iso.isalpha() and iso not in seen:
+                seen.add(iso)
+                valid.append(iso)
+        if not valid:
+            continue
+
+        # counts
+        for iso in valid:
+            counts[iso] = counts.get(iso, 0) + 1
+
+        # timeline: bucket by published_at|ingested_at date
+        when = (r["published_at"] or r["ingested_at"] or "")[:10]
+        if len(when) == 10:
+            bucket = timeline.setdefault(when, {})
+            for iso in valid:
+                bucket[iso] = bucket.get(iso, 0) + 1
+
+        # cooccurrence: every ordered pair within the row
+        for iso in valid:
+            co = cooccurrence.setdefault(iso, {})
+            for other in valid:
+                if other != iso:
+                    co[other] = co.get(other, 0) + 1
+
+        # per-country item lists (sorted + capped after the pass)
+        item = {
+            "id": r["id"],
+            "title": r["title"],
+            "url": r["url"],
+            "summary": r["one_line_summary"] or "",
+            "category": r["category"],
+            "uae_relevance": r["uae_relevance"],
+            "severity": r["severity"],
+            "published_at": r["published_at"],
+            "ingested_at": r["ingested_at"],
+            "source": r["source_name"],
+            "country_focus": valid,
+        }
+        for iso in valid:
+            items_by_country.setdefault(iso, []).append(item)
+
+    for iso, lst in items_by_country.items():
+        lst.sort(key=lambda x: x.get("published_at") or x.get("ingested_at") or "", reverse=True)
+        items_by_country[iso] = lst[:items_limit]
+
+    return {
+        "counts": counts,
+        "timeline": timeline,
+        "cooccurrence": cooccurrence,
+        "items_by_country": items_by_country,
+    }
 
 
 def enabled_users(conn: sqlite3.Connection) -> list[sqlite3.Row]:

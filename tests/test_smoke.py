@@ -490,3 +490,66 @@ def test_market_deltas_distinct_per_window():
     assert abs(m["delta_7d"]  - 0.20) < 1e-9
     # The whole point: they are NOT all equal.
     assert len({round(m["delta_30m"],4), round(m["delta_24h"],4), round(m["delta_7d"],4)}) == 3
+
+
+# ── Countries page: single-pass aggregator replaces the per-country fan-out ───
+
+def _insert_classified_item(conn, *, iid, title, countries, published_at, source_id):
+    import json as _json
+    conn.execute(
+        "INSERT INTO items (id, source_id, url, url_hash, title, published_at, "
+        "ingested_at, prefilter_passed, classified_at, category, uae_relevance, "
+        "severity, one_line_summary, country_focus_json) "
+        "VALUES (?,?,?,?,?,?,?,1,?,?,?,?,?,?)",
+        (iid, source_id, f"https://x/{iid}", f"hash{iid}", title, published_at,
+         published_at, published_at, "humanitarian", 0.8, 0.5, "s",
+         _json.dumps(countries)),
+    )
+
+
+def test_country_aggregates_matches_legacy_functions():
+    """country_aggregates must produce, in ONE pass, exactly what the four
+    legacy per-country functions produced in ~2N+2 passes."""
+    from datetime import datetime, timezone, timedelta
+    from dalila import db
+    db.init_db()
+    now = datetime.now(timezone.utc)
+    def ts(days_ago): return (now - timedelta(days=days_ago)).isoformat()
+    with db.connect() as conn:
+        src = conn.execute("SELECT id FROM sources LIMIT 1").fetchone()["id"]
+        _insert_classified_item(conn, iid=1, title="A", countries=["SD", "AE"], published_at=ts(1), source_id=src)
+        _insert_classified_item(conn, iid=2, title="B", countries=["SD", "IR"], published_at=ts(2), source_id=src)
+        _insert_classified_item(conn, iid=3, title="C", countries=["AE"],       published_at=ts(3), source_id=src)
+        conn.commit()
+
+        agg = db.country_aggregates(conn, since_hours=24 * 180, items_limit=30)
+
+        assert agg["counts"] == db.country_mention_counts(conn, since_hours=24 * 180)
+        assert agg["timeline"] == db.country_timeline(conn, since_hours=24 * 180)
+        for iso in agg["counts"]:
+            assert agg["cooccurrence"].get(iso, {}) == db.country_cooccurrence(conn, iso, since_hours=24 * 180)
+            legacy_ids = [i["id"] for i in db.items_for_country(conn, iso, since_hours=24 * 180, limit=30)]
+            new_ids = [i["id"] for i in agg["items_by_country"].get(iso, [])]
+            assert new_ids == legacy_ids, f"item list mismatch for {iso}"
+
+    # sanity on the actual aggregates
+    assert agg["counts"] == {"SD": 2, "AE": 2, "IR": 1}
+    assert agg["cooccurrence"]["SD"] == {"AE": 1, "IR": 1}
+    # newest-first within a country (item 1 is more recent than item 2 for SD)
+    assert [i["id"] for i in agg["items_by_country"]["SD"]] == [1, 2]
+
+
+def test_country_aggregates_dedupes_within_row_and_drops_junk():
+    """Stricter-than-legacy validation: a row listing a country twice can't
+    double-count, and non-alpha / wrong-length codes are dropped."""
+    from datetime import datetime, timezone
+    from dalila import db
+    db.init_db()
+    now = datetime.now(timezone.utc).isoformat()
+    with db.connect() as conn:
+        src = conn.execute("SELECT id FROM sources LIMIT 1").fetchone()["id"]
+        _insert_classified_item(conn, iid=1, title="dupes", countries=["SD", "SD", "AE", "99", "ABC", ""], published_at=now, source_id=src)
+        conn.commit()
+        agg = db.country_aggregates(conn, since_hours=24 * 180)
+    assert agg["counts"] == {"SD": 1, "AE": 1}              # SD counted once; junk dropped
+    assert agg["cooccurrence"]["SD"] == {"AE": 1}           # no SD->SD self-pair
