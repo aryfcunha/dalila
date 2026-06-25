@@ -490,3 +490,29 @@ def test_market_deltas_distinct_per_window():
     assert abs(m["delta_7d"]  - 0.20) < 1e-9
     # The whole point: they are NOT all equal.
     assert len({round(m["delta_30m"],4), round(m["delta_24h"],4), round(m["delta_7d"],4)}) == 3
+
+
+# ── git self-heal: stale .git/*.lock sweep (prevents silent stale site) ──────
+
+def test_git_self_heal_removes_only_stale_locks(tmp_path):
+    """A lock older than the threshold is removed; a fresh one is kept (so we
+    never yank a lock from a genuinely in-flight git op)."""
+    import os, time
+    from dalila.pipeline import _git_clear_interrupted_state, _STALE_LOCK_SECS
+
+    git_dir = tmp_path / ".git"
+    (git_dir / "refs" / "heads").mkdir(parents=True)
+    stale = git_dir / "index.lock"          # e.g. left by an OOM-killed commit
+    stale.write_text("")
+    fresh = git_dir / "refs" / "heads" / "main.lock"  # a live push in progress
+    fresh.write_text("")
+
+    old = time.time() - (_STALE_LOCK_SECS + 60)
+    os.utime(stale, (old, old))
+
+    # Runs the rebase/merge --abort subprocess calls too; on a non-repo dir they
+    # just fail and are ignored, so this exercises only the lock sweep safely.
+    _git_clear_interrupted_state(tmp_path, dict(os.environ))
+
+    assert not stale.exists(), "stale lock (older than threshold) should be removed"
+    assert fresh.exists(), "fresh lock (younger than threshold) must be kept"

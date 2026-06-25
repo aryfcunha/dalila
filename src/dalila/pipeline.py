@@ -1039,13 +1039,23 @@ def run_publish_backfilled_pages(out_dir: "Path") -> int:
     return written
 
 
-def _git_clear_interrupted_state(repo, env: dict) -> None:
-    """Best-effort: clear a half-finished rebase/merge left by a killed run.
+# A git process killed mid-write (systemd restart, OOM) or wedged in
+# uninterruptible D-state leaves a `.git/*.lock` behind. That lock then blocks
+# EVERY subsequent commit/push permanently — with no operator around to clear
+# it — so renders keep succeeding while the site silently goes stale. We sweep
+# locks older than this many seconds; the age guard ensures we never yank a lock
+# from a genuinely in-flight git op (network push timeout is 120s, so 180s is a
+# safe floor above it).
+_STALE_LOCK_SECS = 180
 
-    Aborts an in-progress rebase or merge so the work-tree is usable again.
-    Each call is a harmless no-op when nothing is in flight (git exits non-zero,
-    which we ignore). Never raises — this runs on the hot path before every
-    publish/market push and must not itself become a failure mode.
+
+def _git_clear_interrupted_state(repo, env: dict) -> None:
+    """Best-effort: clear a half-finished rebase/merge AND any stale .git locks
+    left by a killed/wedged run, so the work-tree is usable again.
+
+    Each step is a harmless no-op when nothing is in flight. Never raises — this
+    runs on the hot path before every publish/market push and must not itself
+    become a failure mode.
     """
     import subprocess
 
@@ -1058,6 +1068,29 @@ def _git_clear_interrupted_state(repo, env: dict) -> None:
         except Exception:
             # A timeout or missing-binary here should never block the publish.
             pass
+
+    # Sweep stale lock files (.git/index.lock, HEAD.lock, refs/**/*.lock, …).
+    # Only remove ones older than _STALE_LOCK_SECS so a concurrent, healthy git
+    # op (e.g. the other publisher mid-push) keeps its lock.
+    try:
+        from pathlib import Path
+        import time
+
+        git_dir = Path(repo) / ".git"
+        if git_dir.is_dir():
+            now = time.time()
+            for lock in git_dir.rglob("*.lock"):
+                try:
+                    age = now - lock.stat().st_mtime
+                    if age >= _STALE_LOCK_SECS:
+                        lock.unlink()
+                        log.warning("git self-heal: removed stale lock %s (age %.0fs)", lock, age)
+                except FileNotFoundError:
+                    pass  # raced with another sweep/op — fine
+                except Exception:
+                    log.exception("git self-heal: could not remove lock %s", lock)
+    except Exception:
+        log.exception("git self-heal: stale-lock sweep failed")
 
 
 def _git_commit_and_push(repo, rel_paths: list, message: str) -> None:
