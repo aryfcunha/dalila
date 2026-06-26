@@ -309,10 +309,14 @@ def save_classification(conn: sqlite3.Connection, item_id: int, c: Classificatio
             conn.execute(
                 """INSERT INTO financial_commitments(
                        item_id, amount, currency, fund_name, recipient,
-                       commitment_type, announced_at, rationale, created_at)
-                   VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                       commitment_type, announced_at, rationale, created_at,
+                       source_country, source_entity,
+                       beneficiary_country, beneficiary_entity)
+                   VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (item_id, fc.amount, fc.currency, fc.fund_name, fc.recipient,
-                 fc.commitment_type, fc.announced_at, fc.rationale, now),
+                 fc.commitment_type, fc.announced_at, fc.rationale, now,
+                 fc.source_country, fc.source_entity,
+                 fc.beneficiary_country, fc.beneficiary_entity),
             )
         for bm in c.bilateral_meetings:
             conn.execute(
@@ -599,6 +603,8 @@ def recent_financial_commitments(conn: sqlite3.Connection, hours: int = 720, lim
         """
         SELECT fc.id, fc.amount, fc.currency, fc.fund_name, fc.recipient,
                fc.commitment_type, fc.announced_at, fc.rationale, fc.created_at,
+               fc.source_country, fc.source_entity,
+               fc.beneficiary_country, fc.beneficiary_entity,
                i.id AS item_id, i.title, i.url
         FROM financial_commitments fc
         JOIN items i ON i.id = fc.item_id

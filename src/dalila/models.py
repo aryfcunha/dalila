@@ -40,6 +40,13 @@ class FinancialCommitment:
     commitment_type: str | None     # pledge | disbursement | mou | loan | grant
     announced_at: str | None
     rationale: str | None = None
+    # Provenance (migration 009): the directed source -> beneficiary edge. All
+    # optional; older rows / extractions leave them None and fall back to
+    # `recipient` for the beneficiary side.
+    source_country: str | None = None
+    source_entity: str | None = None
+    beneficiary_country: str | None = None
+    beneficiary_entity: str | None = None
 
     @classmethod
     def from_dict(cls, d: dict) -> "FinancialCommitment":
@@ -48,14 +55,22 @@ class FinancialCommitment:
             amt = float(amt) if amt is not None else None
         except (TypeError, ValueError):
             amt = None
+        beneficiary_entity = _clean(d.get("beneficiary_entity"))
+        recipient = _clean(d.get("recipient"))
         return cls(
             amount=amt,
             currency=_clean(d.get("currency"), upper=True),
             fund_name=_clean(d.get("fund_name")),
-            recipient=_clean(d.get("recipient")),
+            # Keep recipient populated for back-compat; mirror beneficiary_entity
+            # into it when the new field is the only one given.
+            recipient=recipient or beneficiary_entity,
             commitment_type=_clean(d.get("commitment_type"), lower=True),
             announced_at=_clean(d.get("announced_at")),
             rationale=_clean(d.get("rationale")),
+            source_country=_clean(d.get("source_country"), upper=True),
+            source_entity=_clean(d.get("source_entity")),
+            beneficiary_country=_clean(d.get("beneficiary_country"), upper=True),
+            beneficiary_entity=beneficiary_entity or recipient,
         )
 
 
