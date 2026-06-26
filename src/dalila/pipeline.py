@@ -524,6 +524,90 @@ def _dedupe_by_simhash(items: list[dict], threshold: int = 16) -> list[dict]:
     return kept
 
 
+def _llm_cluster_same_event(items: list[dict]) -> list[list[int]]:
+    """Ask Haiku to cluster candidates that report the SAME event. Returns a
+    list of clusters, each a list of 1-based positions into `items` (only
+    groups of 2+). One CLI call; raises on LLM failure (caller no-ops)."""
+    from dalila import llm
+    from dalila.config import load_prompt
+
+    lines = []
+    for i, it in enumerate(items, start=1):
+        title = (it.get("title") or "").strip()
+        summary = (it.get("one_line_summary") or it.get("summary") or "").strip()
+        lines.append(f"{i}. {title}" + (f" — {summary}" if summary else ""))
+    data = llm.call_json(
+        model=llm.HAIKU,
+        system_prompt=load_prompt("dedupe"),
+        user_prompt="Headlines:\n" + "\n".join(lines),
+        purpose="dedupe",
+    )
+    groups = data.get("clusters") if isinstance(data, dict) else data
+    out: list[list[int]] = []
+    for g in (groups or []):
+        if not isinstance(g, list):
+            continue
+        nums = []
+        for x in g:
+            try:
+                nums.append(int(x))
+            except (TypeError, ValueError):
+                continue
+        nums = [n for n in nums if 1 <= n <= len(items)]
+        if len(set(nums)) >= 2:
+            out.append(sorted(set(nums)))
+    return out
+
+
+def _dedupe_semantic(conn, items: list[dict], *, max_judge: int = 50) -> list[dict]:
+    """Collapse same-EVENT duplicates that SimHash (lexical) can't catch —
+    e.g. "UN Commission Denounces Genocide in Gaza" vs "UN Experts Accuse
+    Israel… Repeat Genocide Claim". One cheap Haiku call/day over the top
+    `max_judge` score-sorted candidates; keeps the highest-scored item per
+    cluster, drops the rest, and tags the cluster via items.cluster_id.
+
+    Best-effort: any LLM failure (rate-limit, bad JSON) is swallowed and the
+    list is returned unchanged — the SimHash pass already ran, so we never make
+    the brief worse, only optionally better.
+    """
+    if len(items) < 2:
+        return items
+    candidates = items[:max_judge]
+    try:
+        clusters = _llm_cluster_same_event(candidates)
+    except Exception as exc:
+        log.warning("semantic dedup skipped (LLM unavailable): %s", exc)
+        return items
+    if not clusters:
+        return items
+
+    drop_pos: set[int] = set()
+    rep_for: dict[int, int] = {}  # dropped position -> kept position
+    for group in clusters:
+        pos = sorted(p - 1 for p in group)          # 1-based → 0-based, ascending = best first
+        keep = pos[0]
+        for p in pos[1:]:
+            if p not in drop_pos:
+                drop_pos.add(p)
+                rep_for[p] = keep
+    if not drop_pos:
+        return items
+
+    try:
+        for p, keep in rep_for.items():
+            cluster_id = candidates[keep]["id"]
+            db.set_cluster_id(conn, candidates[keep]["id"], cluster_id)
+            db.set_cluster_id(conn, candidates[p]["id"], cluster_id)
+    except Exception:
+        log.debug("semantic dedup: cluster_id persist failed", exc_info=True)
+
+    kept = [it for i, it in enumerate(candidates) if i not in drop_pos]
+    kept.extend(items[max_judge:])
+    log.info("semantic dedup: collapsed %d same-event duplicate(s) across %d cluster(s)",
+             len(drop_pos), len([g for g in clusters if len(g) >= 2]))
+    return kept
+
+
 def run_deep_dive(topic: str, since_hours: int = 720, max_items: int = 20) -> tuple[str, list[int]]:
     """Compose a deep-dive on `topic` over recent classified items.
 
@@ -578,6 +662,10 @@ def run_compose_digest(
             exclude_ids=excluded or None,
         )
         items = _dedupe_by_simhash(items)
+        # Semantic pass: collapse same-event stories that SimHash misses
+        # (different wording, same event). Runs BEFORE the max_items cut so a
+        # cluster doesn't waste brief slots. Best-effort — no-ops on LLM failure.
+        items = _dedupe_semantic(conn, items)
         items = items[:max_items]
 
         # Fetch market signals for the Telegram brief

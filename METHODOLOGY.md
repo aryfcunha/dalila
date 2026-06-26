@@ -68,13 +68,14 @@ that prompt caching engages efficiently.
 ## Avoiding duplicates
 
 The same story often appears multiple times &mdash; reposted across outlets, syndicated
-from a wire, or carried by an aggregator. Three deduplication layers run before
+from a wire, or carried by an aggregator. Four deduplication layers run before
 anything reaches the brief.
 
 | Decision | Value | Why |
 |---|---|---|
 | Exact-duplicate guard | **Hash of URL plus title** | Catches the same article re-ingested through different paths. |
-| Cross-outlet near-duplicate detection | **Title similarity within 12 bits** of a 64-bit fingerprint | Cross-outlet reposts of the same story typically differ by 6&ndash;10 bits in this fingerprint; unrelated stories typically differ by 28&ndash;40. Twelve sits in the sweet spot. |
+| Cross-outlet near-duplicate detection | **Title similarity within 16 bits** of a 64-bit fingerprint | Cross-outlet reposts of the same story typically differ by 6&ndash;10 bits in this fingerprint; unrelated stories typically differ by 28&ndash;40. |
+| Same-event grouping | **An editorial check that reads each day&rsquo;s shortlist** | Two stories can describe the very same event in entirely different words (&ldquo;UN denounces genocide&rdquo; vs &ldquo;UN experts repeat genocide claim&rdquo;) &mdash; too different for a fingerprint to catch. A final pass groups headlines that report the same underlying event and keeps only the strongest, so the brief doesn&rsquo;t carry the same story twice. When in doubt it keeps stories separate. |
 | Cross-brief window | **Seven days** | An item used in Monday&rsquo;s brief should not reappear in Friday&rsquo;s. A week is roughly the half-life of a news cycle; a story discussed seven days later is usually a fresh angle, not a repost. |
 
 ## Forecast and early-warning indices

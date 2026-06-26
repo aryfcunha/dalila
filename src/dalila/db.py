@@ -1006,6 +1006,12 @@ def get_url_for_item(conn: sqlite3.Connection, item_id: int) -> str | None:
     return row["url"] if row else None
 
 
+def set_cluster_id(conn: sqlite3.Connection, item_id: int, cluster_id: int) -> None:
+    """Tag an item with a same-event cluster id (the representative item's id).
+    Used by the semantic de-dup pass; reuses the existing items.cluster_id col."""
+    conn.execute("UPDATE items SET cluster_id = ? WHERE id = ?", (cluster_id, item_id))
+
+
 # ---------------------------------------------------------------------------
 # Country / region aggregations — power the /country command + country view
 # ---------------------------------------------------------------------------

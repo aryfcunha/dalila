@@ -715,3 +715,44 @@ def test_run_ingest_records_skipped_status(monkeypatch):
     stats = pipeline.run_ingest()
     assert stats["acled"]["error"].startswith("skipped:")
     assert "ACLED" in stats["acled"]["error"]
+# ── #6 semantic (same-event) news dedup ──────────────────────────────────────
+
+def test_dedupe_semantic_collapses_same_event_clusters(monkeypatch):
+    from dalila import db, pipeline
+    db.init_db()
+    items = [
+        {"id": 10, "title": "UN denounces genocide in Gaza"},
+        {"id": 11, "title": "Floods displace thousands in Sudan"},
+        {"id": 12, "title": "UN experts repeat Gaza genocide claim"},  # same event as #10
+        {"id": 13, "title": "OPEC weighs output cut"},
+    ]
+    # LLM says positions 1 & 3 (ids 10, 12) are the same event.
+    monkeypatch.setattr(pipeline, "_llm_cluster_same_event", lambda cands: [[1, 3]])
+    with db.connect() as conn:
+        out = pipeline._dedupe_semantic(conn, items)
+    assert [it["id"] for it in out] == [10, 11, 13]  # keep first of cluster (10), drop 12
+
+
+def test_dedupe_semantic_noops_on_llm_failure(monkeypatch):
+    from dalila import db, pipeline
+    db.init_db()
+    items = [{"id": 1, "title": "X headline"}, {"id": 2, "title": "Y headline"}]
+
+    def _boom(cands):
+        raise RuntimeError("rate limit reached")
+
+    monkeypatch.setattr(pipeline, "_llm_cluster_same_event", _boom)
+    with db.connect() as conn:
+        out = pipeline._dedupe_semantic(conn, items)
+    assert [it["id"] for it in out] == [1, 2]  # unchanged — never makes the brief worse
+
+
+def test_llm_cluster_parsing_filters_singletons_and_out_of_range(monkeypatch):
+    from dalila import llm, pipeline
+    monkeypatch.setattr(llm, "call_json",
+                        lambda **k: {"clusters": [[1, 2], [3], [2, 99], [4, 5]]})
+    items = [{"title": f"t{i}", "one_line_summary": ""} for i in range(6)]  # positions 1..6
+    groups = pipeline._llm_cluster_same_event(items)
+    assert [1, 2] in groups and [4, 5] in groups
+    assert all(len(g) >= 2 for g in groups)          # singleton [3] dropped
+    assert not any(99 in g for g in groups)          # out-of-range trimmed → [2] dropped

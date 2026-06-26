@@ -99,6 +99,7 @@ Storage: one SQLite file (`dalila.db`). Scheduling: APScheduler in-process. No R
 | Change classifier behaviour | `prompts/classifier.md` |
 | Change digest format / Foresight rules | `prompts/editor.md` |
 | Change deep-dive synthesis style | `prompts/deepdive.md` |
+| Change same-event news dedup rules | `prompts/dedupe.md` (+ `_dedupe_semantic` / `_llm_cluster_same_event` in `pipeline.py`) |
 | Change doctrine extraction rules | `prompts/doctrine.md` |
 | Change the public methodology page | `METHODOLOGY.md` (preserve maintainer-comment block at top) |
 | Add a CLI subcommand | `src/dalila/cli.py` |
@@ -113,6 +114,7 @@ Storage: one SQLite file (`dalila.db`). Scheduling: APScheduler in-process. No R
 
 ## What was built when (recent shipping log)
 
+- **Semantic same-event news dedup** (2026-06-25): SimHash only catches near-identical *wording*; same-event stories with different vocabulary (~22-26 bits) slipped through and the brief carried duplicates. Added a 4th dedup layer: after the SimHash pass in `run_compose_digest`, `_dedupe_semantic` runs ONE Haiku CLI call/day (`prompts/dedupe.md`, via `llm.call_json`) over the top ~50 score-sorted candidates, clusters same-event stories, keeps the highest-scored per cluster, and tags the rest via the previously-unused `items.cluster_id` (no migration). Best-effort: any LLM failure no-ops (the brief is never made worse). Strict "same event, not same topic" prompt + "when unsure, keep separate" to avoid false merges. METHODOLOGY.md updated (now "four deduplication layers"; also corrected the stale "12 bits" → 16).
 - **Countries-page publish hang fix** (2026-06-25): the countries render looped per-country (~190×) calling `items_for_country` + `country_cooccurrence`, each a full scan + per-row `json.loads` of the ~300k-row items window — ~2N+2 passes. At scale this hung `run_publish_site`, and because the bot (`scheduler._publish_site_hook`) and cron both call it **in-process**, the hang wedged the publisher and silently staled the whole site. Fix: `db.country_aggregates` does it in **one** pass (verified ~265× faster, output identical on current data); the legacy four functions stay for the `/country` bot command + tests. Migration `008_country_index.sql` adds a minor partial index. **Resilience:** countries now renders LAST and **out-of-process** via a new `dalila publish-countries` subcommand invoked with a hard `DALILA_COUNTRIES_TIMEOUT_SECS` (default 180s) timeout — a subprocess so a future hang is OS-killable (a thread would leak on the 1GB VM); `DALILA_PUBLISH_SKIP_COUNTRIES=1` is an operator kill-switch. Markets render moved before countries (it's cheap, items-table-independent). Also hardened `db.init_db()` to treat "duplicate column / already exists" migration errors as already-applied (the un-recorded 007 `ADD COLUMN url` otherwise makes init_db raise on every call, bricking bot boot + publish + all CLI).
 - **Original MVP**: bot + scheduler + ingestors + classifier + editor.
 - **Cross-platform CLI launch, batched classifier, smart rate-limit back-off**: early hardening.
