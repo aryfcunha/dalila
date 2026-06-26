@@ -219,6 +219,12 @@ sources:
     kind: gdelt
     # Ingestor pulls from data.gdeltproject.org/gdeltv2/lastupdate.txt
     url: https://www.gdeltproject.org/
+    # Also pull the translingual GKG (machine-translated non-English coverage)
+    # so the foreign-language outlets on trusted_outlets.yaml surface. Set to
+    # false to revert to English-only. GKG themes/orgs stay English either way,
+    # so the prefilter still works; the classifier's translated_title renders
+    # a clean English headline.
+    translingual: true
     quality: 3
     tags: [events, signal]
     enabled: true
