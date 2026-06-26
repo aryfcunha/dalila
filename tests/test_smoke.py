@@ -756,3 +756,56 @@ def test_llm_cluster_parsing_filters_singletons_and_out_of_range(monkeypatch):
     assert [1, 2] in groups and [4, 5] in groups
     assert all(len(g) >= 2 for g in groups)          # singleton [3] dropped
     assert not any(99 in g for g in groups)          # out-of-range trimmed → [2] dropped
+# ── #2 prediction-market history backfill (Manifold + Kalshi) ─────────────────
+
+def test_kalshi_candle_prob_parsing():
+    from dalila.ingestors.prediction_markets import _kalshi_candle_prob
+    assert _kalshi_candle_prob({"price": {"close_dollars": "0.42"}}) == 0.42
+    mid = _kalshi_candle_prob({"price": {}, "yes_bid": {"close_dollars": "0.30"},
+                               "yes_ask": {"close_dollars": "0.40"}})
+    assert abs(mid - 0.35) < 1e-9
+    assert _kalshi_candle_prob({"price": {}}) is None          # nothing usable
+
+
+def test_backfill_manifold_parsing_stops_at_window(monkeypatch):
+    import time
+    from dalila.ingestors import prediction_markets as pm
+    now_ms = int(time.time() * 1000)
+    bets = [
+        {"id": "b3", "probAfter": 0.5, "createdTime": now_ms - 3_600_000},        # in window
+        {"id": "b2", "probAfter": 0.4, "createdTime": now_ms - 7_200_000},        # in window
+        {"id": "b1", "probAfter": 0.3, "createdTime": now_ms - 10 * 86_400_000},  # older → stop
+    ]
+
+    def fake_get(url, timeout=10):
+        if "/slug/" in url:
+            return {"id": "cid1"}
+        if "/bets" in url:
+            return bets
+        return {}
+
+    monkeypatch.setattr(pm, "_http_get", fake_get)
+    out = pm._backfill_manifold_market("some-slug", now_ms - 7 * 86_400 * 1000)
+    assert [p for p, _ in out] == [0.5, 0.4]   # older-than-window bet excluded
+
+
+def test_backfill_market_history_idempotent(monkeypatch):
+    from dalila import db
+    from dalila.ingestors import prediction_markets as pm
+    db.init_db()
+    with db.connect() as conn:
+        conn.execute(
+            "INSERT INTO prediction_market_snapshots "
+            "(market_id, source, question, probability, recorded_at) VALUES (?,?,?,?,?)",
+            ("m1", "manifold", "Will X?", 0.5, db._now_iso()),
+        )
+        conn.commit()
+        monkeypatch.setattr(pm, "_backfill_manifold_market",
+                            lambda slug, since_ms: [(0.5, "2026-06-20T00:00:00+00:00"),
+                                                    (0.6, "2026-06-21T00:00:00+00:00")])
+        s1 = pm.backfill_market_history(conn, days=14)
+        s2 = pm.backfill_market_history(conn, days=14)
+        n = conn.execute("SELECT COUNT(*) FROM prediction_market_history").fetchone()[0]
+    assert s1["inserted"] == 2
+    assert s2["inserted"] == 0   # re-run is idempotent
+    assert n == 2
