@@ -553,3 +553,76 @@ def test_country_aggregates_dedupes_within_row_and_drops_junk():
         agg = db.country_aggregates(conn, since_hours=24 * 180)
     assert agg["counts"] == {"SD": 1, "AE": 1}              # SD counted once; junk dropped
     assert agg["cooccurrence"]["SD"] == {"AE": 1}           # no SD->SD self-pair
+
+
+# ── #3 country page excludes category='other' junk ───────────────────────────
+
+def test_country_page_excludes_other_category_junk():
+    """Sports/trivia (classifier -> category='other') must NOT appear on the
+    country page, even when tagged to a country."""
+    from datetime import datetime, timezone
+    from dalila import db
+    db.init_db()
+    now = datetime.now(timezone.utc).isoformat()
+    with db.connect() as conn:
+        src = conn.execute("SELECT id FROM sources LIMIT 1").fetchone()["id"]
+        # legit dev item + junk 'other' item, both tagged PT
+        _insert_classified_item(conn, iid=1, title="Portugal pledges aid to Sudan", countries=["PT", "SD"], published_at=now, source_id=src)
+        conn.execute(
+            "INSERT INTO items (id, source_id, url, url_hash, title, published_at, "
+            "ingested_at, prefilter_passed, classified_at, category, uae_relevance, "
+            "severity, one_line_summary, country_focus_json) "
+            "VALUES (2,?,?,?,?,?,?,1,?,'other',1.0,0.1,'s','[\"PT\"]')",
+            (src, "https://x/2", "h2", "Drone Show in Matosinhos Breaks Guinness Record", now, now, now),
+        )
+        conn.commit()
+        agg = db.country_aggregates(conn, since_hours=24 * 180)
+    assert agg["counts"].get("PT") == 1, "only the legit dev item should count for PT"
+    pt_ids = [i["id"] for i in agg["items_by_country"].get("PT", [])]
+    assert pt_ids == [1], "the 'other' junk item must be excluded from the country page"
+
+
+# ── #7 bilateral meetings de-duplicate at render time ────────────────────────
+
+def _insert_meeting(conn, *, mid, uae, foreign, country, when_iso, item_id, title, source_id):
+    from datetime import datetime, timezone
+    created = datetime.now(timezone.utc).isoformat()  # always set (NOT NULL)
+    conn.execute(
+        "INSERT OR IGNORE INTO items (id, source_id, url, url_hash, title, ingested_at, prefilter_passed) "
+        "VALUES (?,?,?,?,?,?,1)",
+        (item_id, source_id, f"https://x/{item_id}", f"mh{item_id}", title, created),
+    )
+    conn.execute(
+        "INSERT INTO bilateral_meetings (id, item_id, uae_principal, foreign_principal, "
+        "foreign_country, meeting_type, when_iso, created_at) VALUES (?,?,?,?,?,?,?,?)",
+        (mid, item_id, uae, foreign, country, "meeting", when_iso, created),
+    )
+
+
+def test_bilateral_meetings_dedupe_collapses_duplicates():
+    from datetime import datetime, timezone
+    from dalila import db
+    db.init_db()
+    now = datetime.now(timezone.utc).isoformat()
+    with db.connect() as conn:
+        src = conn.execute("SELECT id FROM sources LIMIT 1").fetchone()["id"]
+        # same meeting reported by 3 outlets (punctuation/case noise), same date
+        _insert_meeting(conn, mid=1, uae="Mohamed bin Zayed Al Nahyan", foreign="Marco Rubio", country="US", when_iso="2026-06-24", item_id=101, title="A", source_id=src)
+        _insert_meeting(conn, mid=2, uae="mohamed bin zayed al nahyan", foreign="Marco  Rubio.", country="US", when_iso="2026-06-24", item_id=102, title="B", source_id=src)
+        _insert_meeting(conn, mid=3, uae="Mohamed bin Zayed Al-Nahyan", foreign="Marco Rubio", country="US", when_iso=None, item_id=103, title="C", source_id=src)
+        # a genuinely different meeting
+        _insert_meeting(conn, mid=4, uae="Mohamed bin Zayed Al Nahyan", foreign="Emmanuel Macron", country="FR", when_iso="2026-06-24", item_id=104, title="D", source_id=src)
+        # two blank-both rows must stay distinct
+        _insert_meeting(conn, mid=5, uae=None, foreign=None, country=None, when_iso="2026-06-24", item_id=105, title="E", source_id=src)
+        _insert_meeting(conn, mid=6, uae=None, foreign=None, country=None, when_iso="2026-06-24", item_id=106, title="F", source_id=src)
+        conn.commit()
+        meetings = db.recent_bilateral_meetings(conn, hours=24 * 60, limit=30)
+
+    keyed = {(m.get("uae_principal"), m.get("foreign_principal")): m for m in meetings}
+    rubio = next(m for m in meetings if (m.get("foreign_principal") or "").startswith("Marco"))
+    assert rubio["mention_count"] == 3, "the 3 Rubio reports (incl. null-date) should collapse to one"
+    assert len(rubio["sources"]) == 3
+    # Macron meeting separate; two blank-both rows stay separate => 1 + 1 + 2 = 4 entries
+    blanks = [m for m in meetings if not m.get("uae_principal") and not m.get("foreign_principal")]
+    assert len(blanks) == 2, "blank-both meetings must NOT be merged"
+    assert len(meetings) == 4

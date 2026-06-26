@@ -7,8 +7,12 @@ real headlines (measured in this repo):
   - cross-outlet repost of same story:  ~6-10 bits
   - tense / wording rephrase:           ~15-20 bits
   - unrelated stories:                  ~28-40 bits
-Default threshold is 12, which catches the cross-outlet case cleanly while
-leaving unrelated stories well separated. Tune in is_near_duplicate.
+`is_near_duplicate`'s standalone default is 12, but the LIVE dedup path runs
+looser: `pipeline._dedupe_by_simhash` defaults to 16 (the value used at every
+pipeline call site) and the archive-render dedup uses 24. SimHash only catches
+near-identical wording — same-event stories with different vocabulary land at
+~22-26 bits (above all these thresholds) and are handled by the separate
+semantic dedup pass, not here.
 
 Cost: O(tokens) per insert, ~50µs on commodity hardware. Storage: 16 bytes
 of hex per item.

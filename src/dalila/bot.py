@@ -245,7 +245,9 @@ async def cmd_meetings(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         foreign = r.get("foreign_principal") or "(foreign side)"
         country = r.get("foreign_country") or ""
         country_tag = f" ({country})" if country else ""
-        lines.append(f"*{mtype}* · _{when}_  ·  {uae} ↔ {foreign}{country_tag}")
+        n = r.get("mention_count") or 1
+        count_tag = f"  ·  _{n} reports_" if n > 1 else ""
+        lines.append(f"*{mtype}* · _{when}_  ·  {uae} ↔ {foreign}{country_tag}{count_tag}")
         if r.get("location"):
             lines.append(f"  📍 {r['location']}")
         topics = r.get("topics") or []

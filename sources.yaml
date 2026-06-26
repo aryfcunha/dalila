@@ -411,11 +411,16 @@ sources:
 
   - id: imf
     name: IMF — News
+    # imf.org/en/News/RSS?Language=ENG now returns HTTP 403 Forbidden (verified
+    # 2026-06-25) — was silently producing 0 items while enabled. IMF lending /
+    # Article IV / DSA coverage reaches Dalila via ReliefWeb, FT/Reuters wire
+    # redistribution, and GDELT-allowlisted outlets. Re-enable if a working
+    # feed/endpoint is found.
     kind: rss
     url: https://www.imf.org/en/News/RSS?Language=ENG
     quality: 4
     tags: [multilateral, dev-finance, macro]
-    enabled: true
+    enabled: false
 
   - id: afdb
     name: African Development Bank — News
