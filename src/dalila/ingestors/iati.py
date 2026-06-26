@@ -93,10 +93,10 @@ def _build_query(window_days: int) -> str:
 def fetch(src: dict) -> list[RawItem]:
     cfg = get_config()
     if not cfg.iati_api_key:
-        # Same silent-skip pattern as ACLED — the source can stay enabled
-        # in sources.yaml and just produce zero items until a key is set.
-        log.info("iati skipped: IATI_API_KEY not set in .env")
-        return []
+        # Stays enabled in sources.yaml; surfaces as a distinguishable
+        # 'skipped: ...' status instead of looking like a healthy quiet source.
+        from dalila.ingestors.base import SourceSkipped
+        raise SourceSkipped("IATI_API_KEY not set")
     window_days = int(src.get("window_days", 30))
     rows = int(src.get("rows", 50))
     try:

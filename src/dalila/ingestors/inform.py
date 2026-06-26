@@ -84,8 +84,8 @@ def fetch(src: dict) -> list[RawItem]:
     cfg = get_config()
     api_key = getattr(cfg, "acaps_api_key", None)
     if not api_key:
-        log.info("INFORM skipped: ACAPS_API_KEY not set")
-        return []
+        from dalila.ingestors.base import SourceSkipped
+        raise SourceSkipped("ACAPS_API_KEY not set")
 
     try:
         resp = httpx.get(
