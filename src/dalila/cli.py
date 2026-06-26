@@ -362,7 +362,7 @@ def _cmd_check() -> int:
     print(f"Ingest interval:    every {cfg.ingest_interval_minutes} min")
     print(f"Telegram token:     {'set' if cfg.telegram_bot_token else 'MISSING — bot will not start'}")
     print(f"ACLED creds:        {'set (oauth)' if (cfg.acled_username and cfg.acled_password) else 'unset (ACLED ingestion skipped — set ACLED_USERNAME + ACLED_PASSWORD)'}")
-    print(f"ACAPS creds:        {'set' if cfg.acaps_api_key else 'unset (INFORM ingestion skipped — set ACAPS_API_KEY)'}")
+    print(f"ACAPS creds:        {'set (token-auth)' if (cfg.acaps_username and cfg.acaps_password) else 'unset (INFORM skipped — set ACAPS_USERNAME + ACAPS_PASSWORD)'}")
     ok, msg = check_cli_available()
     print(f"Claude CLI:         {'OK' if ok else 'FAIL'} — {msg}")
 

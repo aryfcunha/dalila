@@ -897,3 +897,59 @@ def test_gdelt_fetch_combines_english_and_translingual(monkeypatch):
     items = gdelt.fetch({"id": "gdelt_v2", "translingual": False})
     assert not any("translation" in c for c in calls)
     assert len(items) == 1
+
+
+# ── ACAPS INFORM: token-auth + 0–10 scale + list fields ──────────────────────
+
+def test_inform_extract_score_and_first():
+    from dalila.ingestors.inform import _extract_score, _first
+    assert _extract_score({"INFORM Severity Index": 9.5}) == 9.5   # real field (0–10)
+    assert _extract_score({"severity_index": 4.0}) == 4.0          # fallback
+    assert _extract_score({"crisis_name": "x"}) is None
+    assert _first(["AFG"]) == "AFG"                                # ACAPS list field
+    assert _first("XX") == "XX"
+    assert _first([]) is None
+
+
+def test_inform_fetch_token_auth_and_baseline(monkeypatch):
+    from dalila import db, config
+    from dalila.ingestors import inform
+    monkeypatch.setenv("ACAPS_USERNAME", "u")
+    monkeypatch.setenv("ACAPS_PASSWORD", "p")
+    config.get_config.cache_clear()
+    inform._token_cache["token"] = None
+    db.init_db()
+
+    class _Post:
+        def raise_for_status(self): pass
+        def json(self): return {"token": "TESTTOKEN"}
+
+    class _Get:
+        def raise_for_status(self): pass
+        def json(self): return {"count": 1, "next": None, "previous": None, "results": [
+            {"iso3": ["SDN"], "country": ["Sudan"], "INFORM Severity Index": 9.5,
+             "crisis_name": "Complex crisis in Sudan", "Last updated": "2026-06-01"}]}
+
+    monkeypatch.setattr(inform.httpx, "post", lambda *a, **k: _Post())
+    monkeypatch.setattr(inform.httpx, "get", lambda *a, **k: _Get())
+
+    items = inform.fetch({"id": "inform"})
+    assert items == []   # first run = silent baseline (forecast change-rule)
+    with db.connect() as c:
+        row = c.execute(
+            "SELECT country_iso2, value_num FROM forecast_snapshots WHERE source_id='inform'"
+        ).fetchone()
+    assert row["country_iso2"] == "SD"          # iso3 list -> SDN -> SD
+    assert abs(row["value_num"] - 9.5) < 1e-9   # 0–10 scale
+
+
+def test_inform_skips_without_creds(monkeypatch):
+    from dalila import config
+    from dalila.ingestors import inform
+    from dalila.ingestors.base import SourceSkipped
+    monkeypatch.delenv("ACAPS_USERNAME", raising=False)
+    monkeypatch.delenv("ACAPS_PASSWORD", raising=False)
+    monkeypatch.delenv("ACAPS_EMAIL", raising=False)
+    config.get_config.cache_clear()
+    with pytest.raises(SourceSkipped):
+        inform.fetch({"id": "inform"})
