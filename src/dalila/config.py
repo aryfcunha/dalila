@@ -29,10 +29,14 @@ class Config:
     acled_username: str | None
     acled_password: str | None
     acled_api_key: str | None  # legacy, ignored — kept so existing .env files don't error
-    # ACAPS INFORM Severity Index (free public registration at api.acaps.org).
-    # Unset → INFORM ingestor silently returns []. HungerMap and GDACS need
-    # no creds; ACLED CAST reuses the ACLED OAuth pair.
-    acaps_api_key: str | None
+    # ACAPS INFORM Severity Index (free registration at api.acaps.org). Auth is
+    # token-exchange: POST username+password to /api/v1/token-auth/ → token.
+    # Set ACAPS_USERNAME + ACAPS_PASSWORD. (ACAPS_API_KEY is legacy/ignored — the
+    # API has no static key.) Unset → INFORM ingestor SourceSkipped. HungerMap
+    # and GDACS need no creds; ACLED CAST reuses the ACLED OAuth pair.
+    acaps_username: str | None
+    acaps_password: str | None
+    acaps_api_key: str | None  # legacy, ignored
     iati_api_key: str | None
     daily_classifier_call_cap: int
     # One-shot startup backfill: if > 0, the bot composes any of the last N
@@ -68,6 +72,8 @@ def get_config() -> Config:
         acled_username=(os.getenv("ACLED_USERNAME") or os.getenv("ACLED_EMAIL")) or None,
         acled_password=os.getenv("ACLED_PASSWORD") or None,
         acled_api_key=os.getenv("ACLED_API_KEY") or None,  # legacy, ignored
+        acaps_username=(os.getenv("ACAPS_USERNAME") or os.getenv("ACAPS_EMAIL")) or None,
+        acaps_password=os.getenv("ACAPS_PASSWORD") or None,
         acaps_api_key=os.getenv("ACAPS_API_KEY") or None,
         iati_api_key=os.getenv("IATI_API_KEY") or None,
         daily_classifier_call_cap=int(os.getenv("DALILA_DAILY_CLASSIFIER_CALL_CAP", "2000")),

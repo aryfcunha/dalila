@@ -2742,13 +2742,20 @@ def render_about(
 def render_markets(
     markets: list[dict],
     *,
+    tracked_count: int | None = None,
     contact_email: str = "dalila.dev.digest@gmail.com",
     telegram_bot: str | None = "dalila_development_digest_bot",
 ) -> str:
-    """Render a dedicated page for prediction market intelligence."""
+    """Render a dedicated page for prediction market intelligence.
+
+    `markets` is the *live movers* set (from get_market_signals(live_only=True)).
+    `tracked_count` is the size of the full background pool we keep polling, so
+    the quiet-state copy can honestly say how many markets are still tracked
+    rather than implying nothing is being watched.
+    """
     body: list[str] = []
     body.append(_masthead(on_page="markets", tag="MARKET SIGNALS", link_prefix=""))
-    
+
     body.append('<div class="about">')
     body.append(
         '<p style="font-size:17px;color:var(--type);margin-top:18px;">'
@@ -2757,12 +2764,20 @@ def render_markets(
         'like Manifold and Kalshi, Dalila captures emerging trends before they '
         'stabilise in official news cycles.</p>'
     )
-    
-    body.append('<h2 style="margin-top:40px;">Active Risk Indicators</h2>')
+
+    body.append('<h2 style="margin-top:40px;">Live Movers</h2>')
     body.append('<div class="market-grid" style="margin-top:20px;">')
-    
+
     if not markets:
-        body.append('<p style="color:var(--muted);font-style:italic;">No active market signals tracked at this moment.</p>')
+        pool = (f' Dalila is still tracking {tracked_count} market'
+                f'{"s" if tracked_count != 1 else ""} in the background and will '
+                f'surface them here as soon as they move.'
+                if tracked_count else '')
+        body.append(
+            '<p style="color:var(--muted);font-style:italic;">'
+            'Markets are quiet — no tracked market has moved meaningfully in the '
+            'last week.' + pool + '</p>'
+        )
     else:
         for m in markets:
             prob_pct = f"{m.get('probability', 0)*100:4.1f}%"

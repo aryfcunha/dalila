@@ -16,7 +16,7 @@ from dalila.config import (
     load_prefilter_keywords,
 )
 from dalila.editor import compose_deep_dive, compose_digest
-from dalila.ingestors.base import ingest_source, iter_enabled_sources
+from dalila.ingestors.base import SourceSkipped, ingest_source, iter_enabled_sources
 from dalila.models import RawItem, title_case_clean
 from dalila.simhash import is_near_duplicate
 
@@ -49,6 +49,13 @@ def run_ingest() -> dict:
             error: str | None = None
             try:
                 items = ingest_source(src)
+            except SourceSkipped as exc:
+                # Deliberate no-op (e.g. no API key) — record a distinguishing
+                # status so it isn't mistaken for a healthy quiet source or a
+                # real break in `status` / `verify-sources`.
+                error = f"skipped: {exc}"
+                log.info("ingest skipped for %s: %s", sid, exc)
+                items = []
             except Exception as exc:
                 error = f"{type(exc).__name__}: {exc}"
                 log.exception("ingest failed for %s", sid)
@@ -517,6 +524,90 @@ def _dedupe_by_simhash(items: list[dict], threshold: int = 16) -> list[dict]:
     return kept
 
 
+def _llm_cluster_same_event(items: list[dict]) -> list[list[int]]:
+    """Ask Haiku to cluster candidates that report the SAME event. Returns a
+    list of clusters, each a list of 1-based positions into `items` (only
+    groups of 2+). One CLI call; raises on LLM failure (caller no-ops)."""
+    from dalila import llm
+    from dalila.config import load_prompt
+
+    lines = []
+    for i, it in enumerate(items, start=1):
+        title = (it.get("title") or "").strip()
+        summary = (it.get("one_line_summary") or it.get("summary") or "").strip()
+        lines.append(f"{i}. {title}" + (f" — {summary}" if summary else ""))
+    data = llm.call_json(
+        model=llm.HAIKU,
+        system_prompt=load_prompt("dedupe"),
+        user_prompt="Headlines:\n" + "\n".join(lines),
+        purpose="dedupe",
+    )
+    groups = data.get("clusters") if isinstance(data, dict) else data
+    out: list[list[int]] = []
+    for g in (groups or []):
+        if not isinstance(g, list):
+            continue
+        nums = []
+        for x in g:
+            try:
+                nums.append(int(x))
+            except (TypeError, ValueError):
+                continue
+        nums = [n for n in nums if 1 <= n <= len(items)]
+        if len(set(nums)) >= 2:
+            out.append(sorted(set(nums)))
+    return out
+
+
+def _dedupe_semantic(conn, items: list[dict], *, max_judge: int = 50) -> list[dict]:
+    """Collapse same-EVENT duplicates that SimHash (lexical) can't catch —
+    e.g. "UN Commission Denounces Genocide in Gaza" vs "UN Experts Accuse
+    Israel… Repeat Genocide Claim". One cheap Haiku call/day over the top
+    `max_judge` score-sorted candidates; keeps the highest-scored item per
+    cluster, drops the rest, and tags the cluster via items.cluster_id.
+
+    Best-effort: any LLM failure (rate-limit, bad JSON) is swallowed and the
+    list is returned unchanged — the SimHash pass already ran, so we never make
+    the brief worse, only optionally better.
+    """
+    if len(items) < 2:
+        return items
+    candidates = items[:max_judge]
+    try:
+        clusters = _llm_cluster_same_event(candidates)
+    except Exception as exc:
+        log.warning("semantic dedup skipped (LLM unavailable): %s", exc)
+        return items
+    if not clusters:
+        return items
+
+    drop_pos: set[int] = set()
+    rep_for: dict[int, int] = {}  # dropped position -> kept position
+    for group in clusters:
+        pos = sorted(p - 1 for p in group)          # 1-based → 0-based, ascending = best first
+        keep = pos[0]
+        for p in pos[1:]:
+            if p not in drop_pos:
+                drop_pos.add(p)
+                rep_for[p] = keep
+    if not drop_pos:
+        return items
+
+    try:
+        for p, keep in rep_for.items():
+            cluster_id = candidates[keep]["id"]
+            db.set_cluster_id(conn, candidates[keep]["id"], cluster_id)
+            db.set_cluster_id(conn, candidates[p]["id"], cluster_id)
+    except Exception:
+        log.debug("semantic dedup: cluster_id persist failed", exc_info=True)
+
+    kept = [it for i, it in enumerate(candidates) if i not in drop_pos]
+    kept.extend(items[max_judge:])
+    log.info("semantic dedup: collapsed %d same-event duplicate(s) across %d cluster(s)",
+             len(drop_pos), len([g for g in clusters if len(g) >= 2]))
+    return kept
+
+
 def run_deep_dive(topic: str, since_hours: int = 720, max_items: int = 20) -> tuple[str, list[int]]:
     """Compose a deep-dive on `topic` over recent classified items.
 
@@ -571,6 +662,10 @@ def run_compose_digest(
             exclude_ids=excluded or None,
         )
         items = _dedupe_by_simhash(items)
+        # Semantic pass: collapse same-event stories that SimHash misses
+        # (different wording, same event). Runs BEFORE the max_items cut so a
+        # cluster doesn't waste brief slots. Best-effort — no-ops on LLM failure.
+        items = _dedupe_semantic(conn, items)
         items = items[:max_items]
 
         # Fetch market signals for the Telegram brief
@@ -912,42 +1007,56 @@ def run_publish_site(out_dir: "Path") -> dict:
     except Exception:
         log.exception("publish-site: build page generation failed")
 
+    # Markets first — it's cheap (reads only the small prediction-market tables,
+    # never the ~300k-row items table), so it must not sit behind the heavy
+    # countries page where a countries hang could strand it.
     try:
-        from dalila.config import load_countries
-        from dalila.html_digest import render_countries
-
-        cat = load_countries()
-        window_days = 90
-        timeline_days = 180
-        with db.connect() as conn:
-            counts = db.country_mention_counts(conn, since_hours=timeline_days * 24)
-            items_by_country: dict[str, list[dict]] = {}
-            cooccurrence: dict[str, dict[str, int]] = {}
-            for iso in counts.keys():
-                items_by_country[iso] = db.items_for_country(
-                    conn, iso, since_hours=timeline_days * 24, limit=30,
-                )
-                cooccurrence[iso] = db.country_cooccurrence(
-                    conn, iso, since_hours=timeline_days * 24,
-                )
-            timeline = db.country_timeline(conn, since_hours=timeline_days * 24)
-        countries_html = render_countries(
-            cat["countries"], cat["regions"], counts,
-            items_by_country, cooccurrence, window_days=window_days,
-            timeline=timeline,
+        from dalila.ingestors.prediction_markets import (
+            get_market_signals, tracked_market_count,
         )
-        (out_dir / "countries.html").write_text(countries_html, encoding="utf-8")
-    except Exception:
-        log.exception("publish-site: countries page generation failed")
-
-    try:
-        from dalila.ingestors.prediction_markets import get_market_signals
         with db.connect() as conn:
-            markets_data = get_market_signals(conn, top_n=30)
-        markets_html = render_markets(markets_data)
+            markets_data = get_market_signals(conn, top_n=30, live_only=True)
+            tracked = tracked_market_count(conn)
+        markets_html = render_markets(markets_data, tracked_count=tracked)
         (out_dir / "markets.html").write_text(markets_html, encoding="utf-8")
     except Exception:
         log.exception("publish-site: markets page generation failed")
+
+    # Countries is the heaviest page (a window scan + JSON parse over the whole
+    # items table). It runs LAST and OUT-OF-PROCESS with a hard wall-clock
+    # timeout. A subprocess (not a thread) is deliberate: on timeout the OS kills
+    # the child and reclaims its memory + DB connection — a hung thread would
+    # leak on the 1GB VM, and run_publish_site runs in-process inside the
+    # long-lived bot (scheduler._publish_site_hook) as well as via cron, so an
+    # unkillable in-process hang would wedge the bot (the failure that stranded
+    # the site for hours). The core publish (digest/index/archive) and markets
+    # are already on disk above, so a slow or killed countries render can never
+    # strand them; the previous countries.html is left in place on failure.
+    # db.country_aggregates makes the normal run a single fast pass; the timeout
+    # is the backstop against a future regression.
+    import os as _os
+    import subprocess as _sp
+    import sys as _sys
+    if _os.getenv("DALILA_PUBLISH_SKIP_COUNTRIES") == "1":
+        log.info("publish-site: countries page skipped (DALILA_PUBLISH_SKIP_COUNTRIES=1)")
+    else:
+        budget = int(_os.getenv("DALILA_COUNTRIES_TIMEOUT_SECS", "180"))
+        try:
+            proc = _sp.run(
+                [_sys.executable, "-m", "dalila", "publish-countries", "--out", str(out_dir)],
+                timeout=budget, capture_output=True, text=True,
+            )
+            if proc.returncode != 0:
+                log.error("publish-site: countries render exited %d: %s",
+                          proc.returncode,
+                          (proc.stderr or proc.stdout or "").strip()[-500:])
+            else:
+                log.info("publish-site: countries page rendered (subprocess)")
+        except _sp.TimeoutExpired:
+            log.error("publish-site: countries render exceeded %ds — child killed; "
+                      "leaving previous countries.html in place", budget)
+        except Exception:
+            log.exception("publish-site: countries page generation failed")
 
     live_pages = [
         str(out_dir / "index.html"),
@@ -1224,7 +1333,9 @@ def run_regenerate_markets_page(out_dir: "Path | None" = None) -> bool:
     from pathlib import Path as _Path
     from datetime import datetime, timezone
     from dalila.html_digest import render_markets
-    from dalila.ingestors.prediction_markets import get_market_signals
+    from dalila.ingestors.prediction_markets import (
+        get_market_signals, tracked_market_count,
+    )
 
     if out_dir is None:
         out_dir = _Path(
@@ -1237,11 +1348,13 @@ def run_regenerate_markets_page(out_dir: "Path | None" = None) -> bool:
 
     try:
         with db.connect() as conn:
-            markets_data = get_market_signals(conn, top_n=30)
-        markets_html = render_markets(markets_data)
+            markets_data = get_market_signals(conn, top_n=30, live_only=True)
+            tracked = tracked_market_count(conn)
+        markets_html = render_markets(markets_data, tracked_count=tracked)
         markets_path = out_dir / "markets.html"
         markets_path.write_text(markets_html, encoding="utf-8")
-        log.info("markets page regenerated (%d signals)", len(markets_data))
+        log.info("markets page regenerated (%d live of %d tracked)",
+                 len(markets_data), tracked)
     except Exception:
         log.exception("run_regenerate_markets_page failed")
         return False

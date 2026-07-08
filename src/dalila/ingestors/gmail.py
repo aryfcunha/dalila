@@ -51,8 +51,8 @@ def fetch(src: dict) -> list[RawItem]:
     user = os.getenv("GMAIL_USER") or ""
     password = os.getenv("GMAIL_APP_PASSWORD") or ""
     if not user or not password:
-        log.info("Gmail ingestor skipped: GMAIL_USER or GMAIL_APP_PASSWORD not set")
-        return []
+        from dalila.ingestors.base import SourceSkipped
+        raise SourceSkipped("GMAIL_USER / GMAIL_APP_PASSWORD not set")
 
     mailbox = os.getenv("GMAIL_LABEL") or "INBOX"
     window_days = int(src.get("window_days", 1))

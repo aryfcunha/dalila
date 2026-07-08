@@ -11,6 +11,14 @@ from dalila.models import RawItem
 log = logging.getLogger(__name__)
 
 
+class SourceSkipped(RuntimeError):
+    """An ingestor deliberately did nothing this pass — e.g. no API key is
+    configured. Distinct from a genuine failure: run_ingest records it as a
+    `skipped: <reason>` last_error, so a keyless skip is separable from a real
+    break AND from a healthy source that simply had no new items (the silent-
+    failure class the source-health audit flagged)."""
+
+
 def iter_enabled_sources() -> Iterator[dict]:
     for src in load_sources():
         if src.get("enabled", True):
@@ -26,6 +34,9 @@ def ingest_source(src: dict) -> list[RawItem]:
     if kind == "scrape":
         from dalila.ingestors import scrape
         return scrape.fetch(src)
+    if kind == "sitemap":
+        from dalila.ingestors import sitemap
+        return sitemap.fetch(src)
     if kind == "gdelt":
         from dalila.ingestors import gdelt
         return gdelt.fetch(src)

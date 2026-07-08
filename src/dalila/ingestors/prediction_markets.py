@@ -35,8 +35,29 @@ log = logging.getLogger(__name__)
 
 # ── constants ──────────────────────────────────────────────────────────────────
 MANIFOLD_BASE = "https://api.manifold.markets/v0"
-KALSHI_BASE   = "https://external-api.kalshi.com/trade-api/v2"
+# Kalshi's public read API. `api.elections.kalshi.com` is the current canonical
+# host; `external-api.kalshi.com` is kept as a fallback (both answer today).
+KALSHI_BASES  = [
+    "https://api.elections.kalshi.com/trade-api/v2",
+    "https://external-api.kalshi.com/trade-api/v2",
+]
+KALSHI_BASE   = KALSHI_BASES[0]  # back-compat alias
 SETTINGS_PATH = Path(__file__).parents[3] / "prediction_markets.yaml"
+
+# Curated Kalshi series tickers — Kalshi has no full-text search, and its open
+# feed is dominated by elections + sports (e.g. a World-Cup-2026 flood) with the
+# liquid markets buried, so blind paging is useless. We pull markets by series
+# instead. These are the geopolitics / oil / macro series relevant to the UAE
+# lens; override via prediction_markets.yaml → discovery.kalshi_series.
+_KALSHI_SERIES = [
+    "KXWTI",          # WTI crude oil price (daily mover, direct UAE/OPEC signal)
+    "KXFED",          # Fed funds rate
+    "KXFEDDECISION",  # Fed rate decision
+    "KXCPI",          # US CPI / inflation
+    "KXISRAELPM",     # Prime Minister of Israel
+    "KXU3MAX",        # US unemployment ceiling
+    "KXGDPYEAR",      # US GDP growth
+]
 
 _UA = {"User-Agent": "Dalila/0.1 (UAE intelligence digest; +https://github.com/aryfcunha/dalila)"}
 
@@ -207,67 +228,231 @@ def _refresh_manifold_prob(slug: str) -> tuple[float | None, float | None]:
 
 
 # ── Kalshi API ─────────────────────────────────────────────────────────────────
+def _kalshi_get(path: str, timeout: int = 10) -> dict:
+    """GET a Kalshi path, trying each base host until one answers."""
+    last_exc: Exception | None = None
+    for base in KALSHI_BASES:
+        try:
+            data = _http_get(base + path, timeout=timeout)
+            return data if isinstance(data, dict) else {}
+        except Exception as exc:  # noqa: BLE001 — try next host
+            last_exc = exc
+    if last_exc is not None:
+        raise last_exc
+    return {}
+
+
+def _f(d: dict, *keys) -> float | None:
+    """First parseable float among `keys` in dict `d` (Kalshi mixes str/num)."""
+    for k in keys:
+        v = d.get(k)
+        if v is not None:
+            try:
+                return float(v)
+            except (TypeError, ValueError):
+                continue
+    return None
+
+
+def _kalshi_prob(m: dict) -> float | None:
+    """Implied YES probability from a Kalshi market object.
+
+    Kalshi migrated its fields to `*_dollars` (already 0–1) / `*_fp`; the old
+    integer-cent fields (`yes_bid`, `last_price`) are gone, which is why the
+    previous reader always got None. We prefer the YES bid/ask midpoint, derive
+    it from the NO side when only that is quoted, then fall back to last price,
+    and finally to the legacy cent fields for safety.
+    """
+    yb = _f(m, "yes_bid_dollars")
+    ya = _f(m, "yes_ask_dollars")
+    if yb is None and ya is None:
+        nb = _f(m, "no_bid_dollars")
+        na = _f(m, "no_ask_dollars")
+        if na is not None:
+            yb = 1.0 - na          # yes_bid = 1 - no_ask
+        if nb is not None:
+            ya = 1.0 - nb          # yes_ask = 1 - no_bid
+    if yb is not None and ya is not None:
+        return max(0.0, min(1.0, (yb + ya) / 2.0))
+    lp = _f(m, "last_price_dollars")
+    if lp is not None:
+        return max(0.0, min(1.0, lp))
+    # Legacy cent fields (pre-migration), just in case a host still serves them.
+    yb, ya, lp = m.get("yes_bid"), m.get("yes_ask"), m.get("last_price")
+    if yb is not None and ya is not None:
+        return (yb + ya) / 200.0
+    if lp is not None:
+        return lp / 100.0
+    return None
+
+
+def _kalshi_open_interest(m: dict) -> float:
+    """Open interest (contracts) — our liquidity proxy for Kalshi.
+
+    `volume` is unreliable / absent on the series-filtered endpoint, but open
+    interest is consistently populated and is a sound proxy for how live a
+    market is."""
+    return _f(m, "open_interest_fp", "open_interest") or 0.0
+
+
 def _refresh_kalshi_prob(ticker: str) -> tuple[float | None, float | None]:
-    """Fetch latest (probability, volume) for a known Kalshi market/event ticker."""
-    for url in [
-        f"{KALSHI_BASE}/markets/{ticker.upper()}",
-        f"{KALSHI_BASE}/events/{ticker.upper()}?with_nested_markets=true",
+    """Fetch latest (probability, open_interest) for a known Kalshi ticker."""
+    for path in [
+        f"/markets/{ticker.upper()}",
+        f"/events/{ticker.upper()}?with_nested_markets=true",
     ]:
         try:
-            data = _http_get(url, timeout=8)
-            market = data.get("market") or {}
-            if not market:
-                markets = data.get("event", {}).get("markets", [])
-                market = markets[0] if markets else {}
-            yb  = market.get("yes_bid")
-            ya  = market.get("yes_ask")
-            lp  = market.get("last_price")
-            vol = market.get("volume")
-            if yb is not None and ya is not None:
-                return (yb + ya) / 200.0, vol
-            if lp is not None:
-                return lp / 100.0, vol
+            data = _kalshi_get(path, timeout=8)
         except Exception:
             continue
+        market = data.get("market") or {}
+        if not market:
+            markets = (data.get("event") or {}).get("markets") or data.get("markets") or []
+            market = markets[0] if markets else {}
+        if not market:
+            continue
+        prob = _kalshi_prob(market)
+        if prob is not None:
+            return prob, _kalshi_open_interest(market)
     return None, None
+
+
+def _search_kalshi(
+    series_tickers: list[str],
+    *,
+    min_open_interest: float = 0.0,
+    per_series_keep: int = 3,
+    max_months_out: int = 18,
+    limit_per_series: int = 100,
+) -> list[dict]:
+    """Discover liquid-ish Kalshi markets from a curated set of series tickers.
+
+    For each series we pull its open markets, keep the most-active ones by open
+    interest (Kalshi's reliable liquidity signal), and drop long-dated contracts
+    that won't move day-to-day. Errors on one series never sink the others.
+    """
+    now = datetime.now(timezone.utc)
+    cutoff = now + timedelta(days=30 * max_months_out)
+    out: list[dict] = []
+
+    for st in series_tickers:
+        try:
+            data = _kalshi_get(
+                f"/markets?series_ticker={urllib.parse.quote(st)}"
+                f"&status=open&limit={limit_per_series}",
+                timeout=8,
+            )
+        except Exception as exc:
+            log.debug("kalshi series %s failed: %s", st, exc)
+            continue
+
+        candidates: list[tuple[float, dict]] = []
+        for m in (data.get("markets") or []):
+            prob = _kalshi_prob(m)
+            if prob is None:
+                continue
+            oi = _kalshi_open_interest(m)
+            if oi < min_open_interest:
+                continue
+            # Drop long-dated contracts (won't be daily movers).
+            close = m.get("close_time") or m.get("expiration_time")
+            if close:
+                try:
+                    cdt = datetime.fromisoformat(close.replace("Z", "+00:00"))
+                    if cdt > cutoff:
+                        continue
+                except Exception:
+                    pass
+            ticker = m.get("ticker")
+            if not ticker:
+                continue
+            title = (m.get("title") or "").strip()
+            sub = (m.get("yes_sub_title") or m.get("subtitle") or "").strip()
+            question = title
+            if sub and sub.lower() not in title.lower():
+                question = f"{title} — {sub}" if title else sub
+            # Same long-term-year guard as Manifold.
+            if re.findall(r"\b20[3-9][0-9]\b", question):
+                continue
+            event_ticker = m.get("event_ticker") or ticker
+            candidates.append((oi, {
+                "source":      "kalshi",
+                "market_id":   ticker,
+                "question":    question or ticker,
+                "probability": prob,
+                "volume":      oi,
+                "url":         f"https://kalshi.com/markets/{event_ticker}",
+            }))
+
+        # Keep the most active markets per series so one series can't flood the
+        # pool with dozens of dead strike-ladder rungs.
+        candidates.sort(key=lambda x: x[0], reverse=True)
+        out.extend(m for _, m in candidates[:per_series_keep])
+
+    return out
 
 
 # ── Polymarket API ─────────────────────────────────────────────────────────────
 POLYMARKET_GAMMA = "https://gamma-api.polymarket.com/events"
 
-def _search_polymarket(query: str, limit: int = 5) -> list[dict]:
-    """Search for Polymarket events via Gamma API."""
+def _search_polymarket(query: str, limit: int = 5, min_vol: float = 0.0) -> list[dict]:
+    """Search for liquid binary Polymarket markets via the Gamma API.
+
+    Polymarket is the best-fit liquid, daily-moving source for the geopolitics /
+    oil / MENA lens, but the Gamma host is geo-blocked from some networks (it
+    refuses the TLS connection), so callers must treat an empty list as "either
+    no results or unreachable" and degrade gracefully.
+    """
     try:
-        url = f"{POLYMARKET_GAMMA}?active=true&q={urllib.parse.quote(query)}&limit={limit}"
-        data = _http_get(url, timeout=10)
+        url = (
+            f"{POLYMARKET_GAMMA}?active=true&closed=false"
+            f"&q={urllib.parse.quote(query)}&limit={limit}"
+        )
+        data = _http_get(url, timeout=8)
         results = []
         for event in (data if isinstance(data, list) else []):
-            markets = event.get("markets", [])
-            if not markets: continue
-            
-            # Polymarket events can have multiple markets; we take the first binary one
-            m = markets[0]
-            if m.get("marketType") != "normal": continue # only binary for now
-            
-            # outcomePrices is often a string of a JSON list like '["0.50", "0.50"]'
-            prices = m.get("outcomePrices")
-            if isinstance(prices, str):
-                try:
-                    prices = json.loads(prices)
-                except Exception:
-                    continue
-            
-            if not isinstance(prices, list) or len(prices) < 1:
+            markets = event.get("markets") or []
+            if not markets:
                 continue
-
-            prob = float(prices[0]) # Assuming first is 'Yes'
+            # An event can bundle several markets; take the most liquid binary one.
+            best = None
+            best_vol = -1.0
+            for m in markets:
+                # A binary market has exactly two outcomes ("Yes"/"No"). Gamma
+                # doesn't reliably set `marketType`, so detect by outcome count
+                # rather than gating on it (the old `== "normal"` check dropped
+                # everything).
+                prices = m.get("outcomePrices")
+                if isinstance(prices, str):
+                    try:
+                        prices = json.loads(prices)
+                    except Exception:
+                        continue
+                if not isinstance(prices, list) or len(prices) != 2:
+                    continue
+                vol = float(m.get("volumeNum") or m.get("volume") or 0)
+                if vol > best_vol:
+                    best, best_vol = (m, prices), vol
+            if best is None:
+                continue
+            m, prices = best
+            if best_vol < min_vol:
+                continue
+            question = m.get("question") or event.get("title") or ""
+            if re.findall(r"\b20[3-9][0-9]\b", question):
+                continue
+            try:
+                prob = float(prices[0])  # first outcome = 'Yes'
+            except (TypeError, ValueError):
+                continue
+            slug = event.get("slug")
             results.append({
                 "source":      "polymarket",
-                "market_id":   m["id"],
-                "question":    m.get("question") or event.get("title"),
+                "market_id":   str(m.get("id") or m.get("conditionId") or slug),
+                "question":    question,
                 "probability": prob,
-                "volume":      float(m.get("volumeNum") or 0),
-                "url":         f"https://polymarket.com/event/{event['slug']}",
+                "volume":      best_vol,
+                "url":         f"https://polymarket.com/event/{slug}" if slug else "https://polymarket.com",
             })
         return results
     except Exception as exc:
@@ -291,6 +476,20 @@ def _refresh_polymarket_prob(market_id: str) -> tuple[float | None, float | None
 
 # ── Metaforecast API (Metaculus Fallback) ──────────────────────────────────────
 METAFORECAST_API = "https://metaforecast.org/api/graphql"
+
+
+def _metaforecast_ping() -> bool:
+    """Network-reachability probe for Metaforecast. Returns True if the host
+    answers at all (even a GraphQL error body counts — that just means the
+    search resolver is degraded, not that the network is dead); raises on a
+    transport-level failure so the caller can skip the source this cycle."""
+    body = json.dumps({"query": "{ __typename }"}).encode("utf-8")
+    req = urllib.request.Request(
+        METAFORECAST_API, data=body,
+        headers={"Content-Type": "application/json", **_UA},
+    )
+    with urllib.request.urlopen(req, timeout=6) as resp:
+        return resp.status < 500 or True  # any HTTP response = reachable
 
 def _search_metaforecast(query: str, platforms: list[str] = ["metaculus"], limit: int = 5) -> list[dict]:
     """Search for forecasts across multiple platforms via Metaforecast GraphQL."""
@@ -477,13 +676,37 @@ def _extract_news_seeds(
 
 
 # ── Market discovery ──────────────────────────────────────────────────────────
+def _reachable(name: str, probe) -> bool:
+    """Cheap one-shot reachability check so a blocked/down source is skipped for
+    the whole cycle instead of failing once per seed (Polymarket is geo-blocked
+    from some networks; Metaforecast's search has been 500-ing upstream)."""
+    try:
+        probe()
+        return True
+    except Exception as exc:
+        log.info("prediction markets: %s unreachable this cycle (%s) — skipping",
+                 name, exc.__class__.__name__)
+        return False
+
+
 def discover_markets(conn: sqlite3.Connection) -> list[dict]:
-    """Discover markets by searching anchor seeds + dynamic news-derived seeds.
+    """Discover markets across all reachable sources, anchored to the UAE lens.
+
+    Sources:
+      * Manifold  — keyword search per seed (on-topic but low-liquidity).
+      * Polymarket — keyword search per seed (liquid, daily-moving; geo-blocked
+        on some networks, so degrades to nothing when unreachable).
+      * Kalshi    — curated geopolitics/oil/macro series (no full-text search).
+      * Metaforecast/Metaculus — keyword search per seed (forecasts; upstream
+        search is currently flaky, so also degrades gracefully).
 
     Permanent anchor seeds keep results grounded in the UAE / humanitarian /
     development lens. Dynamic seeds are extracted from recent high-UAE-relevance
-    classified items so the watchlist evolves with the news cycle (new crises,
-    summits, aid programmes) without drifting toward unrelated US-political noise.
+    classified items so the watchlist evolves with the news cycle.
+
+    Each source is independent: one being blocked, down, or empty never starves
+    the others, and results are merged round-robin so the pool keeps a healthy
+    cross-source mix rather than collapsing to whichever source is most liquid.
     """
     anchor_seeds: list[str] = _s("discovery.domain_seeds", _DOMAIN_SEEDS)
     news_seeds = _extract_news_seeds(conn)
@@ -493,30 +716,88 @@ def discover_markets(conn: sqlite3.Connection) -> list[dict]:
     seeds = list(anchor_seeds) + extra_seeds
 
     max_markets = int(_s("discovery.max_markets", 50))
+    min_vol     = float(_s("discovery.min_volume", 500))
+    src_cfg     = _s("discovery.sources", {}) or {}
+
+    def _on(name: str) -> bool:
+        return bool(src_cfg.get(name, True))
+
+    # per-source accumulator: source -> {market_id -> dict}
+    pools: dict[str, dict[str, dict]] = {
+        s: {} for s in ("manifold", "polymarket", "kalshi", "metaculus")
+    }
+
+    def _add(m: dict) -> None:
+        src = m.get("source")
+        bucket = pools.setdefault(src, {})
+        mid = m["market_id"]
+        if mid not in bucket:
+            bucket[mid] = m
+        else:
+            bucket[mid]["_relevance_score"] = bucket[mid].get("_relevance_score", 1) + 1
+
+    # Pre-flight the network-fragile sources once so we don't pay a failure per
+    # seed when they're blocked/down.
+    poly_on = _on("polymarket") and _reachable(
+        "polymarket",
+        lambda: _http_get(f"{POLYMARKET_GAMMA}?limit=1&active=true", timeout=6),
+    )
+    meta_on = _on("metaforecast") and _reachable(
+        "metaforecast", _metaforecast_ping,
+    )
+
+    # Per-seed keyword sources.
+    for seed in seeds:
+        if _on("manifold"):
+            for m in _search_manifold(seed, limit=5, min_vol=min_vol):
+                _add(m)
+        if poly_on:
+            for m in _search_polymarket(seed, limit=5, min_vol=min_vol):
+                _add(m)
+        if meta_on:
+            for m in _search_metaforecast(seed, limit=5):
+                _add(m)
+
+    # Kalshi: one curated-series sweep, not per-seed.
+    if _on("kalshi"):
+        series = _s("discovery.kalshi_series", _KALSHI_SERIES)
+        for m in _search_kalshi(
+            series,
+            min_open_interest=float(_s("discovery.kalshi_min_open_interest", 0)),
+            per_series_keep=int(_s("discovery.kalshi_per_series", 3)),
+        ):
+            _add(m)
+
+    # Rank within each source (multi-seed matches first, then liquidity).
+    ranked_by_source: dict[str, list[dict]] = {
+        src: sorted(bucket.values(),
+                    key=lambda x: (x.get("_relevance_score", 1), x.get("volume", 0)),
+                    reverse=True)
+        for src, bucket in pools.items() if bucket
+    }
+
+    # Round-robin merge for a cross-source mix; leftovers fill any remaining slots.
+    merged: list[dict] = []
+    order = [s for s in ("manifold", "polymarket", "kalshi", "metaculus")
+             if s in ranked_by_source]
+    i = 0
+    while len(merged) < max_markets and any(ranked_by_source.values()):
+        src = order[i % len(order)] if order else None
+        i += 1
+        if src and ranked_by_source.get(src):
+            merged.append(ranked_by_source[src].pop(0))
+        if i > max_markets * len(order) + 10:  # safety bound
+            break
 
     log.info(
-        "prediction markets: discovering markets for %d seeds "
-        "(%d anchors + %d from recent news)",
+        "prediction markets: discovered %d markets across %s "
+        "(%d seeds: %d anchors + %d news)",
+        len(merged),
+        {s: len(b) for s, b in ranked_by_source.items()} or
+        {s: len(p) for s, p in pools.items() if p},
         len(seeds), len(anchor_seeds), len(extra_seeds),
     )
-
-    seen: dict[str, dict] = {}  # market_id -> dict
-
-    for seed in seeds:
-        for m in _search_manifold(seed, limit=5, min_vol=500.0):
-            mid = m["market_id"]
-            if mid not in seen:
-                seen[mid] = m
-            else:
-                seen[mid]["_relevance_score"] = seen[mid].get("_relevance_score", 1) + 1
-
-    # Rank: markets matching multiple seeds first, then by volume
-    ranked = sorted(
-        seen.values(),
-        key=lambda x: (x.get("_relevance_score", 1), x.get("volume", 0)),
-        reverse=True,
-    )
-    return ranked[:max_markets]
+    return merged[:max_markets]
 
 
 # ── DB helpers ─────────────────────────────────────────────────────────────────
@@ -554,6 +835,161 @@ def _upsert(conn: sqlite3.Connection, m: dict, prob: float,
            VALUES (?, ?, ?, ?, ?, ?)""",
         (m["market_id"], m["source"], prob, d1h, d24h, now),
     )
+
+
+# ── Historical backfill ─────────────────────────────────────────────────────
+# Both APIs expose free, no-auth historical series (verified live from the UAE
+# host). This recovers the 2026-05-14→06-25 history gap (caused by the url-column
+# crash, fixed by migration 007) so 30m/24h/1w deltas populate immediately
+# instead of taking a week to re-accumulate. Deltas are stored NULL —
+# get_market_signals recomputes them on read.
+
+def _manifold_contract_id(slug: str) -> str | None:
+    """Resolve a Manifold slug → contractId (the /v0/bets cursor key)."""
+    try:
+        data = _http_get(f"{MANIFOLD_BASE}/slug/{urllib.parse.quote(slug)}", timeout=8)
+        return data.get("id") if isinstance(data, dict) else None
+    except Exception:
+        return None
+
+
+def _backfill_manifold_market(slug: str, since_ms: int) -> list[tuple[float, str]]:
+    """[(probability, recorded_at_iso)] from a market's bet history, back to
+    since_ms. /v0/bets returns newest-first; page older via before=<last id>."""
+    cid = _manifold_contract_id(slug)
+    if not cid:
+        return []
+    out: list[tuple[float, str]] = []
+    before: str | None = None
+    for _ in range(50):  # safety cap: 50 * 1000 bets
+        url = f"{MANIFOLD_BASE}/bets?contractId={urllib.parse.quote(cid)}&limit=1000"
+        if before:
+            url += f"&before={urllib.parse.quote(before)}"
+        try:
+            bets = _http_get(url, timeout=20)
+        except Exception as exc:
+            log.debug("manifold bets fetch failed for %s: %s", slug, exc)
+            break
+        if not isinstance(bets, list) or not bets:
+            break
+        for b in bets:
+            ts = b.get("createdTime")
+            pa = b.get("probAfter")
+            if ts is None or pa is None:
+                continue
+            if ts < since_ms:
+                return out  # newest-first → everything beyond here is older
+            out.append((float(pa), datetime.fromtimestamp(ts / 1000, tz=timezone.utc).isoformat()))
+        if len(bets) < 1000:
+            break
+        before = bets[-1].get("id")
+        if not before:
+            break
+    return out
+
+
+def _kalshi_candle_prob(c: dict) -> float | None:
+    """Implied YES probability (0–1) from a Kalshi candlestick. Prefers the
+    traded price close, falls back to the yes bid/ask midpoint (all *_dollars)."""
+    pc = (c.get("price") or {}).get("close_dollars")
+    if pc is not None:
+        try:
+            return float(pc)
+        except (TypeError, ValueError):
+            pass
+    vals = []
+    for side in ("yes_bid", "yes_ask"):
+        v = (c.get(side) or {}).get("close_dollars")
+        try:
+            if v is not None:
+                vals.append(float(v))
+        except (TypeError, ValueError):
+            continue
+    return sum(vals) / len(vals) if vals else None
+
+
+def _backfill_kalshi_market(ticker: str, start_ts: int, end_ts: int) -> list[tuple[float, str]]:
+    """[(probability, recorded_at_iso)] from hourly Kalshi candlesticks. The
+    series ticker is the prefix before the first '-' (e.g. KXWTI-26JUN... → KXWTI)."""
+    series = ticker.split("-")[0]
+    path = (
+        f"/series/{urllib.parse.quote(series)}/markets/{urllib.parse.quote(ticker)}"
+        f"/candlesticks?start_ts={start_ts}&end_ts={end_ts}&period_interval=60"
+    )
+    try:
+        data = _kalshi_get(path, timeout=20)
+    except Exception as exc:
+        log.debug("kalshi candlesticks failed for %s: %s", ticker, exc)
+        return []
+    out: list[tuple[float, str]] = []
+    for c in (data.get("candlesticks") or []):
+        ts = c.get("end_period_ts")
+        prob = _kalshi_candle_prob(c)
+        if ts is None or prob is None:
+            continue
+        out.append((prob, datetime.fromtimestamp(int(ts), tz=timezone.utc).isoformat()))
+    return out
+
+
+def backfill_market_history(
+    conn: sqlite3.Connection,
+    *,
+    days: int = 14,
+    source: str | None = None,
+    max_markets: int | None = None,
+) -> dict:
+    """Backfill prediction_market_history for the tracked snapshot markets.
+
+    Idempotent: skips (market_id, source, recorded_at) rows already present, so
+    re-runs are safe. Returns {"markets": n, "inserted": rows, "skipped": n}.
+    """
+    now = datetime.now(timezone.utc)
+    since = now - timedelta(days=days)
+    since_ms = int(since.timestamp() * 1000)
+    start_ts, end_ts = int(since.timestamp()), int(now.timestamp())
+
+    q = "SELECT market_id, source FROM prediction_market_snapshots"
+    params: tuple = ()
+    if source:
+        q += " WHERE source = ?"
+        params = (source,)
+    markets = conn.execute(q, params).fetchall()
+
+    stats = {"markets": 0, "inserted": 0, "skipped": 0}
+    for r in markets:
+        mid, src = r["market_id"], r["source"]
+        if src == "manifold":
+            series = _backfill_manifold_market(mid, since_ms)
+        elif src == "kalshi":
+            series = _backfill_kalshi_market(mid, start_ts, end_ts)
+        else:
+            stats["skipped"] += 1
+            continue
+        if not series:
+            continue
+        stats["markets"] += 1
+        existing = {
+            row["recorded_at"] for row in conn.execute(
+                "SELECT recorded_at FROM prediction_market_history WHERE market_id=? AND source=?",
+                (mid, src),
+            )
+        }
+        for prob, recorded_at in series:
+            if recorded_at in existing:
+                continue
+            conn.execute(
+                "INSERT INTO prediction_market_history "
+                "(market_id, source, probability, delta_1h, delta_24h, recorded_at) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (mid, src, prob, None, None, recorded_at),
+            )
+            existing.add(recorded_at)
+            stats["inserted"] += 1
+        if max_markets and stats["markets"] >= max_markets:
+            break
+        log.info("backfill-markets: %s/%s → %d total rows inserted so far",
+                 src, mid, stats["inserted"])
+    return stats
 
 
 # ── Main poll ─────────────────────────────────────────────────────────────────
@@ -668,21 +1104,65 @@ def _is_duplicate_topic(m1: dict, m2: dict) -> bool:
     return overlap > 0.6
 
 
+def tracked_market_count(conn: sqlite3.Connection) -> int:
+    """How many markets are currently in the snapshot pool (the background set
+    we keep polling, regardless of whether they've moved)."""
+    try:
+        return int(conn.execute(
+            "SELECT COUNT(*) FROM prediction_market_snapshots"
+        ).fetchone()[0])
+    except Exception:
+        return 0
+
+
+def _max_abs_move(m: dict) -> float:
+    """Largest absolute move across the available delta windows (30m/24h/1w).
+    Windows with no baseline (None) are ignored. Returns 0.0 if none exist."""
+    moves = [abs(m[k]) for k in ("delta_30m", "delta_24h", "delta_7d")
+             if m.get(k) is not None]
+    return max(moves) if moves else 0.0
+
+
 def get_market_signals(conn: sqlite3.Connection,
                        digest_items: list[dict] | None = None,
-                       top_n: int | None = None) -> list[dict]:
-    """Return top N market signals scored for today's digest content."""
+                       top_n: int | None = None,
+                       *,
+                       live_only: bool = False,
+                       live_threshold: float | None = None) -> list[dict]:
+    """Return top N market signals scored for today's digest content.
+
+    `live_only` (used by the public website) keeps only markets that actually
+    moved — at least `live_threshold` absolute probability shift in any of the
+    30m / 24h / 1w windows — and ranks them by how much they moved. This stops
+    a pool of static, low-liquidity markets from rendering as a wall of
+    "+0.0%" cards that makes the site look broken. The background pool is left
+    untouched; we just don't surface the quiet ones.
+    """
     if top_n is None:
         top_n = int(_s("digest.top_n", 9))
+    if live_threshold is None:
+        live_threshold = float(_s("display.live_threshold", 0.005))
 
     now = datetime.now(timezone.utc)
-    cutoff_24h  = (now - timedelta(hours=23)).isoformat()
-    cutoff_7d   = (now - timedelta(hours=167)).isoformat()
-    cutoff_30m  = (now - timedelta(minutes=25)).isoformat()
+    # Each window's baseline must be BRACKETED near its nominal age, not merely
+    # "the most recent row at least N old". Without a lower bound, when polling
+    # has been down (e.g. the 2026-05-14→06-25 history gap), the only row that
+    # exists is an ancient pre-gap snapshot — and that single row satisfies the
+    # `recorded_at <= cutoff` test for ALL THREE windows, so p_30m == p_24h ==
+    # p_7d and the deltas collapse to three identical numbers mislabelled as
+    # 30m/24h/1w. The lower bound rejects a baseline that's far older than the
+    # window; if nothing qualifies the delta is reported as None ("--") rather
+    # than computed against stale data. Slack on each side absorbs missed polls.
+    hi_30m = (now - timedelta(minutes=25)).isoformat()
+    lo_30m = (now - timedelta(hours=2)).isoformat()
+    hi_24h = (now - timedelta(hours=23)).isoformat()
+    lo_24h = (now - timedelta(hours=36)).isoformat()
+    hi_7d  = (now - timedelta(hours=167)).isoformat()
+    lo_7d  = (now - timedelta(days=10)).isoformat()
 
     # Use a two-step join (aggregate → history) so we always retrieve the
-    # probability from the exact row with MAX(recorded_at), not an arbitrary
-    # row as SQLite's bare-column aggregation would give.
+    # probability from the exact row with MAX(recorded_at) inside the window's
+    # [lo, hi] bracket, not an arbitrary row as a bare-column aggregation would.
     rows = conn.execute(
         """SELECT s.market_id, s.source, s.question, s.probability, s.volume, s.url,
                   h24.probability as p_24h,
@@ -694,7 +1174,7 @@ def get_market_signals(conn: sqlite3.Connection,
                FROM prediction_market_history h
                INNER JOIN (
                    SELECT market_id, source, MAX(recorded_at) as max_at
-                   FROM prediction_market_history WHERE recorded_at <= ?
+                   FROM prediction_market_history WHERE recorded_at <= ? AND recorded_at >= ?
                    GROUP BY market_id, source
                ) m ON h.market_id = m.market_id AND h.source = m.source AND h.recorded_at = m.max_at
            ) h24 ON h24.market_id = s.market_id AND h24.source = s.source
@@ -703,7 +1183,7 @@ def get_market_signals(conn: sqlite3.Connection,
                FROM prediction_market_history h
                INNER JOIN (
                    SELECT market_id, source, MAX(recorded_at) as max_at
-                   FROM prediction_market_history WHERE recorded_at <= ?
+                   FROM prediction_market_history WHERE recorded_at <= ? AND recorded_at >= ?
                    GROUP BY market_id, source
                ) m ON h.market_id = m.market_id AND h.source = m.source AND h.recorded_at = m.max_at
            ) h7d ON h7d.market_id = s.market_id AND h7d.source = s.source
@@ -712,11 +1192,11 @@ def get_market_signals(conn: sqlite3.Connection,
                FROM prediction_market_history h
                INNER JOIN (
                    SELECT market_id, source, MAX(recorded_at) as max_at
-                   FROM prediction_market_history WHERE recorded_at <= ?
+                   FROM prediction_market_history WHERE recorded_at <= ? AND recorded_at >= ?
                    GROUP BY market_id, source
                ) m ON h.market_id = m.market_id AND h.source = m.source AND h.recorded_at = m.max_at
            ) h30m ON h30m.market_id = s.market_id AND h30m.source = s.source""",
-        (cutoff_24h, cutoff_7d, cutoff_30m),
+        (hi_24h, lo_24h, hi_7d, lo_7d, hi_30m, lo_30m),
     ).fetchall()
 
     scored = []
@@ -744,11 +1224,21 @@ def get_market_signals(conn: sqlite3.Connection,
             shift = 0.0
             
         overlap = _topic_overlap(m, digest_items or [])
+        m["_move"] = _max_abs_move(m)
         m["_score"] = (overlap * 2.0) + (shift * 1.5)
         scored.append(m)
 
-    # Topic Deduplication: Keep only the highest scored market per topic cluster
-    scored.sort(key=lambda x: x["_score"], reverse=True)
+    # Live filter: drop markets that haven't moved meaningfully in any window.
+    if live_only:
+        scored = [m for m in scored if m["_move"] >= live_threshold]
+        # Rank the survivors by how much they moved (liveliest first); the
+        # public page is not tied to a specific digest, so movement — not
+        # topic overlap — is the right ordering there.
+        scored.sort(key=lambda x: (x["_move"], x.get("volume") or 0), reverse=True)
+    else:
+        scored.sort(key=lambda x: x["_score"], reverse=True)
+
+    # Topic Deduplication: Keep only the highest-ranked market per topic cluster
     final = []
     for m in scored:
         if any(_is_duplicate_topic(m, existing) for existing in final):

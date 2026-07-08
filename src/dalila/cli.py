@@ -55,6 +55,13 @@ def main(argv: list[str] | None = None) -> int:
     p_site.add_argument("--out", type=str, default="docs", help="Output directory (default ./docs, matches GitHub Pages source)")
     p_site.add_argument("--push", action="store_true",
                         help="After rendering, commit + push docs/ to origin/main (self-healing git, rebase-on-reject). Use to force an immediate site update outside the scheduler.")
+    p_pc = sub.add_parser(
+        "publish-countries",
+        help="Render only docs/countries.html (heavy; publish-site runs this out-of-process with a hard timeout)",
+    )
+    p_pc.add_argument("--out", type=str, default="docs", help="Output directory (default ./docs)")
+    p_pc.add_argument("--timeline-days", type=int, default=180)
+    p_pc.add_argument("--window-days", type=int, default=90)
     p_back = sub.add_parser("backfill-digests", help="Compose a brief for each of the past N days (one LLM call per day)")
     p_back.add_argument("--days", type=int, default=5, help="How many days back to backfill (default 5)")
     p_back.add_argument("--min-relevance", type=float, default=0.4)
@@ -83,6 +90,11 @@ def main(argv: list[str] | None = None) -> int:
                        help="Cap candidate URLs per sitemap source (default 4000).")
     p_bf.add_argument("--gdelt-step", type=int, default=60,
                        help="GDELT slice cadence in minutes — 60=one per hour (default), 15=full coverage 4x/hr, 240=light sample. Lower = more data, slower.")
+    p_bfm = sub.add_parser("backfill-markets", help="Backfill prediction_market_history from Manifold bet history + Kalshi candlesticks (free, no auth). Recovers real 30m/24h/1w deltas.")
+    p_bfm.add_argument("--days", type=int, default=14, help="How many days of history to pull (default 14)")
+    p_bfm.add_argument("--source", choices=("manifold", "kalshi"), default=None,
+                       help="Only backfill one platform (default: both)")
+    p_bfm.add_argument("--max-markets", type=int, default=None, help="Cap markets processed (default: all tracked)")
     p_doctrine = sub.add_parser("doctrine", help="Run the doctrine extraction pass over pending classified items")
     p_doctrine.add_argument("--limit", type=int, default=20, help="Max items to process this run")
     sub.add_parser("verify-sources", help="Probe every enabled source and report fetched count + sample title")
@@ -172,6 +184,27 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Wrote {out}  ({len(items)} items, {len(html_str):,} bytes)")
         return 0
 
+    if args.cmd == "publish-countries":
+        from pathlib import Path
+        from dalila.config import load_countries
+        from dalila.html_digest import render_countries
+        db.init_db()
+        out_dir = Path(args.out).resolve()
+        out_dir.mkdir(parents=True, exist_ok=True)
+        cat = load_countries()
+        with db.connect() as conn:
+            agg = db.country_aggregates(
+                conn, since_hours=args.timeline_days * 24, items_limit=30,
+            )
+        html_str = render_countries(
+            cat["countries"], cat["regions"], agg["counts"],
+            agg["items_by_country"], agg["cooccurrence"],
+            window_days=args.window_days, timeline=agg["timeline"],
+        )
+        (out_dir / "countries.html").write_text(html_str, encoding="utf-8")
+        print(f"Wrote {out_dir / 'countries.html'}  ({len(agg['counts'])} countries)")
+        return 0
+
     if args.cmd == "publish-site":
         from pathlib import Path
         from dalila.pipeline import run_publish_site
@@ -235,6 +268,18 @@ def main(argv: list[str] | None = None) -> int:
                 print("Committed + pushed docs/ to origin/main.")
             elif os.getenv("DALILA_SITE_GIT_PUSH") != "1":
                 print("Set DALILA_SITE_GIT_PUSH=1 to also commit + push docs/ automatically.")
+        return 0
+
+    if args.cmd == "backfill-markets":
+        from dalila.ingestors.prediction_markets import backfill_market_history
+        db.init_db()
+        with db.connect() as conn:
+            stats = backfill_market_history(
+                conn, days=args.days, source=args.source, max_markets=args.max_markets,
+            )
+        print(f"Market backfill: {stats['inserted']} history row(s) across "
+              f"{stats['markets']} market(s) ({stats['skipped']} unsupported source skipped). "
+              f"Deltas will appear on the next publish-site.")
         return 0
 
     if args.cmd == "backfill":
@@ -317,11 +362,28 @@ def _cmd_check() -> int:
     print(f"Ingest interval:    every {cfg.ingest_interval_minutes} min")
     print(f"Telegram token:     {'set' if cfg.telegram_bot_token else 'MISSING — bot will not start'}")
     print(f"ACLED creds:        {'set (oauth)' if (cfg.acled_username and cfg.acled_password) else 'unset (ACLED ingestion skipped — set ACLED_USERNAME + ACLED_PASSWORD)'}")
-    print(f"ACAPS creds:        {'set' if cfg.acaps_api_key else 'unset (INFORM ingestion skipped — set ACAPS_API_KEY)'}")
+    print(f"ACAPS creds:        {'set (token-auth)' if (cfg.acaps_username and cfg.acaps_password) else 'unset (INFORM skipped — set ACAPS_USERNAME + ACAPS_PASSWORD)'}")
     ok, msg = check_cli_available()
     print(f"Claude CLI:         {'OK' if ok else 'FAIL'} — {msg}")
+
+    import os as _os
+    from dalila.llm import _auto_fallback_enabled, _fallback_cooldown_seconds
+    ds_key = bool(_os.getenv("DEEPSEEK_API_KEY"))
+    if _os.getenv("DALILA_LLM_BACKEND", "").strip().lower() == "deepseek" and ds_key:
+        print("LLM backend:        DeepSeek (forced via DALILA_LLM_BACKEND=deepseek)")
+    elif _auto_fallback_enabled():
+        cd = _fallback_cooldown_seconds() // 60
+        print(f"DeepSeek fallback:  ON — auto-routes on Claude quota/rate-limit (cooldown {cd}m)")
+    elif ds_key:
+        print("DeepSeek fallback:  OFF (key set but DALILA_DEEPSEEK_FALLBACK=0) — Claude-only")
+    else:
+        print("DeepSeek fallback:  unavailable (set DEEPSEEK_API_KEY to enable live redundancy)")
     print()
-    if not ok:
+
+    # The CLI being down is not fatal when a DeepSeek path can serve the live
+    # calls — the bot can still produce briefs.
+    if not ok and not (ds_key and (_auto_fallback_enabled()
+                                   or _os.getenv("DALILA_LLM_BACKEND", "").strip().lower() == "deepseek")):
         return 1
     return 0
 
@@ -465,14 +527,19 @@ def _cmd_bot() -> int:
 
     # Announce the effective LLM routing so the paid path can never be a silent
     # surprise again. Three states: forced-DeepSeek (manual backfill override),
-    # Haiku-primary-with-fallback, or Haiku-only.
+    # Haiku-primary with capacity fallback, or Haiku-only.
     import os as _os
+    _fb_on = _os.getenv("DALILA_DEEPSEEK_FALLBACK", "1").strip().lower() in ("1", "true", "yes", "on")
     if _os.getenv("DALILA_LLM_BACKEND", "").strip().lower() == "deepseek" and _os.getenv("DEEPSEEK_API_KEY"):
         log.warning("LLM backend: DALILA_LLM_BACKEND=deepseek is set — ALL live calls "
                     "go to the PAID DeepSeek API. Unset it to run Haiku ($0 on Max).")
+    elif _os.getenv("DEEPSEEK_API_KEY") and _fb_on:
+        log.info("LLM backend: Haiku via CLI (primary, $0 on Max); DeepSeek fallback armed "
+                 "for Claude capacity errors (quota/rate-limit/overload) so the brief still ships. "
+                 "Disable with DALILA_DEEPSEEK_FALLBACK=0.")
     elif _os.getenv("DEEPSEEK_API_KEY"):
-        log.info("LLM backend: Haiku via CLI (primary, $0 on Max); DeepSeek fallback "
-                 "armed for hard CLI failures only (rate-limits back off on Haiku).")
+        log.info("LLM backend: Haiku via CLI only ($0 on Max); DeepSeek key present but "
+                 "fallback OFF (DALILA_DEEPSEEK_FALLBACK=0).")
     else:
         log.info("LLM backend: Haiku via CLI only ($0 on Max); no DeepSeek fallback configured.")
 

@@ -58,6 +58,72 @@ DEFAULT_HEADERS = {
 
 # XML namespace used by every sitemap protocol implementation.
 _NS = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+# Google News sitemap extension — carries <news:title> + <news:publication_date>
+# so we get real headlines + dates straight from the sitemap, no per-article fetch.
+_NEWS_NS = {
+    "sm": "http://www.sitemaps.org/schemas/sitemap/0.9",
+    "news": "http://www.google.com/schemas/sitemap-news/0.9",
+}
+
+
+def fetch(src: dict) -> list[RawItem]:
+    """LIVE ingestor for a Google-News-style sitemap (e.g. WAM).
+
+    Reads the current month's news sitemap and emits one RawItem per <url>,
+    taking the headline from <news:news><news:title> and the date from
+    <news:publication_date> (falling back to <lastmod> / the URL slug). NO
+    per-article HTTP fetch — one GET per poll. Only entries newer than
+    `recent_hours` (default 48) are emitted so each poll stays small; url_hash
+    dedup drops anything already ingested.
+
+    sources.yaml wiring:
+        kind: sitemap
+        url: https://www.wam.ae/sitemap/news/en/{year}/{month}/english.xml
+    The {year}/{month} placeholders are expanded to the current month here.
+    """
+    url_tmpl = (src.get("url") or "").strip()
+    if not url_tmpl:
+        log.info("sitemap %s: no url", src.get("id"))
+        return []
+    now = datetime.now(timezone.utc)
+    url = url_tmpl.format(year=now.year, month=now.month) if "{year}" in url_tmpl else url_tmpl
+
+    blob = _http_get(url)
+    if blob is None:
+        log.info("sitemap %s: %s unreachable", src.get("id"), url)
+        return []
+    root = _parse_xml(blob)
+    if root is None:
+        return []
+
+    recent_hours = int(src.get("recent_hours", 48))
+    cutoff = now - timedelta(hours=recent_hours)
+    out: list[RawItem] = []
+    for url_el in root.iter("{http://www.sitemaps.org/schemas/sitemap/0.9}url"):
+        loc = url_el.findtext("sm:loc", default="", namespaces=_NS).strip()
+        if not loc:
+            continue
+        title = (url_el.findtext("news:news/news:title", default="", namespaces=_NEWS_NS) or "").strip()
+        pub_dt = (
+            _parse_lastmod(url_el.findtext("news:news/news:publication_date", default="", namespaces=_NEWS_NS))
+            or _parse_lastmod(url_el.findtext("sm:lastmod", default="", namespaces=_NS))
+            or _date_from_url(loc)
+        )
+        if pub_dt and pub_dt < cutoff:
+            continue
+        if not title:
+            title = loc.rstrip("/").rsplit("/", 1)[-1].replace("-", " ").replace("_", " ").strip()
+        if not title:
+            continue
+        out.append(RawItem(
+            source_id=src["id"],
+            title=title[:300],
+            url=loc,
+            body=None,
+            published_at=pub_dt,
+        ))
+    log.info("sitemap %s: %d recent item(s) from %s", src.get("id"), len(out), url)
+    return out
 
 
 # ---------------------------------------------------------------------------

@@ -6,13 +6,19 @@ The five named tiers sit at integer boundaries (Very Low / Low /
 Medium / High / Very High at 1 / 2 / 3 / 4). Half-a-point movements
 correspond to one tier-crossing and are surfaced in the brief.
 
-Auth: ACAPS_API_KEY env var (free public registration at api.acaps.org).
-Without a key, the ingestor silently returns []. Same shape as `cast.py`.
+Auth (verified 2026-06-26): token-exchange. POST username+password to
+https://api.acaps.org/api/v1/token-auth/ → {"token": ...}; send it as
+`Authorization: Token <token>`. Set ACAPS_USERNAME + ACAPS_PASSWORD; missing
+creds → SourceSkipped.
 
-CAUTION: ACAPS revised their API in 2025–2026. Endpoint paths and field
-names below are inferred from their public tutorials. If the actual
-response differs, the ingestor logs the keys it saw — adjust the field
-extraction in `_extract_rows` and the score lookup accordingly.
+API quirks (verified against the live endpoint):
+- /api/v1/inform-severity-index/ 302-redirects to the current month
+  (e.g. .../Jun2026/). Follow it.
+- It REJECTS unknown query params with HTTP 404 ("Field X is not valid") —
+  do NOT send `_format` or `limit`. Paginate via the DRF `next` URL.
+- Scale is **0–10** (`INFORM Severity Index`, e.g. 9.5), NOT 0–5. There is a
+  separate `INFORM Severity category (numeric)` 1–5 tier field.
+- `iso3` and `country` are LISTS (e.g. ["AFG"], ["Afghanistan"]).
 """
 
 from __future__ import annotations
@@ -32,12 +38,37 @@ from dalila.models import RawItem
 
 log = logging.getLogger(__name__)
 
-# Public API root. The severity dataset lives at /api/v1/inform-severity-index/
-# or /api/v1/inform-risk/ depending on which product ACAPS exposes.
-# We try the severity endpoint first since that's the documented public one.
+ACAPS_TOKEN_URL = "https://api.acaps.org/api/v1/token-auth/"
 INFORM_URL = "https://api.acaps.org/api/v1/inform-severity-index/"
-INFORM_DELTA_THRESHOLD = 0.5     # one tier-crossing on the 0–5 scale
+INFORM_DELTA_THRESHOLD = 1.0     # a full point on the 0–10 INFORM Severity Index
 SOURCE_ID = "inform"
+_MAX_PAGES = 30                  # safety cap on DRF pagination (≈ thousands of rows)
+
+# In-process token cache (mirrors acled.py). Token is exchanged once per process.
+_token_cache: dict = {"token": None}
+
+
+def _get_acaps_token() -> str | None:
+    """Exchange ACAPS username/password for an API token (cached in-process).
+    Returns None if creds are missing or the exchange fails."""
+    if _token_cache["token"]:
+        return _token_cache["token"]
+    cfg = get_config()
+    if not cfg.acaps_username or not cfg.acaps_password:
+        return None
+    try:
+        resp = httpx.post(
+            ACAPS_TOKEN_URL,
+            data={"username": cfg.acaps_username, "password": cfg.acaps_password},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        token = resp.json().get("token")
+    except Exception as exc:
+        log.warning("ACAPS token-auth failed: %s", exc)
+        return None
+    _token_cache["token"] = token
+    return token
 
 
 def _extract_rows(payload) -> list[dict]:
@@ -54,8 +85,9 @@ def _extract_rows(payload) -> list[dict]:
 
 
 def _extract_score(row: dict) -> float | None:
-    """Locate the severity score across the schema variants we've seen."""
-    for key in ("severity_index", "inform_severity_index",
+    """The 0–10 INFORM Severity Index. The live field is 'INFORM Severity Index'
+    (with spaces); the snake_case fallbacks cover any future shape change."""
+    for key in ("INFORM Severity Index", "severity_index", "inform_severity_index",
                 "current_severity", "severity_score", "score", "value"):
         raw = row.get(key)
         if raw is None:
@@ -67,9 +99,17 @@ def _extract_score(row: dict) -> float | None:
     return None
 
 
+def _first(v):
+    """ACAPS returns iso3/country as lists; take the first element."""
+    if isinstance(v, list):
+        return v[0] if v else None
+    return v
+
+
 def _month_label(row: dict) -> str:
     raw = (
-        row.get("date") or row.get("observation_date")
+        row.get("Last updated") or row.get("_internal_filter_date")
+        or row.get("date") or row.get("observation_date")
         or row.get("month") or row.get("updated_at") or ""
     )
     if not raw:
@@ -82,32 +122,35 @@ def _month_label(row: dict) -> str:
 
 def fetch(src: dict) -> list[RawItem]:
     cfg = get_config()
-    api_key = getattr(cfg, "acaps_api_key", None)
-    if not api_key:
-        log.info("INFORM skipped: ACAPS_API_KEY not set")
-        return []
+    if not cfg.acaps_username or not cfg.acaps_password:
+        from dalila.ingestors.base import SourceSkipped
+        raise SourceSkipped("ACAPS_USERNAME / ACAPS_PASSWORD not set")
+    token = _get_acaps_token()
+    if not token:
+        # Creds present but token exchange failed → a real error, not a skip.
+        raise RuntimeError("ACAPS token-auth failed (check ACAPS_USERNAME/PASSWORD)")
 
+    headers = {"Authorization": f"Token {token}", "Accept": "application/json"}
+    rows: list[dict] = []
+    url = INFORM_URL   # 302-redirects to the current month; no query params (they 404)
     try:
-        resp = httpx.get(
-            INFORM_URL,
-            params={"_format": "json", "limit": 500},
-            headers={"Authorization": f"Token {api_key}"},
-            timeout=60,
-            # ACAPS redirects /inform-severity-index/ to the latest monthly
-            # snapshot (e.g. /inform-severity-index/May2026/). Follow it.
-            follow_redirects=True,
-        )
-        resp.raise_for_status()
-        payload = resp.json()
+        for _ in range(_MAX_PAGES):
+            resp = httpx.get(url, headers=headers, timeout=60, follow_redirects=True)
+            resp.raise_for_status()
+            payload = resp.json()
+            rows.extend(_extract_rows(payload))
+            nxt = payload.get("next") if isinstance(payload, dict) else None
+            if not nxt:
+                break
+            url = nxt
     except Exception as exc:
         log.warning("INFORM fetch failed: %s", exc)
         return []
 
-    rows = _extract_rows(payload)
     if not rows:
-        keys = list(payload.keys()) if isinstance(payload, dict) else type(payload).__name__
-        log.info("INFORM: empty response (envelope keys: %s)", keys)
+        log.info("INFORM: empty response")
         return []
+    log.info("INFORM: fetched %d crisis rows", len(rows))
 
     name_lookup = name_to_iso2_lookup()
     items: list[RawItem] = []
@@ -120,7 +163,11 @@ def fetch(src: dict) -> list[RawItem]:
                      "next monthly run will surface deltas ≥ %.1f only.",
                      INFORM_DELTA_THRESHOLD)
         for row in rows:
-            iso = resolve_iso2(row, name_lookup)
+            # ACAPS iso3/country are LISTS — normalize before resolving.
+            iso = resolve_iso2(
+                {"iso3": _first(row.get("iso3")), "country": _first(row.get("country"))},
+                name_lookup,
+            )
             if not iso:
                 continue
             score = _extract_score(row)
@@ -129,7 +176,7 @@ def fetch(src: dict) -> list[RawItem]:
 
             month_label = _month_label(row)
             observed_at = datetime.now(timezone.utc)
-            notes = (row.get("notes") or row.get("description") or "").strip()[:1500] or None
+            notes = (str(_first(row.get("crisis_name")) or "").strip())[:1500] or None
 
             change = record_observation(
                 conn, source_id=SOURCE_ID, country_iso2=iso,
@@ -149,19 +196,19 @@ def fetch(src: dict) -> list[RawItem]:
                 source_label=f"INFORM {month_label}",
                 country_name=country_name,
                 metric_label="crisis severity",
-                units="/5",
+                units="/10",
             )
             if change.value_prev is not None:
                 body = (
                     f"ACAPS INFORM Severity Index for {country_name} moved from "
                     f"{change.value_prev:.1f} to {change.value_now:.1f} "
                     f"({'↑' if change.direction == 'up' else '↓'}{abs(change.delta or 0):.1f}) "
-                    f"on the 0–5 scale. Observation date {month_label}."
+                    f"on the 0–10 scale. Observation date {month_label}."
                 )
             else:
                 body = (
                     f"ACAPS INFORM began tracking {country_name} at "
-                    f"{change.value_now:.1f}/5 severity in {month_label}."
+                    f"{change.value_now:.1f}/10 severity in {month_label}."
                 )
             if notes:
                 body += f" ACAPS note: {notes}"

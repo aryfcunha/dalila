@@ -96,12 +96,12 @@ PRIORITY_COUNTRIES = [
 def fetch(src: dict) -> list[RawItem]:
     cfg = get_config()
     if not cfg.acled_username or not cfg.acled_password:
-        log.info("ACLED skipped: ACLED_USERNAME or ACLED_PASSWORD not set")
-        return []
+        from dalila.ingestors.base import SourceSkipped
+        raise SourceSkipped("ACLED_USERNAME / ACLED_PASSWORD not set")
     headers = _auth_headers()
     if not headers:
-        log.info("ACLED skipped: could not mint oauth token (check creds)")
-        return []
+        # Creds ARE set but token mint failed — that's a real error, not a skip.
+        raise RuntimeError("ACLED: could not mint oauth token (check creds)")
 
     since = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
     params = {

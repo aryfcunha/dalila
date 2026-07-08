@@ -141,8 +141,8 @@ def _forecast_month_label(row: dict) -> str:
 def fetch(src: dict) -> list[RawItem]:
     cfg = get_config()
     if not cfg.acled_username or not cfg.acled_password:
-        log.info("CAST skipped: ACLED_USERNAME / ACLED_PASSWORD not set")
-        return []
+        from dalila.ingestors.base import SourceSkipped
+        raise SourceSkipped("ACLED_USERNAME / ACLED_PASSWORD not set")
     headers = _auth_headers()
     if not headers:
         log.info("CAST skipped: could not mint oauth token")

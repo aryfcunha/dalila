@@ -1,4 +1,14 @@
-"""LLM backend: subprocess wrapper around the `claude` CLI with DeepSeek fallback."""
+"""LLM backend: subprocess wrapper around the `claude` CLI with DeepSeek fallback.
+
+Three DeepSeek paths exist:
+  • Manual override — DALILA_LLM_BACKEND=deepseek routes every call to DeepSeek.
+  • Automatic fallback — on a Claude capacity error (quota / rate-limit / overload)
+    the call transparently retries on DeepSeek, with a shared cooldown so we stop
+    re-spawning a throttled CLI. Toggle with DALILA_DEEPSEEK_FALLBACK (default ON
+    when DEEPSEEK_API_KEY is set). This keeps the daily brief shipping when the
+    Claude subscription is exhausted.
+  • Missing-binary fallback — if the `claude` CLI isn't found at all.
+"""
 
 from __future__ import annotations
 
@@ -44,94 +54,46 @@ def check_cli_available() -> tuple[bool, str]:
     except Exception as exc:
         return False, str(exc)
 
-def _looks_like_rate_limit(msg: str) -> bool:
-    """True if a CLI error is a Claude usage/rate-limit — a FREE, self-healing
-    condition. These must NOT trigger the paid DeepSeek fallback: the scheduler
-    pauses classify until the window resets and retries on Haiku at $0. Network
-    blips, auth failures and hard errors are deliberately excluded here so they
-    DO fall back to DeepSeek (the 'if that doesn't work' path)."""
-    m = (msg or "").lower()
-    return any(t in m for t in (
-        # Substrings, contraction-agnostic ("you've"/"you have" both match).
-        "hit your limit", "reached your limit", "limit reached",
-        "rate limit", "rate_limit", "usage limit", "usage_limit",
-        "429", "quota",
-    ))
+# Capacity-class failures from the `claude` CLI that mean "Claude can't serve
+# this right now" — quota exhaustion, rate limits, transient overload. On any
+# of these we route to DeepSeek (when DALILA_DEEPSEEK_FALLBACK is enabled) so
+# the daily brief still ships, instead of the scheduler simply backing off and
+# producing nothing. Auth / bad-request / prompt errors are deliberately
+# EXCLUDED: DeepSeek can't fix those and they must stay visible (and the
+# scheduler's rate-limit back-off still engages when the fallback is off).
+_FALLBACK_SIGNALS = (
+    "you've hit your limit", "usage limit", "rate limit", "rate_limit",
+    "ratelimit", "429", "quota", "insufficient", "overloaded",
+    "capacity", "503", "529",
+)
+
+# Monotonic-clock deadline. While now < this, skip Claude and go straight to
+# DeepSeek — set after a capacity error so we don't pay a doomed CLI spawn on
+# every call during a multi-hour quota window. Module-level so the cooldown is
+# shared across all call sites (they draw on one quota pool).
+_claude_cooldown_until: float = 0.0
 
 
-def _deepseek_available() -> bool:
-    return bool(os.getenv("DEEPSEEK_API_KEY"))
+def _auto_fallback_enabled() -> bool:
+    """Automatic DeepSeek fallback on Claude capacity errors. Defaults ON when
+    a DeepSeek key is present; force off with DALILA_DEEPSEEK_FALLBACK=0."""
+    if not os.getenv("DEEPSEEK_API_KEY"):
+        return False
+    return os.getenv("DALILA_DEEPSEEK_FALLBACK", "1").strip().lower() in (
+        "1", "true", "yes", "on",
+    )
 
 
-def _record(model: str, purpose: str, start: float, success: bool, error: str | None) -> None:
-    """Best-effort persist of an LLM call for cost/health accounting."""
+def _is_capacity_error(err_msg: str) -> bool:
+    low = err_msg.lower()
+    return any(sig in low for sig in _FALLBACK_SIGNALS)
+
+
+def _fallback_cooldown_seconds() -> int:
     try:
-        with connect() as conn:
-            record_llm_call(conn, model=model, purpose=purpose,
-                            duration_ms=int((time.monotonic() - start) * 1000),
-                            success=success, error=error)
-    except Exception:
-        pass
-
-
-def _deepseek_recorded(model: str, system_prompt: str, user_prompt: str,
-                       purpose: str, timeout: int) -> "LLMResponse":
-    start = time.monotonic()
-    ok, err = False, None
-    try:
-        resp = _call_deepseek(model, system_prompt, user_prompt, purpose, timeout)
-        ok = True
-        return resp
-    except Exception as exc:
-        err = str(exc)
-        raise
-    finally:
-        # Record under a deepseek-tagged model name so cost accounting can tell
-        # the paid fallback apart from the free Haiku path.
-        _record(f"deepseek:{model}", purpose, start, ok, err)
-
-
-def _run_claude_cli(*, model: str, system_prompt: str, user_prompt: str,
-                    purpose: str, timeout: int) -> "LLMResponse":
-    """One call via the `claude` CLI (Haiku, Max-plan, $0 marginal).
-
-    Records the attempt and raises FileNotFoundError (binary missing) or
-    LLMError (non-zero exit / empty output / rate-limit) on failure so the
-    caller can decide whether to fall back."""
-    cfg = get_config()
-    bin_path = _resolve_claude_bin() or cfg.claude_bin
-    start = time.monotonic()
-    success = False
-    error = None
-    try:
-        combined_prompt = (
-            "You are operating under the following system instructions.\n\n"
-            "===== SYSTEM INSTRUCTIONS =====\n" + system_prompt.strip() + "\n===== END SYSTEM INSTRUCTIONS =====\n\n"
-            "===== USER INPUT =====\n" + user_prompt.strip() + "\n===== END USER INPUT =====\n"
-        )
-        args = [bin_path, "-p", "--model", model, "--no-session-persistence"]
-        result = subprocess.run(
-            args, input=combined_prompt, capture_output=True, text=True,
-            encoding="utf-8", errors="replace", timeout=timeout, check=False
-        )
-        if result.returncode != 0:
-            stderr_msg = (result.stderr or "").strip()
-            stdout_msg = (result.stdout or "").strip()
-            error = (stderr_msg or stdout_msg or f"exit {result.returncode}")[:500]
-            raise LLMError(f"claude CLI exit {result.returncode}: {error}")
-
-        text = (result.stdout or "").strip()
-        if not text:
-            raise LLMError("claude CLI returned empty stdout")
-
-        success = True
-        return LLMResponse(text=text, duration_ms=int((time.monotonic() - start) * 1000))
-    except Exception as exc:
-        if error is None:
-            error = str(exc)
-        raise
-    finally:
-        _record(model, purpose, start, success, error)
+        return max(0, int(os.getenv("DALILA_DEEPSEEK_FALLBACK_COOLDOWN_MINUTES", "30"))) * 60
+    except ValueError:
+        return 30 * 60
 
 
 def _run_claude(
@@ -142,35 +104,104 @@ def _run_claude(
     purpose: str,
     timeout: int = 120,
 ) -> LLMResponse:
-    # Explicit manual override: force DeepSeek for the WHOLE live path. This is
-    # opt-in and intended only for cost-bounded one-shot backfill runs (set
-    # DALILA_LLM_BACKEND=deepseek). It is NOT the live default — normal
-    # operation runs Haiku via the CLI below. Leaving this set on the VM is what
-    # silently routed every live call through the paid API.
-    if os.getenv("DALILA_LLM_BACKEND", "").strip().lower() == "deepseek" and _deepseek_available():
-        log.info("DALILA_LLM_BACKEND=deepseek — forcing DeepSeek for %s (manual override)", purpose)
-        return _deepseek_recorded(model, system_prompt, user_prompt, purpose, timeout)
-
-    # ---- Primary: Haiku via the `claude` CLI ($0 marginal on the Max plan) ---
-    try:
-        return _run_claude_cli(model=model, system_prompt=system_prompt,
-                               user_prompt=user_prompt, purpose=purpose, timeout=timeout)
-    except (FileNotFoundError, LLMError) as exc:
-        msg = str(exc)
-        # A usage/rate-limit is free and self-healing — never spill to the paid
-        # DeepSeek path. Re-raise so the scheduler's back-off logic parses the
-        # reset time and retries on Haiku when the window opens.
-        if isinstance(exc, LLMError) and _looks_like_rate_limit(msg):
+    # Backend override: route the live LLM path through DeepSeek when the
+    # Claude Code subscription is unavailable (org-disabled) or otherwise not
+    # wanted. Enable with DALILA_LLM_BACKEND=deepseek in the environment/.env.
+    if os.getenv("DALILA_LLM_BACKEND", "").strip().lower() == "deepseek" and os.getenv("DEEPSEEK_API_KEY"):
+        _start = time.monotonic()
+        _ok, _err = False, None
+        try:
+            _resp = _call_deepseek(model, system_prompt, user_prompt, purpose, timeout)
+            _ok = True
+            return _resp
+        except Exception as _exc:
+            _err = str(_exc)
             raise
-        # Any other CLI failure (binary missing, auth broken, timeout, malformed
-        # output) is a genuine "the CLI can't do this right now" — fall back to
-        # DeepSeek if a key is configured, so classification still happens.
-        if _deepseek_available():
-            log.warning("claude CLI unusable for %s (%s) — falling back to DeepSeek",
-                        purpose, msg[:200])
-            return _deepseek_recorded(model, system_prompt, user_prompt, purpose, timeout)
-        raise
+        finally:
+            try:
+                with connect() as _conn:
+                    record_llm_call(_conn, model=model, purpose=purpose,
+                                    duration_ms=int((time.monotonic() - _start) * 1000),
+                                    success=_ok, error=_err)
+            except Exception:
+                pass
 
+    global _claude_cooldown_until
+    cfg = get_config()
+    bin_path = _resolve_claude_bin() or cfg.claude_bin
+
+    start = time.monotonic()
+    success = False
+    error = None
+    used_model = model  # switches to the DeepSeek model if we fall back
+
+    def _fallback(reason: str) -> LLMResponse:
+        nonlocal used_model, success
+        log.warning("Claude unavailable for %s (%s) — falling back to DeepSeek", purpose, reason)
+        resp = _call_deepseek(model, system_prompt, user_prompt, purpose, timeout)
+        used_model = "deepseek-chat"
+        success = True
+        return resp
+
+    try:
+        # Still inside a cooldown from a recent capacity error → don't even
+        # spawn the CLI; Claude is almost certainly still throttled.
+        if _auto_fallback_enabled() and time.monotonic() < _claude_cooldown_until:
+            return _fallback("in Claude cooldown window")
+
+        combined_prompt = (
+            "You are operating under the following system instructions.\n\n"
+            "===== SYSTEM INSTRUCTIONS =====\n" + system_prompt.strip() + "\n===== END SYSTEM INSTRUCTIONS =====\n\n"
+            "===== USER INPUT =====\n" + user_prompt.strip() + "\n===== END USER INPUT =====\n"
+        )
+
+        args = [bin_path, "-p", "--model", model, "--no-session-persistence"]
+
+        try:
+            result = subprocess.run(
+                args, input=combined_prompt, capture_output=True, text=True,
+                encoding="utf-8", errors="replace", timeout=timeout, check=False
+            )
+        except FileNotFoundError as exc:
+            # Claude CLI binary is missing — fall back to DeepSeek if a key is
+            # configured (any backend beats no brief).
+            if os.getenv("DEEPSEEK_API_KEY"):
+                return _fallback(f"CLI not found: {exc}")
+            raise LLMError(f"Claude CLI not found and no DeepSeek fallback available: {exc}")
+
+        if result.returncode != 0:
+            stderr_msg = (result.stderr or "").strip()
+            stdout_msg = (result.stdout or "").strip()
+            err = (stderr_msg or stdout_msg or f"exit {result.returncode}")[:500]
+            # Quota / rate-limit / overload → switch to DeepSeek instead of
+            # failing, and start a cooldown so we stop probing a throttled
+            # Claude every tick. Other non-zero exits (auth, bad request)
+            # propagate as LLMError so they stay visible and the scheduler's
+            # rate-limit back-off still engages when the fallback is disabled.
+            if _auto_fallback_enabled() and _is_capacity_error(err):
+                _claude_cooldown_until = time.monotonic() + _fallback_cooldown_seconds()
+                return _fallback(err[:160])
+            error = err
+            raise LLMError(f"claude CLI exit {result.returncode}: {err}")
+
+        text = (result.stdout or "").strip()
+        if not text:
+            raise LLMError("claude CLI returned empty stdout")
+
+        success = True
+        return LLMResponse(text=text, duration_ms=int((time.monotonic() - start) * 1000))
+
+    except Exception as exc:
+        if error is None:
+            error = str(exc)
+        raise
+    finally:
+        duration_ms = int((time.monotonic() - start) * 1000)
+        try:
+            with connect() as conn:
+                record_llm_call(conn, model=used_model, purpose=purpose, duration_ms=duration_ms, success=success, error=error)
+        except Exception:
+            pass
 
 def _call_deepseek(model: str, system_prompt: str, user_prompt: str, purpose: str, timeout: int) -> LLMResponse:
     """Fallback using DeepSeek API with urllib (proven path on VM)."""

@@ -60,11 +60,19 @@ def fetch(src: dict) -> list[RawItem]:
     items: list[RawItem] = []
     seen_titles: set[str] = set()
     for card in cards[:40]:  # cap per page to avoid pulling navigation links etc.
-        # Find the first link with usable text
-        a = card.find("a", href=True)
+        # The selector may match the article <a> directly, or a container card
+        # that holds the link plus a separate heading (e.g. MoFA's
+        # div.card-content with an <h2> headline + a "View Details" link).
+        if getattr(card, "name", None) == "a" and card.has_attr("href"):
+            a = card
+        else:
+            a = card.find("a", href=True)
         if not a:
             continue
-        title = (a.get_text() or "").strip()
+        # Prefer a heading for the title — the link text is often a generic CTA
+        # ("View Details", "Read more"). Fall back to the link/card text.
+        heading = card.find(["h1", "h2", "h3", "h4"]) if hasattr(card, "find") else None
+        title = ((heading.get_text(strip=True) if heading else a.get_text()) or "").strip()
         if not title or len(title) < 8 or title in seen_titles:
             continue
         seen_titles.add(title)

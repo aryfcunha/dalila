@@ -41,7 +41,7 @@ def _help_text() -> str:
         "• `/digest` — show the latest daily digest (read-only). `/digest fresh` to recompose now.\n"
         "• `/more <topic>` — deep-dive synthesis on a topic from the last 30 days\n"
         "• `/doctrine` — list tracked UAE doctrine positions\n"
-        "• `/commitments` — recent UAE financial commitments\n"
+        "• `/commitments` — recent development financial commitments\n"
         "• `/meetings` — recent UAE bilateral meetings\n"
         "• `/region [name]` — items aggregated by region\n"
         "• `/country <name>` — recent news mentioning a specific country\n"
@@ -177,7 +177,7 @@ async def cmd_digest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
 
 async def cmd_commitments(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Recent UAE financial commitments extracted from news items."""
+    """Recent development financial commitments extracted from news items."""
     if not update.message:
         return
     hours = 720  # last 30 days
@@ -185,20 +185,23 @@ async def cmd_commitments(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         rows = db.recent_financial_commitments(conn, hours=hours, limit=20)
     if not rows:
         await update.message.reply_text(
-            "No UAE financial commitments tracked in the last 30 days. "
+            "No development financial commitments tracked in the last 30 days. "
             "These are extracted from news items mentioning concrete pledges, "
             "disbursements, MoUs, loans, or grants with an attached amount."
         )
         return
-    lines = ["💰 *UAE financial commitments — last 30 days*", ""]
+    lines = ["💰 *Development financial commitments — last 30 days*", ""]
     for r in rows:
         amt = _fmt_amount(r.get("amount"), r.get("currency"))
         when = (r.get("announced_at") or r.get("created_at") or "")[:10]
         ct = (r.get("commitment_type") or "").upper() or "—"
-        fund = r.get("fund_name") or "(unspecified fund)"
-        recipient = r.get("recipient") or "(unspecified recipient)"
+        fund = r.get("fund_name")
+        source = r.get("source_entity") or r.get("source_country") or "(unspecified source)"
+        beneficiary = (r.get("beneficiary_entity") or r.get("beneficiary_country")
+                       or r.get("recipient") or "(unspecified beneficiary)")
+        fund_tag = f" · via {fund}" if fund else ""
         lines.append(f"*{amt}* · {ct} · _{when}_")
-        lines.append(f"  → {fund} → {recipient}")
+        lines.append(f"  {source} → {beneficiary}{fund_tag}")
         if r.get("title"):
             title = r["title"][:80] + ("…" if len(r["title"]) > 80 else "")
             lines.append(f"  _{title}_")
@@ -245,7 +248,9 @@ async def cmd_meetings(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         foreign = r.get("foreign_principal") or "(foreign side)"
         country = r.get("foreign_country") or ""
         country_tag = f" ({country})" if country else ""
-        lines.append(f"*{mtype}* · _{when}_  ·  {uae} ↔ {foreign}{country_tag}")
+        n = r.get("mention_count") or 1
+        count_tag = f"  ·  _{n} reports_" if n > 1 else ""
+        lines.append(f"*{mtype}* · _{when}_  ·  {uae} ↔ {foreign}{country_tag}{count_tag}")
         if r.get("location"):
             lines.append(f"  📍 {r['location']}")
         topics = r.get("topics") or []

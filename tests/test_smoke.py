@@ -299,3 +299,657 @@ def test_doctrine_fact_lifecycle_new_then_append(tmp_path, monkeypatch):
     assert len(f["evolution_log"]) == 2
     assert f["source_item_ids"] == [i1, i2]
     assert abs(f["confidence"] - 0.6) < 1e-9, f"expected 0.5 + 0.1 = 0.6, got {f['confidence']}"
+
+
+# ── DeepSeek automatic fallback (Claude quota/rate-limit redundancy) ─────────
+
+def _completed(returncode, stdout="", stderr=""):
+    from types import SimpleNamespace
+    return SimpleNamespace(returncode=returncode, stdout=stdout, stderr=stderr)
+
+
+def _patch_llm(monkeypatch, *, cli_result=None, cli_exc=None,
+               key="ds-key", fallback=None, backend=None, cooldown=None):
+    """Wire llm so no real CLI / DB / network is touched. Drives behaviour
+    through env vars (matching the real env-driven implementation)."""
+    import contextlib
+    from dalila import llm
+
+    # Env knobs
+    if key is None:
+        monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    else:
+        monkeypatch.setenv("DEEPSEEK_API_KEY", key)
+    if fallback is None:
+        monkeypatch.delenv("DALILA_DEEPSEEK_FALLBACK", raising=False)
+    else:
+        monkeypatch.setenv("DALILA_DEEPSEEK_FALLBACK", fallback)
+    if backend is None:
+        monkeypatch.delenv("DALILA_LLM_BACKEND", raising=False)
+    else:
+        monkeypatch.setenv("DALILA_LLM_BACKEND", backend)
+    if cooldown is not None:
+        monkeypatch.setenv("DALILA_DEEPSEEK_FALLBACK_COOLDOWN_MINUTES", cooldown)
+
+    # Stub get_config so its load_dotenv() can't repopulate env vars we just
+    # cleared (the dev .env may carry a real DEEPSEEK_API_KEY).
+    from types import SimpleNamespace
+    monkeypatch.setattr(llm, "get_config", lambda: SimpleNamespace(claude_bin="claude"))
+    monkeypatch.setattr(llm, "_resolve_claude_bin", lambda: "claude")
+    monkeypatch.setattr(llm, "_claude_cooldown_until", 0.0, raising=False)
+
+    calls = {"deepseek": 0, "cli": 0}
+
+    def fake_run(*a, **k):
+        calls["cli"] += 1
+        if cli_exc is not None:
+            raise cli_exc
+        return cli_result
+    monkeypatch.setattr(llm.subprocess, "run", fake_run)
+
+    def fake_deepseek(model, sysp, userp, purpose, timeout):
+        calls["deepseek"] += 1
+        return llm.LLMResponse(text="DEEPSEEK_OUTPUT", duration_ms=1)
+    monkeypatch.setattr(llm, "_call_deepseek", fake_deepseek)
+
+    monkeypatch.setattr(llm, "connect", lambda: contextlib.nullcontext(None))
+    monkeypatch.setattr(llm, "record_llm_call", lambda *a, **k: None)
+    return llm, calls
+
+
+def test_is_capacity_error_classification():
+    from dalila.llm import _is_capacity_error
+    assert _is_capacity_error("You've hit your limit — resets 5:30pm (Asia/Dubai)")
+    assert _is_capacity_error("Error: 429 Too Many Requests")
+    assert _is_capacity_error("rate_limit_error: quota exceeded")
+    assert _is_capacity_error("Service overloaded (529)")
+    assert not _is_capacity_error("401 Unauthorized: invalid API key")
+    assert not _is_capacity_error("invalid model name")
+
+
+def test_quota_error_auto_falls_back(monkeypatch):
+    result = _completed(1, stderr="You've hit your limit — resets 5:30pm (Asia/Dubai)")
+    llm, calls = _patch_llm(monkeypatch, cli_result=result)  # fallback defaults ON
+    out = llm.call(model=llm.HAIKU, system_prompt="s", user_prompt="u", purpose="editor")
+    assert out == "DEEPSEEK_OUTPUT"
+    assert calls["deepseek"] == 1
+
+
+def test_missing_binary_falls_back(monkeypatch):
+    llm, calls = _patch_llm(monkeypatch, cli_exc=FileNotFoundError("claude"))
+    out = llm.call(model=llm.HAIKU, system_prompt="s", user_prompt="u", purpose="classify")
+    assert out == "DEEPSEEK_OUTPUT"
+    assert calls["deepseek"] == 1
+
+
+def test_auth_error_does_not_fall_back(monkeypatch):
+    from dalila.llm import LLMError
+    result = _completed(1, stderr="401 Unauthorized: invalid API key")
+    llm, calls = _patch_llm(monkeypatch, cli_result=result)
+    with pytest.raises(LLMError):
+        llm.call(model=llm.HAIKU, system_prompt="s", user_prompt="u", purpose="editor")
+    assert calls["deepseek"] == 0
+
+
+def test_fallback_disabled_raises_on_quota(monkeypatch):
+    from dalila.llm import LLMError
+    result = _completed(1, stderr="You've hit your limit, resets at 17:30 (UTC)")
+    llm, calls = _patch_llm(monkeypatch, cli_result=result, fallback="0")
+    with pytest.raises(LLMError):
+        llm.call(model=llm.HAIKU, system_prompt="s", user_prompt="u", purpose="editor")
+    assert calls["deepseek"] == 0
+
+
+def test_no_key_means_no_fallback(monkeypatch):
+    from dalila.llm import LLMError
+    result = _completed(1, stderr="rate limit reached")
+    llm, calls = _patch_llm(monkeypatch, cli_result=result, key=None)
+    with pytest.raises(LLMError):
+        llm.call(model=llm.HAIKU, system_prompt="s", user_prompt="u", purpose="editor")
+    assert calls["deepseek"] == 0
+
+
+def test_manual_backend_override_skips_cli(monkeypatch):
+    llm, calls = _patch_llm(monkeypatch, backend="deepseek")
+    out = llm.call(model=llm.HAIKU, system_prompt="s", user_prompt="u", purpose="editor")
+    assert out == "DEEPSEEK_OUTPUT"
+    assert calls["deepseek"] == 1
+    assert calls["cli"] == 0   # CLI never spawned
+
+
+def test_cooldown_routes_straight_to_deepseek(monkeypatch):
+    result = _completed(1, stderr="rate limit reached")
+    llm, calls = _patch_llm(monkeypatch, cli_result=result, cooldown="30")
+    # First call trips the cooldown via a real CLI spawn + fallback.
+    llm.call(model=llm.HAIKU, system_prompt="s", user_prompt="u", purpose="editor")
+    assert calls["cli"] == 1 and calls["deepseek"] == 1
+    # Second call must skip the CLI entirely.
+    def boom(*a, **k):
+        raise AssertionError("CLI should not be spawned during cooldown")
+    monkeypatch.setattr(llm.subprocess, "run", boom)
+    out = llm.call(model=llm.HAIKU, system_prompt="s", user_prompt="u", purpose="classify")
+    assert out == "DEEPSEEK_OUTPUT"
+    assert calls["deepseek"] == 2
+
+
+# ── Markets: per-window deltas must not collapse onto a stale baseline ────────
+
+def _pm_seed(conn, *, mid, source="manifold", prob_now, history):
+    """history = list of (age_timedelta_kwargs, probability). Inserts a current
+    snapshot plus the given historical rows."""
+    from datetime import datetime, timedelta, timezone
+    now = datetime.now(timezone.utc)
+    conn.execute(
+        """INSERT INTO prediction_market_snapshots
+               (market_id, source, question, probability, volume, url, topic_tags, recorded_at)
+           VALUES (?,?,?,?,?,?,?,?)""",
+        (mid, source, f"Will {mid}?", prob_now, 1000.0, f"https://x/{mid}", None, now.isoformat()),
+    )
+    for age, prob in history:
+        conn.execute(
+            """INSERT INTO prediction_market_history
+                   (market_id, source, probability, delta_1h, delta_24h, recorded_at)
+               VALUES (?,?,?,?,?,?)""",
+            (mid, source, prob, None, None, (now - timedelta(**age)).isoformat()),
+        )
+
+
+def test_market_deltas_ignore_ancient_baseline():
+    """A market whose only history is a pre-gap snapshot must NOT report three
+    identical deltas — every window should be None (rendered as '--')."""
+    from dalila import db
+    from dalila.ingestors.prediction_markets import get_market_signals
+    db.init_db()
+    with db.connect() as conn:
+        _pm_seed(conn, mid="stale", prob_now=0.20, history=[({"days": 40}, 0.80)])
+        conn.commit()
+        sig = {m["market_id"]: m for m in get_market_signals(conn, top_n=30)}
+    m = sig["stale"]
+    assert m["delta_30m"] is None
+    assert m["delta_24h"] is None
+    assert m["delta_7d"] is None
+
+
+def test_market_deltas_distinct_per_window():
+    """With a real row in each window's bracket, the three deltas differ and are
+    each measured against the correct-age baseline."""
+    from dalila import db
+    from dalila.ingestors.prediction_markets import get_market_signals
+    db.init_db()
+    with db.connect() as conn:
+        _pm_seed(conn, mid="live", prob_now=0.50, history=[
+            ({"minutes": 40}, 0.48),   # ~30m window  → +0.02
+            ({"hours": 24},   0.40),   # ~24h window  → +0.10
+            ({"days": 7},     0.30),   # ~1w window   → +0.20
+        ])
+        conn.commit()
+        sig = {m["market_id"]: m for m in get_market_signals(conn, top_n=30)}
+    m = sig["live"]
+    assert abs(m["delta_30m"] - 0.02) < 1e-9
+    assert abs(m["delta_24h"] - 0.10) < 1e-9
+    assert abs(m["delta_7d"]  - 0.20) < 1e-9
+    # The whole point: they are NOT all equal.
+    assert len({round(m["delta_30m"],4), round(m["delta_24h"],4), round(m["delta_7d"],4)}) == 3
+
+
+# ── Countries page: single-pass aggregator replaces the per-country fan-out ───
+
+def _insert_classified_item(conn, *, iid, title, countries, published_at, source_id):
+    import json as _json
+    conn.execute(
+        "INSERT INTO items (id, source_id, url, url_hash, title, published_at, "
+        "ingested_at, prefilter_passed, classified_at, category, uae_relevance, "
+        "severity, one_line_summary, country_focus_json) "
+        "VALUES (?,?,?,?,?,?,?,1,?,?,?,?,?,?)",
+        (iid, source_id, f"https://x/{iid}", f"hash{iid}", title, published_at,
+         published_at, published_at, "humanitarian", 0.8, 0.5, "s",
+         _json.dumps(countries)),
+    )
+
+
+def test_country_aggregates_matches_legacy_functions():
+    """country_aggregates must produce, in ONE pass, exactly what the four
+    legacy per-country functions produced in ~2N+2 passes."""
+    from datetime import datetime, timezone, timedelta
+    from dalila import db
+    db.init_db()
+    now = datetime.now(timezone.utc)
+    def ts(days_ago): return (now - timedelta(days=days_ago)).isoformat()
+    with db.connect() as conn:
+        src = conn.execute("SELECT id FROM sources LIMIT 1").fetchone()["id"]
+        _insert_classified_item(conn, iid=1, title="A", countries=["SD", "AE"], published_at=ts(1), source_id=src)
+        _insert_classified_item(conn, iid=2, title="B", countries=["SD", "IR"], published_at=ts(2), source_id=src)
+        _insert_classified_item(conn, iid=3, title="C", countries=["AE"],       published_at=ts(3), source_id=src)
+        conn.commit()
+
+        agg = db.country_aggregates(conn, since_hours=24 * 180, items_limit=30)
+
+        assert agg["counts"] == db.country_mention_counts(conn, since_hours=24 * 180)
+        assert agg["timeline"] == db.country_timeline(conn, since_hours=24 * 180)
+        for iso in agg["counts"]:
+            assert agg["cooccurrence"].get(iso, {}) == db.country_cooccurrence(conn, iso, since_hours=24 * 180)
+            legacy_ids = [i["id"] for i in db.items_for_country(conn, iso, since_hours=24 * 180, limit=30)]
+            new_ids = [i["id"] for i in agg["items_by_country"].get(iso, [])]
+            assert new_ids == legacy_ids, f"item list mismatch for {iso}"
+
+    # sanity on the actual aggregates
+    assert agg["counts"] == {"SD": 2, "AE": 2, "IR": 1}
+    assert agg["cooccurrence"]["SD"] == {"AE": 1, "IR": 1}
+    # newest-first within a country (item 1 is more recent than item 2 for SD)
+    assert [i["id"] for i in agg["items_by_country"]["SD"]] == [1, 2]
+
+
+def test_country_aggregates_dedupes_within_row_and_drops_junk():
+    """Stricter-than-legacy validation: a row listing a country twice can't
+    double-count, and non-alpha / wrong-length codes are dropped."""
+    from datetime import datetime, timezone
+    from dalila import db
+    db.init_db()
+    now = datetime.now(timezone.utc).isoformat()
+    with db.connect() as conn:
+        src = conn.execute("SELECT id FROM sources LIMIT 1").fetchone()["id"]
+        _insert_classified_item(conn, iid=1, title="dupes", countries=["SD", "SD", "AE", "99", "ABC", ""], published_at=now, source_id=src)
+        conn.commit()
+        agg = db.country_aggregates(conn, since_hours=24 * 180)
+    assert agg["counts"] == {"SD": 1, "AE": 1}              # SD counted once; junk dropped
+    assert agg["cooccurrence"]["SD"] == {"AE": 1}           # no SD->SD self-pair
+
+
+# ── #3 country page excludes category='other' junk ───────────────────────────
+
+def test_country_page_excludes_other_category_junk():
+    """Sports/trivia (classifier -> category='other') must NOT appear on the
+    country page, even when tagged to a country."""
+    from datetime import datetime, timezone
+    from dalila import db
+    db.init_db()
+    now = datetime.now(timezone.utc).isoformat()
+    with db.connect() as conn:
+        src = conn.execute("SELECT id FROM sources LIMIT 1").fetchone()["id"]
+        # legit dev item + junk 'other' item, both tagged PT
+        _insert_classified_item(conn, iid=1, title="Portugal pledges aid to Sudan", countries=["PT", "SD"], published_at=now, source_id=src)
+        conn.execute(
+            "INSERT INTO items (id, source_id, url, url_hash, title, published_at, "
+            "ingested_at, prefilter_passed, classified_at, category, uae_relevance, "
+            "severity, one_line_summary, country_focus_json) "
+            "VALUES (2,?,?,?,?,?,?,1,?,'other',1.0,0.1,'s','[\"PT\"]')",
+            (src, "https://x/2", "h2", "Drone Show in Matosinhos Breaks Guinness Record", now, now, now),
+        )
+        conn.commit()
+        agg = db.country_aggregates(conn, since_hours=24 * 180)
+    assert agg["counts"].get("PT") == 1, "only the legit dev item should count for PT"
+    pt_ids = [i["id"] for i in agg["items_by_country"].get("PT", [])]
+    assert pt_ids == [1], "the 'other' junk item must be excluded from the country page"
+
+
+# ── #7 bilateral meetings de-duplicate at render time ────────────────────────
+
+def _insert_meeting(conn, *, mid, uae, foreign, country, when_iso, item_id, title, source_id):
+    from datetime import datetime, timezone
+    created = datetime.now(timezone.utc).isoformat()  # always set (NOT NULL)
+    conn.execute(
+        "INSERT OR IGNORE INTO items (id, source_id, url, url_hash, title, ingested_at, prefilter_passed) "
+        "VALUES (?,?,?,?,?,?,1)",
+        (item_id, source_id, f"https://x/{item_id}", f"mh{item_id}", title, created),
+    )
+    conn.execute(
+        "INSERT INTO bilateral_meetings (id, item_id, uae_principal, foreign_principal, "
+        "foreign_country, meeting_type, when_iso, created_at) VALUES (?,?,?,?,?,?,?,?)",
+        (mid, item_id, uae, foreign, country, "meeting", when_iso, created),
+    )
+
+
+def test_bilateral_meetings_dedupe_collapses_duplicates():
+    from datetime import datetime, timezone
+    from dalila import db
+    db.init_db()
+    now = datetime.now(timezone.utc).isoformat()
+    with db.connect() as conn:
+        src = conn.execute("SELECT id FROM sources LIMIT 1").fetchone()["id"]
+        # same meeting reported by 3 outlets (punctuation/case noise), same date
+        _insert_meeting(conn, mid=1, uae="Mohamed bin Zayed Al Nahyan", foreign="Marco Rubio", country="US", when_iso="2026-06-24", item_id=101, title="A", source_id=src)
+        _insert_meeting(conn, mid=2, uae="mohamed bin zayed al nahyan", foreign="Marco  Rubio.", country="US", when_iso="2026-06-24", item_id=102, title="B", source_id=src)
+        _insert_meeting(conn, mid=3, uae="Mohamed bin Zayed Al-Nahyan", foreign="Marco Rubio", country="US", when_iso=None, item_id=103, title="C", source_id=src)
+        # a genuinely different meeting
+        _insert_meeting(conn, mid=4, uae="Mohamed bin Zayed Al Nahyan", foreign="Emmanuel Macron", country="FR", when_iso="2026-06-24", item_id=104, title="D", source_id=src)
+        # two blank-both rows must stay distinct
+        _insert_meeting(conn, mid=5, uae=None, foreign=None, country=None, when_iso="2026-06-24", item_id=105, title="E", source_id=src)
+        _insert_meeting(conn, mid=6, uae=None, foreign=None, country=None, when_iso="2026-06-24", item_id=106, title="F", source_id=src)
+        conn.commit()
+        meetings = db.recent_bilateral_meetings(conn, hours=24 * 60, limit=30)
+
+    keyed = {(m.get("uae_principal"), m.get("foreign_principal")): m for m in meetings}
+    rubio = next(m for m in meetings if (m.get("foreign_principal") or "").startswith("Marco"))
+    assert rubio["mention_count"] == 3, "the 3 Rubio reports (incl. null-date) should collapse to one"
+    assert len(rubio["sources"]) == 3
+    # Macron meeting separate; two blank-both rows stay separate => 1 + 1 + 2 = 4 entries
+    blanks = [m for m in meetings if not m.get("uae_principal") and not m.get("foreign_principal")]
+    assert len(blanks) == 2, "blank-both meetings must NOT be merged"
+    assert len(meetings) == 4
+# ── Batch 2: source re-wiring (WAM sitemap, MoFA scrape, skip instrumentation) ─
+
+def test_sitemap_fetch_reads_news_title_and_filters_old(monkeypatch):
+    """WAM-style Google-News sitemap: headline from <news:title>, date from
+    <news:publication_date>, entries older than recent_hours dropped."""
+    from datetime import datetime, timezone, timedelta
+    from dalila.ingestors import sitemap
+    now = datetime.now(timezone.utc)
+    recent = (now - timedelta(hours=1)).isoformat()
+    old = (now - timedelta(days=10)).isoformat()
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
+        'xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">'
+        '<url><loc>https://www.wam.ae/en/article/recent</loc>'
+        f'<lastmod>{recent}</lastmod>'
+        f'<news:news><news:publication_date>{recent}</news:publication_date>'
+        '<news:title>UAE announces aid package for Sudan</news:title></news:news></url>'
+        '<url><loc>https://www.wam.ae/en/article/old</loc>'
+        f'<news:news><news:publication_date>{old}</news:publication_date>'
+        '<news:title>Old headline</news:title></news:news></url>'
+        '</urlset>'
+    ).encode("utf-8")
+    monkeypatch.setattr(sitemap, "_http_get", lambda url, **k: xml)
+    items = sitemap.fetch({
+        "id": "wam_en",
+        "url": "https://www.wam.ae/sitemap/news/en/{year}/{month}/english.xml",
+        "recent_hours": 48,
+    })
+    titles = [it.title for it in items]
+    assert "UAE announces aid package for Sudan" in titles
+    assert "Old headline" not in titles  # filtered by recent_hours
+    assert items[0].url == "https://www.wam.ae/en/article/recent"
+    assert items[0].source_id == "wam_en"
+
+
+def test_scrape_selects_anchor_cards_directly(monkeypatch):
+    """MoFA card: headline in <h2>, URL in a separate 'View Details' link.
+    Title must come from the heading (not the generic link text)."""
+    from dalila.ingestors import scrape
+    html = (
+        "<html><body>"
+        "<div class='card-content'>"
+        "  <h2 class='line-clamp-3'>UAE and Venezuela discuss cooperation</h2>"
+        "  <a href='/en/MediaHub/News/2026/6/25/UAE-Venezuela'>View Details</a>"
+        "</div>"
+        "<div class='card-content'>"
+        "  <h2 class='line-clamp-3'>Abdullah bin Zayed receives British counterpart</h2>"
+        "  <a href='/en/MediaHub/News/2026/6/25/UAE-UK'>View Details</a>"
+        "</div>"
+        "</body></html>"
+    )
+
+    class _Resp:
+        text = html
+        def raise_for_status(self):
+            pass
+
+    monkeypatch.setattr(scrape.httpx, "get", lambda *a, **k: _Resp())
+    items = scrape.fetch({
+        "id": "mofa_uae",
+        "url": "https://www.mofa.gov.ae/en/mediahub/news",
+        "selector": ".card-content",
+    })
+    titles = [it.title for it in items]
+    assert any("Venezuela" in t for t in titles)
+    # title is the headline, NOT the "View Details" CTA text
+    assert "View Details" not in titles
+    assert all("MediaHub/News/2026" in it.url for it in items)
+    assert len(items) == 2
+
+
+def test_run_ingest_records_skipped_status(monkeypatch):
+    """A keyless creds-gated ingestor surfaces as last_error='skipped: ...',
+    not as a healthy 0-item poll."""
+    from dalila import db
+    from dalila.ingestors.base import SourceSkipped
+    from dalila import pipeline
+    db.init_db()
+    monkeypatch.setattr(pipeline, "iter_enabled_sources",
+                        lambda: iter([{"id": "acled", "kind": "acled", "tags": []}]))
+
+    def _skip(src):
+        raise SourceSkipped("ACLED_USERNAME / ACLED_PASSWORD not set")
+
+    monkeypatch.setattr(pipeline, "ingest_source", _skip)
+    stats = pipeline.run_ingest()
+    assert stats["acled"]["error"].startswith("skipped:")
+    assert "ACLED" in stats["acled"]["error"]
+# ── #6 semantic (same-event) news dedup ──────────────────────────────────────
+
+def test_dedupe_semantic_collapses_same_event_clusters(monkeypatch):
+    from dalila import db, pipeline
+    db.init_db()
+    items = [
+        {"id": 10, "title": "UN denounces genocide in Gaza"},
+        {"id": 11, "title": "Floods displace thousands in Sudan"},
+        {"id": 12, "title": "UN experts repeat Gaza genocide claim"},  # same event as #10
+        {"id": 13, "title": "OPEC weighs output cut"},
+    ]
+    # LLM says positions 1 & 3 (ids 10, 12) are the same event.
+    monkeypatch.setattr(pipeline, "_llm_cluster_same_event", lambda cands: [[1, 3]])
+    with db.connect() as conn:
+        out = pipeline._dedupe_semantic(conn, items)
+    assert [it["id"] for it in out] == [10, 11, 13]  # keep first of cluster (10), drop 12
+
+
+def test_dedupe_semantic_noops_on_llm_failure(monkeypatch):
+    from dalila import db, pipeline
+    db.init_db()
+    items = [{"id": 1, "title": "X headline"}, {"id": 2, "title": "Y headline"}]
+
+    def _boom(cands):
+        raise RuntimeError("rate limit reached")
+
+    monkeypatch.setattr(pipeline, "_llm_cluster_same_event", _boom)
+    with db.connect() as conn:
+        out = pipeline._dedupe_semantic(conn, items)
+    assert [it["id"] for it in out] == [1, 2]  # unchanged — never makes the brief worse
+
+
+def test_llm_cluster_parsing_filters_singletons_and_out_of_range(monkeypatch):
+    from dalila import llm, pipeline
+    monkeypatch.setattr(llm, "call_json",
+                        lambda **k: {"clusters": [[1, 2], [3], [2, 99], [4, 5]]})
+    items = [{"title": f"t{i}", "one_line_summary": ""} for i in range(6)]  # positions 1..6
+    groups = pipeline._llm_cluster_same_event(items)
+    assert [1, 2] in groups and [4, 5] in groups
+    assert all(len(g) >= 2 for g in groups)          # singleton [3] dropped
+    assert not any(99 in g for g in groups)          # out-of-range trimmed → [2] dropped
+# ── #2 prediction-market history backfill (Manifold + Kalshi) ─────────────────
+
+def test_kalshi_candle_prob_parsing():
+    from dalila.ingestors.prediction_markets import _kalshi_candle_prob
+    assert _kalshi_candle_prob({"price": {"close_dollars": "0.42"}}) == 0.42
+    mid = _kalshi_candle_prob({"price": {}, "yes_bid": {"close_dollars": "0.30"},
+                               "yes_ask": {"close_dollars": "0.40"}})
+    assert abs(mid - 0.35) < 1e-9
+    assert _kalshi_candle_prob({"price": {}}) is None          # nothing usable
+
+
+def test_backfill_manifold_parsing_stops_at_window(monkeypatch):
+    import time
+    from dalila.ingestors import prediction_markets as pm
+    now_ms = int(time.time() * 1000)
+    bets = [
+        {"id": "b3", "probAfter": 0.5, "createdTime": now_ms - 3_600_000},        # in window
+        {"id": "b2", "probAfter": 0.4, "createdTime": now_ms - 7_200_000},        # in window
+        {"id": "b1", "probAfter": 0.3, "createdTime": now_ms - 10 * 86_400_000},  # older → stop
+    ]
+
+    def fake_get(url, timeout=10):
+        if "/slug/" in url:
+            return {"id": "cid1"}
+        if "/bets" in url:
+            return bets
+        return {}
+
+    monkeypatch.setattr(pm, "_http_get", fake_get)
+    out = pm._backfill_manifold_market("some-slug", now_ms - 7 * 86_400 * 1000)
+    assert [p for p, _ in out] == [0.5, 0.4]   # older-than-window bet excluded
+
+
+def test_backfill_market_history_idempotent(monkeypatch):
+    from dalila import db
+    from dalila.ingestors import prediction_markets as pm
+    db.init_db()
+    with db.connect() as conn:
+        conn.execute(
+            "INSERT INTO prediction_market_snapshots "
+            "(market_id, source, question, probability, recorded_at) VALUES (?,?,?,?,?)",
+            ("m1", "manifold", "Will X?", 0.5, db._now_iso()),
+        )
+        conn.commit()
+        monkeypatch.setattr(pm, "_backfill_manifold_market",
+                            lambda slug, since_ms: [(0.5, "2026-06-20T00:00:00+00:00"),
+                                                    (0.6, "2026-06-21T00:00:00+00:00")])
+        s1 = pm.backfill_market_history(conn, days=14)
+        s2 = pm.backfill_market_history(conn, days=14)
+        n = conn.execute("SELECT COUNT(*) FROM prediction_market_history").fetchone()[0]
+    assert s1["inserted"] == 2
+    assert s2["inserted"] == 0   # re-run is idempotent
+    assert n == 2
+# ── #4 commitment provenance (source -> beneficiary) ─────────────────────────
+
+def test_financial_commitment_from_dict_provenance():
+    from dalila.models import FinancialCommitment
+    fc = FinancialCommitment.from_dict({"amount": 50, "currency": "aed",
+                                        "beneficiary_entity": "Yemen"})
+    assert fc.recipient == "Yemen"          # recipient mirrors beneficiary
+    assert fc.beneficiary_entity == "Yemen"
+    fc2 = FinancialCommitment.from_dict({"recipient": "Gaza", "source_country": "ae"})
+    assert fc2.beneficiary_entity == "Gaza"  # beneficiary mirrors legacy recipient
+    assert fc2.source_country == "AE"        # ISO upper-cased
+
+
+def test_financial_commitment_provenance_roundtrip():
+    from dalila import db
+    from dalila.models import Classification
+    db.init_db()
+    c = Classification.from_dict({
+        "category": "humanitarian", "uae_relevance": 0.9, "severity": 0.3,
+        "is_breaking_candidate": False, "entities": [], "doctrine_relation": None,
+        "one_line_summary": "x", "rationale": "y",
+        "financial_commitments": [{
+            "amount": 100, "currency": "USD", "fund_name": "Global Fund",
+            "commitment_type": "pledge", "announced_at": "2026-06-20",
+            "source_country": "US", "source_entity": "USAID",
+            "beneficiary_country": "SD", "beneficiary_entity": "Sudan relief",
+        }],
+    })
+    with db.connect() as conn:
+        src = conn.execute("SELECT id FROM sources LIMIT 1").fetchone()["id"]
+        conn.execute(
+            "INSERT INTO items (id, source_id, url, url_hash, title, ingested_at, prefilter_passed) "
+            "VALUES (1,?,?,?,?,?,1)",
+            (src, "https://x/1", "h1", "T", db._now_iso()),
+        )
+        db.save_classification(conn, 1, c)
+        rows = db.recent_financial_commitments(conn, hours=24 * 60)
+    assert len(rows) == 1
+    r = rows[0]
+    assert r["source_country"] == "US" and r["source_entity"] == "USAID"
+    assert r["beneficiary_country"] == "SD" and r["beneficiary_entity"] == "Sudan relief"
+    assert r["recipient"] == "Sudan relief"   # back-compat mirror persisted
+# ── #5 GDELT translingual ingestion ──────────────────────────────────────────
+
+def _gkg_row(url, date="20260625120000"):
+    cols = [""] * 15
+    cols[1] = date
+    cols[4] = url
+    cols[7] = "TAX_FNCACT;EPU_POLICY"   # themes (English regardless of article lang)
+    cols[11] = "Jane Doe"               # persons
+    cols[13] = "United Nations"         # orgs
+    return "\t".join(cols)
+
+
+def test_gdelt_rows_to_items_filters_by_allowlist():
+    from dalila.ingestors import gdelt
+    allow = gdelt._load_trusted_outlets()
+    text = "\n".join([
+        _gkg_row("https://www.reuters.com/world/middle-east/uae-aid-sudan-pledge"),
+        _gkg_row("https://obscure-local-paper-xyz.example/story-12345"),
+    ])
+    items = gdelt._rows_to_items(text, "gdelt_v2", allow)
+    urls = [i.url for i in items]
+    assert any("reuters.com" in u for u in urls)            # allowlisted kept
+    assert not any("obscure-local-paper" in u for u in urls)  # non-allowlisted dropped
+    assert items[0].title                                    # slug-derived title present
+    assert "Themes:" in (items[0].body or "")               # English GKG themes in body
+
+
+def test_gdelt_fetch_combines_english_and_translingual(monkeypatch):
+    from dalila.ingestors import gdelt
+    calls = []
+
+    def fake_dl(url):
+        calls.append(url)
+        tag = "tr" if "translation" in url else "en"
+        return _gkg_row(f"https://www.reuters.com/world/story-{tag}")
+
+    monkeypatch.setattr(gdelt, "_download_gkg_text", fake_dl)
+    items = gdelt.fetch({"id": "gdelt_v2", "translingual": True})
+    assert any("translation" in c for c in calls)   # translingual feed fetched
+    assert len(items) == 2                            # one item from each feed
+
+    # translingual: false → only the English feed
+    calls.clear()
+    items = gdelt.fetch({"id": "gdelt_v2", "translingual": False})
+    assert not any("translation" in c for c in calls)
+    assert len(items) == 1
+
+
+# ── ACAPS INFORM: token-auth + 0–10 scale + list fields ──────────────────────
+
+def test_inform_extract_score_and_first():
+    from dalila.ingestors.inform import _extract_score, _first
+    assert _extract_score({"INFORM Severity Index": 9.5}) == 9.5   # real field (0–10)
+    assert _extract_score({"severity_index": 4.0}) == 4.0          # fallback
+    assert _extract_score({"crisis_name": "x"}) is None
+    assert _first(["AFG"]) == "AFG"                                # ACAPS list field
+    assert _first("XX") == "XX"
+    assert _first([]) is None
+
+
+def test_inform_fetch_token_auth_and_baseline(monkeypatch):
+    from dalila import db, config
+    from dalila.ingestors import inform
+    monkeypatch.setenv("ACAPS_USERNAME", "u")
+    monkeypatch.setenv("ACAPS_PASSWORD", "p")
+    config.get_config.cache_clear()
+    inform._token_cache["token"] = None
+    db.init_db()
+
+    class _Post:
+        def raise_for_status(self): pass
+        def json(self): return {"token": "TESTTOKEN"}
+
+    class _Get:
+        def raise_for_status(self): pass
+        def json(self): return {"count": 1, "next": None, "previous": None, "results": [
+            {"iso3": ["SDN"], "country": ["Sudan"], "INFORM Severity Index": 9.5,
+             "crisis_name": "Complex crisis in Sudan", "Last updated": "2026-06-01"}]}
+
+    monkeypatch.setattr(inform.httpx, "post", lambda *a, **k: _Post())
+    monkeypatch.setattr(inform.httpx, "get", lambda *a, **k: _Get())
+
+    items = inform.fetch({"id": "inform"})
+    assert items == []   # first run = silent baseline (forecast change-rule)
+    with db.connect() as c:
+        row = c.execute(
+            "SELECT country_iso2, value_num FROM forecast_snapshots WHERE source_id='inform'"
+        ).fetchone()
+    assert row["country_iso2"] == "SD"          # iso3 list -> SDN -> SD
+    assert abs(row["value_num"] - 9.5) < 1e-9   # 0–10 scale
+
+
+def test_inform_skips_without_creds(monkeypatch):
+    from dalila import config
+    from dalila.ingestors import inform
+    from dalila.ingestors.base import SourceSkipped
+    monkeypatch.delenv("ACAPS_USERNAME", raising=False)
+    monkeypatch.delenv("ACAPS_PASSWORD", raising=False)
+    monkeypatch.delenv("ACAPS_EMAIL", raising=False)
+    config.get_config.cache_clear()
+    with pytest.raises(SourceSkipped):
+        inform.fetch({"id": "inform"})

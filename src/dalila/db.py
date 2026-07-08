@@ -81,9 +81,27 @@ def init_db() -> None:
         for sql_path in sorted(cfg.migrations_dir.glob("*.sql")):
             if sql_path.name in applied:
                 continue
-            conn.executescript(sql_path.read_text(encoding="utf-8"))
+            try:
+                conn.executescript(sql_path.read_text(encoding="utf-8"))
+            except sqlite3.OperationalError as exc:
+                # The migration's change is already present — e.g. a column was
+                # added out-of-band, or schema_migrations lost this row after a
+                # DB snapshot/restore. Treat "already applied" as success and
+                # record it. Without this, ONE un-recorded ALTER (the live
+                # 007 `ADD COLUMN url` did exactly this) makes init_db raise on
+                # every call, which bricks the bot boot, publish-site, and every
+                # CLI command permanently — with no operator around to fix it.
+                msg = str(exc).lower()
+                if "duplicate column name" in msg or "already exists" in msg:
+                    import logging
+                    logging.getLogger(__name__).warning(
+                        "migration %s already applied (%s) — recording as done",
+                        sql_path.name, exc,
+                    )
+                else:
+                    raise
             conn.execute(
-                "INSERT INTO schema_migrations(filename, applied_at) VALUES(?, ?)",
+                "INSERT OR IGNORE INTO schema_migrations(filename, applied_at) VALUES(?, ?)",
                 (sql_path.name, _now_iso()),
             )
         _seed_sources(conn)
@@ -291,10 +309,14 @@ def save_classification(conn: sqlite3.Connection, item_id: int, c: Classificatio
             conn.execute(
                 """INSERT INTO financial_commitments(
                        item_id, amount, currency, fund_name, recipient,
-                       commitment_type, announced_at, rationale, created_at)
-                   VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                       commitment_type, announced_at, rationale, created_at,
+                       source_country, source_entity,
+                       beneficiary_country, beneficiary_entity)
+                   VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (item_id, fc.amount, fc.currency, fc.fund_name, fc.recipient,
-                 fc.commitment_type, fc.announced_at, fc.rationale, now),
+                 fc.commitment_type, fc.announced_at, fc.rationale, now,
+                 fc.source_country, fc.source_entity,
+                 fc.beneficiary_country, fc.beneficiary_entity),
             )
         for bm in c.bilateral_meetings:
             conn.execute(
@@ -581,6 +603,8 @@ def recent_financial_commitments(conn: sqlite3.Connection, hours: int = 720, lim
         """
         SELECT fc.id, fc.amount, fc.currency, fc.fund_name, fc.recipient,
                fc.commitment_type, fc.announced_at, fc.rationale, fc.created_at,
+               fc.source_country, fc.source_entity,
+               fc.beneficiary_country, fc.beneficiary_entity,
                i.id AS item_id, i.title, i.url
         FROM financial_commitments fc
         JOIN items i ON i.id = fc.item_id
@@ -593,8 +617,33 @@ def recent_financial_commitments(conn: sqlite3.Connection, hours: int = 720, lim
     return [dict(r) for r in rows]
 
 
+def _norm_principal(s: str | None) -> str:
+    """Normalize a principal/country name for dedup keys: lower, punctuation→space
+    (so 'Al-Nahyan' == 'Al Nahyan'), collapse whitespace."""
+    import re
+    s = re.sub(r"[^\w\s]", " ", (s or "").strip().lower())
+    return re.sub(r"\s+", " ", s).strip()
+
+
 def recent_bilateral_meetings(conn: sqlite3.Connection, hours: int = 720, limit: int = 30) -> list[dict]:
+    """Recent bilateral meetings, DE-DUPLICATED at render time.
+
+    N outlets covering the same meeting create N near-identical rows (there is
+    no storage-level uniqueness, by design — the re-classify path deletes by
+    item_id). We collapse them on a canonical key
+    (norm uae_principal + norm foreign_principal + norm foreign_country +
+    meeting DATE) so each real meeting shows once, with `mention_count` and the
+    list of source articles.
+
+    Guards (per the audit's adversarial review):
+      - BOTH principals blank → keyed on row id, never merged (an unidentified
+        meeting is a real distinct event, not a duplicate of other blanks).
+      - The date component uses `when_iso` ONLY (not `created_at`), so two
+        outlets that left when_iso NULL but ingested on different days still
+        collapse — otherwise differing ingest dates would split a real dup.
+    """
     cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+    # Pull a generous superset (duplicates collapse below), newest first.
     rows = conn.execute(
         """
         SELECT bm.id, bm.uae_principal, bm.foreign_principal, bm.foreign_country,
@@ -604,16 +653,61 @@ def recent_bilateral_meetings(conn: sqlite3.Connection, hours: int = 720, limit:
         JOIN items i ON i.id = bm.item_id
         WHERE COALESCE(bm.when_iso, bm.created_at) >= ?
         ORDER BY COALESCE(bm.when_iso, bm.created_at) DESC, bm.id DESC
-        LIMIT ?
+        LIMIT 2000
         """,
-        (cutoff, limit),
+        (cutoff,),
     ).fetchall()
-    out: list[dict] = []
-    for r in rows:
-        d = dict(r)
-        d["topics"] = json.loads(d.pop("topics_json")) if d.get("topics_json") else []
-        out.append(d)
-    return out
+
+    by_key: dict = {}
+    order: list = []
+
+    def _principals(r):
+        """(uae, foreign, country) normalized, or None for blank-both."""
+        uae = _norm_principal(r["uae_principal"])
+        foreign = _norm_principal(r["foreign_principal"])
+        if not uae and not foreign:
+            return None
+        return (uae, foreign, _norm_principal(r["foreign_country"]))
+
+    def _add(r, key):
+        src = {"title": r["title"], "url": r["url"], "item_id": r["item_id"]}
+        if key in by_key:
+            by_key[key]["mention_count"] += 1
+            by_key[key]["sources"].append(src)
+        elif len(order) < limit:
+            d = dict(r)
+            d["topics"] = json.loads(d.pop("topics_json")) if d.get("topics_json") else []
+            d["mention_count"] = 1
+            d["sources"] = [src]
+            by_key[key] = d
+            order.append(key)
+        # else: already have `limit` distinct meetings — ignore new keys
+
+    # Two passes so a date-less report still collapses with dated reports of the
+    # same meeting: pass 1 buckets DATED rows by principals+day (newest first,
+    # so the first dated key per principal set is the representative); pass 2
+    # attaches NULL-date rows to that same-principals bucket, else makes their
+    # own. Blank-both rows are always distinct (keyed on row id).
+    principals_to_key: dict = {}
+    dated = [r for r in rows if (r["when_iso"] or "")[:10]]
+    undated = [r for r in rows if not (r["when_iso"] or "")[:10]]
+    for r in dated:
+        pk = _principals(r)
+        if pk is None:
+            _add(r, ("__blank__", r["id"]))
+        else:
+            key = pk + ((r["when_iso"] or "")[:10],)
+            principals_to_key.setdefault(pk, key)
+            _add(r, key)
+    for r in undated:
+        pk = _principals(r)
+        if pk is None:
+            _add(r, ("__blank__", r["id"]))
+        else:
+            key = principals_to_key.get(pk) or (pk + ("",))
+            principals_to_key.setdefault(pk, key)
+            _add(r, key)
+    return [by_key[k] for k in order]
 
 
 def items_by_country_codes(
@@ -918,6 +1012,12 @@ def get_url_for_item(conn: sqlite3.Connection, item_id: int) -> str | None:
     return row["url"] if row else None
 
 
+def set_cluster_id(conn: sqlite3.Connection, item_id: int, cluster_id: int) -> None:
+    """Tag an item with a same-event cluster id (the representative item's id).
+    Used by the semantic de-dup pass; reuses the existing items.cluster_id col."""
+    conn.execute("UPDATE items SET cluster_id = ? WHERE id = ?", (cluster_id, item_id))
+
+
 # ---------------------------------------------------------------------------
 # Country / region aggregations — power the /country command + country view
 # ---------------------------------------------------------------------------
@@ -937,6 +1037,14 @@ def _classified_window_rows(conn: sqlite3.Connection, since_hours: int) -> list[
              AND i.classified_at >= ?
              AND i.country_focus_json IS NOT NULL
              AND i.country_focus_json != '[]'
+             -- Development-relevance floor for the country page: the classifier
+             -- forces sports / celebrity / trivia hard-negatives to
+             -- category='other' (see prompts/classifier.md), so excluding
+             -- 'other' drops that junk from counts, the heatmap, the timeline,
+             -- co-occurrence and per-country news in one place. Legitimate dev
+             -- categories are never 'other', so this carries no false-negative
+             -- risk. (The digest path enforces its own relevance gate already.)
+             AND i.category != 'other'
              AND TRIM(COALESCE(i.title, '')) != ''
              AND COALESCE(i.title, '') NOT LIKE 'http://%'
              AND COALESCE(i.title, '') NOT LIKE 'https://%'
@@ -1044,6 +1152,104 @@ def items_for_country(
     # Sort by published_at desc when available, ingested_at otherwise
     out.sort(key=lambda x: x.get("published_at") or x.get("ingested_at") or "", reverse=True)
     return out[:limit]
+
+
+def country_aggregates(
+    conn: sqlite3.Connection,
+    since_hours: int = 24 * 180,
+    *,
+    items_limit: int = 30,
+) -> dict:
+    """Single-pass replacement for the per-country fan-out that hung publish-site.
+
+    The countries page used to call country_mention_counts (1x) plus
+    items_for_country + country_cooccurrence ONCE PER COUNTRY (~190 countries),
+    each re-scanning the full classified window and re-parsing every row's
+    country_focus_json — ~2N+2 full passes. On a 317k-row items table that is
+    minutes of pure json.loads and a memory storm on the 1GB VM, i.e. a hang.
+
+    This scans the window ONCE, parses each row's JSON ONCE, and fills every
+    structure the page needs in the same loop:
+
+        {
+          "counts":           {ISO: n},                  # == country_mention_counts
+          "timeline":         {YYYY-MM-DD: {ISO: n}},     # == country_timeline
+          "cooccurrence":     {ISO: {other_ISO: n}},      # == country_cooccurrence per ISO
+          "items_by_country": {ISO: [item dict, ...]},    # == items_for_country per ISO (top N)
+        }
+
+    Output matches the four legacy functions on all current data. It applies
+    slightly stricter per-row validation uniformly (2-letter alpha ISO codes,
+    de-duplicated within a row so a malformed row can't double-count
+    co-occurrence) — the legacy functions varied on this; the stricter rule is
+    a no-op today and more robust on future junk. The legacy functions are kept
+    for the /country bot command, the country-debug CLI, and tests.
+    """
+    counts: dict[str, int] = {}
+    timeline: dict[str, dict[str, int]] = {}
+    cooccurrence: dict[str, dict[str, int]] = {}
+    items_by_country: dict[str, list[dict]] = {}
+
+    for r in _classified_window_rows(conn, since_hours):
+        try:
+            raw = json.loads(r["country_focus_json"]) or []
+        except Exception:
+            continue
+        valid: list[str] = []
+        seen: set[str] = set()
+        for c in raw:
+            iso = str(c).strip().upper()
+            if len(iso) == 2 and iso.isalpha() and iso not in seen:
+                seen.add(iso)
+                valid.append(iso)
+        if not valid:
+            continue
+
+        # counts
+        for iso in valid:
+            counts[iso] = counts.get(iso, 0) + 1
+
+        # timeline: bucket by published_at|ingested_at date
+        when = (r["published_at"] or r["ingested_at"] or "")[:10]
+        if len(when) == 10:
+            bucket = timeline.setdefault(when, {})
+            for iso in valid:
+                bucket[iso] = bucket.get(iso, 0) + 1
+
+        # cooccurrence: every ordered pair within the row
+        for iso in valid:
+            co = cooccurrence.setdefault(iso, {})
+            for other in valid:
+                if other != iso:
+                    co[other] = co.get(other, 0) + 1
+
+        # per-country item lists (sorted + capped after the pass)
+        item = {
+            "id": r["id"],
+            "title": r["title"],
+            "url": r["url"],
+            "summary": r["one_line_summary"] or "",
+            "category": r["category"],
+            "uae_relevance": r["uae_relevance"],
+            "severity": r["severity"],
+            "published_at": r["published_at"],
+            "ingested_at": r["ingested_at"],
+            "source": r["source_name"],
+            "country_focus": valid,
+        }
+        for iso in valid:
+            items_by_country.setdefault(iso, []).append(item)
+
+    for iso, lst in items_by_country.items():
+        lst.sort(key=lambda x: x.get("published_at") or x.get("ingested_at") or "", reverse=True)
+        items_by_country[iso] = lst[:items_limit]
+
+    return {
+        "counts": counts,
+        "timeline": timeline,
+        "cooccurrence": cooccurrence,
+        "items_by_country": items_by_country,
+    }
 
 
 def enabled_users(conn: sqlite3.Connection) -> list[sqlite3.Row]:
