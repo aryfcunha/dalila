@@ -463,6 +463,19 @@ def _cmd_bot() -> int:
     else:
         log.info("claude CLI check: %s", msg)
 
+    # Announce the effective LLM routing so the paid path can never be a silent
+    # surprise again. Three states: forced-DeepSeek (manual backfill override),
+    # Haiku-primary-with-fallback, or Haiku-only.
+    import os as _os
+    if _os.getenv("DALILA_LLM_BACKEND", "").strip().lower() == "deepseek" and _os.getenv("DEEPSEEK_API_KEY"):
+        log.warning("LLM backend: DALILA_LLM_BACKEND=deepseek is set — ALL live calls "
+                    "go to the PAID DeepSeek API. Unset it to run Haiku ($0 on Max).")
+    elif _os.getenv("DEEPSEEK_API_KEY"):
+        log.info("LLM backend: Haiku via CLI (primary, $0 on Max); DeepSeek fallback "
+                 "armed for hard CLI failures only (rate-limits back off on Haiku).")
+    else:
+        log.info("LLM backend: Haiku via CLI only ($0 on Max); no DeepSeek fallback configured.")
+
     db.init_db()
 
     from apscheduler.schedulers.asyncio import AsyncIOScheduler
